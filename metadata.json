@@ -1,0 +1,7 @@
+{
+  "name": "Huzada Master Catalog",
+  "description": "Simple ordering and product catalog via WhatsApp",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
