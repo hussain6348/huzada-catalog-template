@@ -1,7 +1,8 @@
 import { createClient } from '@libsql/client/web';
 
-export const onRequestPost: PagesFunction<any> = async ({ request, env }) => {
-  const body = await request.json() as any;
+export const onRequestPost = async (context: any) => {
+  const { request, env } = context;
+  const body = await request.json();
   const orderId = `ORD-${Date.now()}`;
   
   if (env.TURSO_DATABASE_URL && env.TURSO_AUTH_TOKEN) {
