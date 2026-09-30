@@ -1,0 +1,6 @@
+name = "huzada--catalog-template"
+pages_build_output_dir = "dist"
+
+[[r2_buckets]]
+binding = "UPLOAD_BUCKET"
+bucket_name = "huzada-uploads"
