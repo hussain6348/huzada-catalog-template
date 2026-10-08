@@ -1,33 +1,29 @@
-import { useEffect, useState } from 'react';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { CatalogEngine } from './components/CatalogEngine';
+import { Admin } from './pages/Admin';
+import { Settings } from 'lucide-react';
 
 export default function App() {
-  const [items, setItems] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetch('/api/catalog')
-      .then(res => res.json())
-      .then(data => {
-        if (data.results?.[0]?.response?.result?.rows) {
-          setItems(data.results[0].response.result.rows);
-        }
-      });
-  }, []);
-
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">Catalog Dashboard</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        {items.length === 0 ? (
-          <p className="text-gray-500">No items found.</p>
-        ) : (
-          items.map((item) => (
-            <div key={item.id} className="border-b last:border-0 py-3">
-              <p className="font-semibold text-lg">{item.name || 'Unnamed Item'}</p>
-              <p className="text-gray-700">{item.price || 'No Price'} - {item.status || 'Active'}</p>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <div className="min-h-screen bg-zinc-100/50 py-12 px-4 relative">
+            <CatalogEngine />
+            {/* Visible Floating Pill to Admin Console */}
+            <Link
+              to="/admin"
+              className="fixed bottom-6 right-6 z-40 bg-zinc-900 hover:bg-black text-white px-4 py-2.5 rounded-full text-xs font-semibold shadow-xl hover:shadow-2xl transition-all flex items-center gap-2 border border-zinc-700/60 active:scale-95"
+            >
+              <Settings className="w-3.5 h-3.5 text-zinc-300" />
+              <span>Go to Admin Console (/admin)</span>
+            </Link>
+          </div>
+        }
+      />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
