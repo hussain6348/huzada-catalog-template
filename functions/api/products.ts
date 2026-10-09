@@ -137,12 +137,35 @@ export const onRequestPost = async (context: any) => {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
       await initProductsTable(db);
 
-      // Verify actual columns in table schema
+      // Verify actual columns and types in table schema
       const tableInfo = await db.execute('PRAGMA table_info(products)');
       const columnNames = new Set(tableInfo.rows.map((row: any) => String(row.name).toLowerCase()));
+      const idCol = tableInfo.rows.find((row: any) => String(row.name).toLowerCase() === 'id');
+      const isIdInteger = Boolean(idCol && String(idCol.type || '').toUpperCase().includes('INT'));
 
-      const cols = ['id', 'name', 'description', 'category', 'price', 'stock', 'image', 'images'];
-      args = [id, name, description, category, price, stock, image, images];
+      const numericId = parseInt(String(body.id), 10);
+      const hasValidIntId = Number.isInteger(numericId) && !isNaN(numericId) && String(numericId) === String(body.id).trim();
+
+      let cols: string[] = [];
+      let savedId = id;
+
+      if (isIdInteger) {
+        if (hasValidIntId) {
+          // Updating an existing integer-keyed product
+          cols = ['id', 'name', 'description', 'category', 'price', 'stock', 'image', 'images'];
+          args = [numericId, name, description, category, price, stock, image, images];
+          savedId = String(numericId);
+        } else {
+          // New product on an integer-keyed table: omit 'id' so SQLite auto-increments
+          cols = ['name', 'description', 'category', 'price', 'stock', 'image', 'images'];
+          args = [name, description, category, price, stock, image, images];
+        }
+      } else {
+        // Table uses TEXT id
+        cols = ['id', 'name', 'description', 'category', 'price', 'stock', 'image', 'images'];
+        args = [id, name, description, category, price, stock, image, images];
+        savedId = id;
+      }
 
       if (columnNames.has('created_at')) {
         cols.push('created_at');
@@ -150,29 +173,42 @@ export const onRequestPost = async (context: any) => {
       }
 
       const placeholders = cols.map(() => '?').join(', ');
-      const setClause = cols
-        .filter(c => c !== 'id' && c !== 'created_at')
-        .map(c => `${c} = excluded.${c}`)
-        .join(', ');
+      let insertResult: any;
 
-      try {
-        await db.execute({
-          sql: `INSERT INTO products (${cols.join(', ')})
-                VALUES (${placeholders})
-                ON CONFLICT(id) DO UPDATE SET ${setClause}`,
-          args,
-        });
-      } catch (upsertError: any) {
-        // Fallback to direct INSERT if ON CONFLICT clause is not supported on the target schema
-        await db.execute({
+      if (cols.includes('id')) {
+        const setClause = cols
+          .filter(c => c !== 'id' && c !== 'created_at')
+          .map(c => `${c} = excluded.${c}`)
+          .join(', ');
+
+        try {
+          insertResult = await db.execute({
+            sql: `INSERT INTO products (${cols.join(', ')})
+                  VALUES (${placeholders})
+                  ON CONFLICT(id) DO UPDATE SET ${setClause}`,
+            args,
+          });
+        } catch (upsertError: any) {
+          insertResult = await db.execute({
+            sql: `INSERT INTO products (${cols.join(', ')}) VALUES (${placeholders})`,
+            args,
+          });
+        }
+      } else {
+        // Standard INSERT omitting id for autoincrement
+        insertResult = await db.execute({
           sql: `INSERT INTO products (${cols.join(', ')}) VALUES (${placeholders})`,
           args,
         });
+
+        if (insertResult?.lastInsertRowid !== undefined && insertResult?.lastInsertRowid !== null) {
+          savedId = String(insertResult.lastInsertRowid);
+        }
       }
 
       const responseProduct = {
         ...body,
-        id,
+        id: savedId,
         name,
         description,
         category,
@@ -235,10 +271,18 @@ export const onRequestDelete = async (context: any) => {
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
       await initProductsTable(db);
-      await db.execute({
-        sql: 'DELETE FROM products WHERE id = ?',
-        args: [String(id)],
-      });
+      const numericId = parseInt(String(id), 10);
+      if (Number.isInteger(numericId) && !isNaN(numericId) && String(numericId) === String(id).trim()) {
+        await db.execute({
+          sql: 'DELETE FROM products WHERE id = ?',
+          args: [numericId],
+        });
+      } else {
+        await db.execute({
+          sql: 'DELETE FROM products WHERE id = ?',
+          args: [String(id)],
+        });
+      }
     } catch (e: any) {
       console.error('Turso delete product error:', e);
       return new Response(JSON.stringify({ success: false, error: e.message || 'Failed to delete product' }), {
