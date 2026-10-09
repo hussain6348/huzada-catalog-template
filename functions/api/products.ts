@@ -12,6 +12,7 @@ async function initProductsTable(db: any) {
       price REAL,
       stock INTEGER DEFAULT 10,
       image TEXT,
+      image_path TEXT,
       images TEXT,
       created_at TEXT
     )
@@ -23,6 +24,7 @@ async function initProductsTable(db: any) {
     'ALTER TABLE products ADD COLUMN price REAL',
     'ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10',
     'ALTER TABLE products ADD COLUMN image TEXT',
+    'ALTER TABLE products ADD COLUMN image_path TEXT',
     'ALTER TABLE products ADD COLUMN images TEXT',
     'ALTER TABLE products ADD COLUMN description TEXT',
     'ALTER TABLE products ADD COLUMN created_at TEXT',
@@ -47,22 +49,24 @@ export const onRequestGet = async (context: any) => {
 
       const result = await db.execute('SELECT * FROM products ORDER BY rowid DESC');
       const products = result.rows.map(r => {
-        let images: string[] = [];
+        let parsedImages: string[] = [];
         try {
           if (typeof r.images === 'string' && r.images.trim().length > 0) {
             const parsed = JSON.parse(r.images);
             if (Array.isArray(parsed)) {
-              images = parsed.filter(url => typeof url === 'string' && url.trim().length > 0);
+              parsedImages = parsed.filter(url => typeof url === 'string' && url.trim().length > 0);
             }
           } else if (Array.isArray(r.images)) {
-            images = r.images.filter(url => typeof url === 'string' && url.trim().length > 0);
+            parsedImages = r.images.filter(url => typeof url === 'string' && url.trim().length > 0);
           }
         } catch {
-          images = [];
+          parsedImages = [];
         }
 
-        if (images.length === 0 && r.image) {
-          images = [String(r.image)];
+        const primaryImage = String(r.image || r.image_path || parsedImages[0] || '');
+
+        if (parsedImages.length === 0 && primaryImage) {
+          parsedImages = [primaryImage];
         }
 
         return {
@@ -71,8 +75,8 @@ export const onRequestGet = async (context: any) => {
           description: String(r.description || ''),
           price: Number(parseFloat(r.price as any) || 0),
           category: String(r.category || 'General'),
-          images: images.slice(0, 5),
-          image: images[0] || (r.image ? String(r.image) : ''),
+          images: parsedImages.slice(0, 5),
+          image: primaryImage,
           stock: Number(parseInt(r.stock as any, 10) || 10),
           badge: r.badge ? String(r.badge) : undefined,
         };
@@ -126,8 +130,10 @@ export const onRequestPost = async (context: any) => {
 
   const imagesArray: string[] = Array.isArray(body.images) && body.images.length > 0
     ? body.images.map(String).filter((img: string) => img.trim().length > 0)
-    : (body.image ? [String(body.image)] : []);
-  const image: string = String(imagesArray[0] || '');
+    : (body.image ? [String(body.image)] : (body.image_path ? [String(body.image_path)] : []));
+
+  const imagePath: string = String(imagesArray[0] || body.image || body.image_path || '');
+  const image: string = String(imagesArray[0] || body.image || body.image_path || '');
   const images: string = JSON.stringify(Array.isArray(body.images) ? body.images : (imagesArray.length > 0 ? imagesArray : []));
   const createdAt: string = new Date().toISOString();
 
@@ -146,25 +152,38 @@ export const onRequestPost = async (context: any) => {
       const numericId = parseInt(String(body.id), 10);
       const hasValidIntId = Number.isInteger(numericId) && !isNaN(numericId) && String(numericId) === String(body.id).trim();
 
-      let cols: string[] = [];
+      const cols: string[] = [];
+      args = [];
       let savedId = id;
 
       if (isIdInteger) {
         if (hasValidIntId) {
-          // Updating an existing integer-keyed product
-          cols = ['id', 'name', 'description', 'category', 'price', 'stock', 'image', 'images'];
-          args = [numericId, name, description, category, price, stock, image, images];
+          cols.push('id');
+          args.push(numericId);
           savedId = String(numericId);
-        } else {
-          // New product on an integer-keyed table: omit 'id' so SQLite auto-increments
-          cols = ['name', 'description', 'category', 'price', 'stock', 'image', 'images'];
-          args = [name, description, category, price, stock, image, images];
         }
       } else {
-        // Table uses TEXT id
-        cols = ['id', 'name', 'description', 'category', 'price', 'stock', 'image', 'images'];
-        args = [id, name, description, category, price, stock, image, images];
+        cols.push('id');
+        args.push(id);
         savedId = id;
+      }
+
+      cols.push('name', 'description', 'category', 'price', 'stock');
+      args.push(name, description, category, price, stock);
+
+      if (columnNames.has('image') || columnNames.size === 0) {
+        cols.push('image');
+        args.push(image);
+      }
+
+      if (columnNames.has('image_path')) {
+        cols.push('image_path');
+        args.push(imagePath);
+      }
+
+      if (columnNames.has('images') || columnNames.size === 0) {
+        cols.push('images');
+        args.push(images);
       }
 
       if (columnNames.has('created_at')) {
@@ -215,6 +234,7 @@ export const onRequestPost = async (context: any) => {
         price,
         stock,
         image,
+        image_path: imagePath,
         images: Array.isArray(body.images) ? body.images : imagesArray,
         created_at: createdAt,
       };
@@ -246,6 +266,7 @@ export const onRequestPost = async (context: any) => {
     price,
     stock,
     image,
+    image_path: imagePath,
     images: Array.isArray(body.images) ? body.images : imagesArray,
     created_at: createdAt,
   };
