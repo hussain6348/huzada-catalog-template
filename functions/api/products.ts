@@ -107,9 +107,9 @@ export const onRequestPost = async (context: any) => {
     return unauthorizedResponse('Authentication required to modify inventory items.');
   }
 
-  let product: any;
+  let body: any;
   try {
-    product = await request.json();
+    body = await request.json();
   } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: 'Invalid JSON payload' }), {
       status: 400,
@@ -117,57 +117,56 @@ export const onRequestPost = async (context: any) => {
     });
   }
 
-  const imagesArray: string[] = Array.isArray(product.images) && product.images.length > 0
-    ? product.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5)
-    : (product.image ? [String(product.image)] : []);
-  const primaryImage = imagesArray[0] || (product.image ? String(product.image) : '');
-  const imagesJson = JSON.stringify(imagesArray);
-  const cleanCategory = (typeof product.category === 'string' && product.category.trim().length > 0)
-    ? product.category.trim()
-    : 'General';
+  // Strict Parameter Normalization & Type Casting
+  const id: string = String(body.id || `prod_${Date.now()}`);
+  const name: string = String(body.name || '');
+  const description: string = String(body.description || '');
+  const category: string = String(body.category || 'General');
+  const price: number = parseFloat(body.price) || 0.0;
+  const stock: number = parseInt(body.stock, 10) || 0;
+  const imagesJsonString: string = JSON.stringify(Array.isArray(body.images) ? body.images : [body.image].filter(Boolean));
+  const primaryImage: string = String(Array.isArray(body.images) && body.images.length > 0 ? body.images[0] : (body.image || ''));
+  const createdAt: string = new Date().toISOString();
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
       await initProductsTable(db);
 
-      await db.execute({
-        sql: `INSERT INTO products (id, name, description, price, category, images, image, stock, badge, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              ON CONFLICT(id) DO UPDATE SET
-                name = excluded.name,
-                description = excluded.description,
-                price = excluded.price,
-                category = excluded.category,
-                images = excluded.images,
-                image = excluded.image,
-                stock = excluded.stock,
-                badge = excluded.badge`,
-        args: [
-          String(product.id),
-          String(product.name || '').trim(),
-          String(product.description || '').trim(),
-          Number(product.price || 0),
-          cleanCategory,
-          imagesJson,
-          primaryImage,
-          Number(product.stock ?? 10),
-          product.badge ? String(product.badge).trim() : null,
-          new Date().toISOString(),
-        ],
-      });
+      try {
+        await db.execute({
+          sql: `INSERT INTO products (id, name, description, category, price, stock, images, image, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  name = excluded.name,
+                  description = excluded.description,
+                  category = excluded.category,
+                  price = excluded.price,
+                  stock = excluded.stock,
+                  images = excluded.images,
+                  image = excluded.image`,
+          args: [id, name, description, category, price, stock, imagesJsonString, primaryImage, createdAt],
+        });
+      } catch (upsertError: any) {
+        // Fallback to direct INSERT if ON CONFLICT clause is not supported on the target schema
+        await db.execute({
+          sql: `INSERT INTO products (id, name, description, category, price, stock, images, image, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [id, name, description, category, price, stock, imagesJsonString, primaryImage, createdAt],
+        });
+      }
 
       const responseProduct = {
-        ...product,
-        id: String(product.id),
-        name: String(product.name || '').trim(),
-        description: String(product.description || '').trim(),
-        price: Number(product.price || 0),
-        category: cleanCategory,
-        images: imagesArray,
+        ...body,
+        id,
+        name,
+        description,
+        category,
+        price,
+        stock,
+        images: Array.isArray(body.images) ? body.images : [body.image].filter(Boolean),
         image: primaryImage,
-        stock: Number(product.stock ?? 10),
-        badge: product.badge ? String(product.badge).trim() : undefined,
+        created_at: createdAt,
       };
 
       return new Response(JSON.stringify({ success: true, product: responseProduct }), {
@@ -184,9 +183,16 @@ export const onRequestPost = async (context: any) => {
 
   // Fallback when Turso env variables are not present
   const fallbackProduct = {
-    ...product,
-    images: imagesArray,
+    ...body,
+    id,
+    name,
+    description,
+    category,
+    price,
+    stock,
+    images: Array.isArray(body.images) ? body.images : [body.image].filter(Boolean),
     image: primaryImage,
+    created_at: createdAt,
   };
 
   return new Response(JSON.stringify({ success: true, product: fallbackProduct, source: 'fallback' }), {
@@ -212,7 +218,7 @@ export const onRequestDelete = async (context: any) => {
       await initProductsTable(db);
       await db.execute({
         sql: 'DELETE FROM products WHERE id = ?',
-        args: [id],
+        args: [String(id)],
       });
     } catch (e: any) {
       console.error('Turso delete product error:', e);
