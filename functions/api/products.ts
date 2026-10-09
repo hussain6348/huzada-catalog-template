@@ -2,53 +2,68 @@
 import { createClient } from '@libsql/client/web';
 import { verifyAuthToken, unauthorizedResponse } from './_auth';
 
+async function initProductsTable(db: any) {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS products (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      description TEXT,
+      price REAL,
+      category TEXT,
+      images TEXT,
+      image TEXT,
+      stock INTEGER DEFAULT 10,
+      badge TEXT,
+      created_at TEXT
+    )
+  `);
+
+  // Ensure 'images' column exists if products table was created in a previous schema version
+  try {
+    await db.execute(`ALTER TABLE products ADD COLUMN images TEXT`);
+  } catch {
+    // Column already exists or table is up to date
+  }
+}
+
 export const onRequestGet = async (context: any) => {
   const { env } = context;
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS products (
-          id TEXT PRIMARY KEY,
-          name TEXT,
-          description TEXT,
-          price REAL,
-          category TEXT,
-          images TEXT,
-          image TEXT,
-          stock INTEGER DEFAULT 10,
-          badge TEXT,
-          created_at TEXT
-        )
-      `);
+      await initProductsTable(db);
 
       const result = await db.execute('SELECT * FROM products ORDER BY rowid DESC');
       const products = result.rows.map(r => {
         let images: string[] = [];
         try {
-          if (typeof r.images === 'string') {
-            images = JSON.parse(r.images);
+          if (typeof r.images === 'string' && r.images.trim().length > 0) {
+            const parsed = JSON.parse(r.images);
+            if (Array.isArray(parsed)) {
+              images = parsed.filter(url => typeof url === 'string' && url.trim().length > 0);
+            }
           } else if (Array.isArray(r.images)) {
-            images = r.images;
+            images = r.images.filter(url => typeof url === 'string' && url.trim().length > 0);
           }
         } catch {
           images = [];
         }
+
         if (images.length === 0 && r.image) {
           images = [String(r.image)];
         }
 
         return {
-          id: r.id,
-          name: r.name,
-          description: r.description || '',
+          id: String(r.id),
+          name: String(r.name || ''),
+          description: String(r.description || ''),
           price: Number(r.price || 0),
-          category: r.category || 'General',
+          category: String(r.category || 'General'),
           images: images.slice(0, 5),
           image: images[0] || (r.image ? String(r.image) : ''),
           stock: Number(r.stock ?? 10),
-          badge: r.badge || undefined,
+          badge: r.badge ? String(r.badge) : undefined,
         };
       });
 
@@ -57,6 +72,10 @@ export const onRequestGet = async (context: any) => {
       });
     } catch (e: any) {
       console.error('Turso fetch products error:', e);
+      return new Response(JSON.stringify({ success: false, error: e.message || 'Database query error', products: [] }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   }
 
@@ -74,30 +93,26 @@ export const onRequestPost = async (context: any) => {
     return unauthorizedResponse('Authentication required to modify inventory items.');
   }
 
-  const product = await request.json();
+  let product: any;
+  try {
+    product = await request.json();
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: 'Invalid JSON payload' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-  const imagesArray = Array.isArray(product.images) && product.images.length > 0
-    ? product.images.slice(0, 5)
-    : (product.image ? [product.image] : []);
-  const primaryImage = imagesArray[0] || product.image || '';
+  const imagesArray: string[] = Array.isArray(product.images) && product.images.length > 0
+    ? product.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0).slice(0, 5)
+    : (product.image ? [String(product.image)] : []);
+  const primaryImage = imagesArray[0] || (product.image ? String(product.image) : '');
+  const imagesJson = JSON.stringify(imagesArray);
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS products (
-          id TEXT PRIMARY KEY,
-          name TEXT,
-          description TEXT,
-          price REAL,
-          category TEXT,
-          images TEXT,
-          image TEXT,
-          stock INTEGER DEFAULT 10,
-          badge TEXT,
-          created_at TEXT
-        )
-      `);
+      await initProductsTable(db);
 
       await db.execute({
         sql: `INSERT INTO products (id, name, description, price, category, images, image, stock, badge, created_at)
@@ -112,28 +127,52 @@ export const onRequestPost = async (context: any) => {
                 stock = excluded.stock,
                 badge = excluded.badge`,
         args: [
-          product.id,
-          product.name,
-          product.description || '',
-          product.price || 0,
-          product.category || 'General',
-          JSON.stringify(imagesArray),
+          String(product.id),
+          String(product.name || '').trim(),
+          String(product.description || '').trim(),
+          Number(product.price || 0),
+          String(product.category || 'General').trim(),
+          imagesJson,
           primaryImage,
-          product.stock ?? 10,
-          product.badge || null,
+          Number(product.stock ?? 10),
+          product.badge ? String(product.badge).trim() : null,
           new Date().toISOString(),
         ],
       });
 
-      return new Response(JSON.stringify({ success: true, product: { ...product, images: imagesArray, image: primaryImage } }), {
+      const responseProduct = {
+        ...product,
+        id: String(product.id),
+        name: String(product.name || '').trim(),
+        description: String(product.description || '').trim(),
+        price: Number(product.price || 0),
+        category: String(product.category || 'General').trim(),
+        images: imagesArray,
+        image: primaryImage,
+        stock: Number(product.stock ?? 10),
+        badge: product.badge ? String(product.badge).trim() : undefined,
+      };
+
+      return new Response(JSON.stringify({ success: true, product: responseProduct }), {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (e: any) {
       console.error('Turso save product error:', e);
+      return new Response(JSON.stringify({ success: false, error: e.message || 'Failed to save product in database' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   }
 
-  return new Response(JSON.stringify({ success: true, product: { ...product, images: imagesArray, image: primaryImage }, source: 'fallback' }), {
+  // Fallback when Turso env variables are not present
+  const fallbackProduct = {
+    ...product,
+    images: imagesArray,
+    image: primaryImage,
+  };
+
+  return new Response(JSON.stringify({ success: true, product: fallbackProduct, source: 'fallback' }), {
     headers: { 'Content-Type': 'application/json' },
   });
 };
@@ -153,12 +192,17 @@ export const onRequestDelete = async (context: any) => {
   if (id && env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
+      await initProductsTable(db);
       await db.execute({
         sql: 'DELETE FROM products WHERE id = ?',
         args: [id],
       });
     } catch (e: any) {
       console.error('Turso delete product error:', e);
+      return new Response(JSON.stringify({ success: false, error: e.message || 'Failed to delete product' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   }
 

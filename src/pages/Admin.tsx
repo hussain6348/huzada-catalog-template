@@ -531,6 +531,13 @@ export function Admin({ onLogout }: AdminProps = {}) {
       setInventory(updated);
       setIsProductModalOpen(false);
       setEditingProduct(null);
+
+      // Refresh catalog from server in background to ensure database sync
+      fetchCatalogProducts().then(freshProducts => {
+        if (freshProducts && freshProducts.length > 0) {
+          setInventory(freshProducts);
+        }
+      });
     } catch {
       setProductError('Error saving product. Please try again.');
     } finally {
@@ -1300,10 +1307,17 @@ export function Admin({ onLogout }: AdminProps = {}) {
                     <input
                       required
                       type="number"
-                      min="1"
-                      step="10"
-                      value={productForm.price}
-                      onChange={e => setProductForm({ ...productForm, price: Number(e.target.value) })}
+                      min="0.01"
+                      step="any"
+                      placeholder="e.g. 125"
+                      value={productForm.price === 0 ? '' : productForm.price}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setProductForm({
+                          ...productForm,
+                          price: val === '' ? 0 : Number(val),
+                        });
+                      }}
                       className="w-full bg-white border border-zinc-200 rounded-lg pl-9 pr-3 py-2 text-xs font-mono text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                     />
                   </div>

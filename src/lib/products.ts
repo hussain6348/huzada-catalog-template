@@ -147,7 +147,7 @@ export async function persistProduct(product: Product): Promise<Product[]> {
   saveStoredProducts(updated);
 
   try {
-    await fetch('/api/products', {
+    const res = await fetch('/api/products', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -155,6 +155,21 @@ export async function persistProduct(product: Product): Promise<Product[]> {
       },
       body: JSON.stringify(clean),
     });
+
+    if (res.ok) {
+      const data: any = await res.json();
+      if (data.success && data.product) {
+        const savedProduct = normalizeProduct(data.product);
+        const latestCurrent = getStoredProducts();
+        const idx = latestCurrent.findIndex(p => p.id === savedProduct.id);
+        if (idx >= 0) {
+          updated = latestCurrent.map(p => (p.id === savedProduct.id ? savedProduct : p));
+        } else {
+          updated = [savedProduct, ...latestCurrent];
+        }
+        saveStoredProducts(updated);
+      }
+    }
   } catch (e) {
     console.warn('Network product save notice (fallback active):', e);
   }
