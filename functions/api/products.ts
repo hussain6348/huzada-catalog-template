@@ -8,26 +8,23 @@ async function initProductsTable(db: any) {
       id TEXT PRIMARY KEY,
       name TEXT,
       description TEXT,
-      price REAL,
       category TEXT,
-      images TEXT,
-      image TEXT,
+      price REAL,
       stock INTEGER DEFAULT 10,
-      badge TEXT,
+      image TEXT,
+      images TEXT,
       created_at TEXT
     )
   `);
 
   // Ensure all expected columns are automatically ensured before insertion.
-  // Run safe migration queries inside isolated try-catch blocks and silently ignore if column already exists.
   const migrations = [
     'ALTER TABLE products ADD COLUMN category TEXT',
-    'ALTER TABLE products ADD COLUMN images TEXT',
-    'ALTER TABLE products ADD COLUMN image TEXT',
-    'ALTER TABLE products ADD COLUMN description TEXT',
     'ALTER TABLE products ADD COLUMN price REAL',
     'ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10',
-    'ALTER TABLE products ADD COLUMN badge TEXT',
+    'ALTER TABLE products ADD COLUMN image TEXT',
+    'ALTER TABLE products ADD COLUMN images TEXT',
+    'ALTER TABLE products ADD COLUMN description TEXT',
     'ALTER TABLE products ADD COLUMN created_at TEXT',
   ];
 
@@ -35,7 +32,7 @@ async function initProductsTable(db: any) {
     try {
       await db.execute(sql);
     } catch {
-      // Catch and silently ignore any "duplicate column name" errors so it never throws on columns that already exist.
+      // Catch and silently ignore any "duplicate column name" errors
     }
   }
 }
@@ -72,11 +69,11 @@ export const onRequestGet = async (context: any) => {
           id: String(r.id),
           name: String(r.name || ''),
           description: String(r.description || ''),
-          price: Number(r.price || 0),
+          price: Number(parseFloat(r.price as any) || 0),
           category: String(r.category || 'General'),
           images: images.slice(0, 5),
           image: images[0] || (r.image ? String(r.image) : ''),
-          stock: Number(r.stock ?? 10),
+          stock: Number(parseInt(r.stock as any, 10) || 10),
           badge: r.badge ? String(r.badge) : undefined,
         };
       });
@@ -117,42 +114,59 @@ export const onRequestPost = async (context: any) => {
     });
   }
 
-  // Strict Parameter Normalization & Type Casting
-  const id: string = String(body.id || `prod_${Date.now()}`);
+  // 1. Explicit Type Casting & Fallbacks:
+  const id: string = String(
+    body.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `prod_${Date.now()}`)
+  );
   const name: string = String(body.name || '');
   const description: string = String(body.description || '');
   const category: string = String(body.category || 'General');
-  const price: number = parseFloat(body.price) || 0.0;
-  const stock: number = parseInt(body.stock, 10) || 0;
-  const imagesJsonString: string = JSON.stringify(Array.isArray(body.images) ? body.images : [body.image].filter(Boolean));
-  const primaryImage: string = String(Array.isArray(body.images) && body.images.length > 0 ? body.images[0] : (body.image || ''));
+  const price: number = Number(parseFloat(body.price) || 0);
+  const stock: number = Number(parseInt(body.stock, 10) || 10);
+
+  const imagesArray: string[] = Array.isArray(body.images) && body.images.length > 0
+    ? body.images.map(String).filter((img: string) => img.trim().length > 0)
+    : (body.image ? [String(body.image)] : []);
+  const image: string = String(imagesArray[0] || '');
+  const images: string = JSON.stringify(Array.isArray(body.images) ? body.images : (imagesArray.length > 0 ? imagesArray : []));
   const createdAt: string = new Date().toISOString();
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
+    let args: any[] = [];
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
       await initProductsTable(db);
 
+      // Verify actual columns in table schema
+      const tableInfo = await db.execute('PRAGMA table_info(products)');
+      const columnNames = new Set(tableInfo.rows.map((row: any) => String(row.name).toLowerCase()));
+
+      const cols = ['id', 'name', 'description', 'category', 'price', 'stock', 'image', 'images'];
+      args = [id, name, description, category, price, stock, image, images];
+
+      if (columnNames.has('created_at')) {
+        cols.push('created_at');
+        args.push(createdAt);
+      }
+
+      const placeholders = cols.map(() => '?').join(', ');
+      const setClause = cols
+        .filter(c => c !== 'id' && c !== 'created_at')
+        .map(c => `${c} = excluded.${c}`)
+        .join(', ');
+
       try {
         await db.execute({
-          sql: `INSERT INTO products (id, name, description, category, price, stock, images, image, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                  name = excluded.name,
-                  description = excluded.description,
-                  category = excluded.category,
-                  price = excluded.price,
-                  stock = excluded.stock,
-                  images = excluded.images,
-                  image = excluded.image`,
-          args: [id, name, description, category, price, stock, imagesJsonString, primaryImage, createdAt],
+          sql: `INSERT INTO products (${cols.join(', ')})
+                VALUES (${placeholders})
+                ON CONFLICT(id) DO UPDATE SET ${setClause}`,
+          args,
         });
       } catch (upsertError: any) {
         // Fallback to direct INSERT if ON CONFLICT clause is not supported on the target schema
         await db.execute({
-          sql: `INSERT INTO products (id, name, description, category, price, stock, images, image, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [id, name, description, category, price, stock, imagesJsonString, primaryImage, createdAt],
+          sql: `INSERT INTO products (${cols.join(', ')}) VALUES (${placeholders})`,
+          args,
         });
       }
 
@@ -164,17 +178,22 @@ export const onRequestPost = async (context: any) => {
         category,
         price,
         stock,
-        images: Array.isArray(body.images) ? body.images : [body.image].filter(Boolean),
-        image: primaryImage,
+        image,
+        images: Array.isArray(body.images) ? body.images : imagesArray,
         created_at: createdAt,
       };
 
       return new Response(JSON.stringify({ success: true, product: responseProduct }), {
         headers: { 'Content-Type': 'application/json' },
       });
-    } catch (e: any) {
-      console.error('Turso save product error:', e);
-      return new Response(JSON.stringify({ success: false, error: e.message || 'Failed to save product in database' }), {
+    } catch (insertError: any) {
+      console.error('Failed to insert product. Query args:', JSON.stringify(args, null, 2));
+      console.error('Turso execution error:', insertError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: insertError.message || 'Failed to save product in database',
+        debugArgs: args,
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -190,8 +209,8 @@ export const onRequestPost = async (context: any) => {
     category,
     price,
     stock,
-    images: Array.isArray(body.images) ? body.images : [body.image].filter(Boolean),
-    image: primaryImage,
+    image,
+    images: Array.isArray(body.images) ? body.images : imagesArray,
     created_at: createdAt,
   };
 
