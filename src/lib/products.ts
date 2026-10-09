@@ -1,4 +1,5 @@
 import type { Product } from './types';
+import { getAuthHeaders } from './auth';
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
@@ -7,6 +8,11 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Double-wall vacuum insulated flask with matte textured finish (750ml).',
     price: 1250,
     category: 'Lifestyle',
+    images: [
+      'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
+      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80',
+      'https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
     stock: 18,
     badge: 'Popular',
@@ -17,6 +23,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Precision milled solid walnut tray for pens, phone, and desktop cables.',
     price: 1850,
     category: 'Workspace',
+    images: [
+      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
+      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
     stock: 9,
   },
@@ -26,6 +36,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Artisanal stoneware ceramic mug with ergonomic unglazed clay base (320ml).',
     price: 950,
     category: 'Lifestyle',
+    images: [
+      'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80',
+      'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80',
     stock: 24,
   },
@@ -35,6 +49,9 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'High-density memory foam wrist rest with anti-fray stitched fabric rim.',
     price: 1400,
     category: 'Workspace',
+    images: [
+      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80',
     stock: 12,
   },
@@ -44,6 +61,9 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Balanced solid brass casing engineered for ultra-smooth fluid ink delivery.',
     price: 850,
     category: 'Accessories',
+    images: [
+      'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&q=80',
     stock: 35,
   },
@@ -53,6 +73,9 @@ export const INITIAL_PRODUCTS: Product[] = [
     description: 'Premium wool blend desk pad with non-slip natural rubber backing (80x40cm).',
     price: 1650,
     category: 'Workspace',
+    images: [
+      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
     stock: 15,
   },
@@ -61,13 +84,25 @@ export const INITIAL_PRODUCTS: Product[] = [
 const STORAGE_KEY = 'merchant_catalog_products';
 export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
 
+function normalizeProduct(p: any): Product {
+  const images = Array.isArray(p.images) && p.images.length > 0
+    ? p.images.slice(0, 5)
+    : (p.image ? [p.image] : []);
+  return {
+    ...p,
+    images,
+    image: images[0] || p.image || '',
+    stock: p.stock ?? 10,
+  };
+}
+
 export function getStoredProducts(): Product[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map(normalizeProduct);
       }
     }
   } catch {}
@@ -76,8 +111,9 @@ export function getStoredProducts(): Product[] {
 
 export function saveStoredProducts(products: Product[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    window.dispatchEvent(new CustomEvent(CATALOG_UPDATED_EVENT, { detail: products }));
+    const normalized = products.map(normalizeProduct);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent(CATALOG_UPDATED_EVENT, { detail: normalized }));
   } catch (e) {
     console.error('Storage write error:', e);
   }
@@ -89,8 +125,9 @@ export async function fetchCatalogProducts(): Promise<Product[]> {
     if (res.ok) {
       const data: any = await res.json();
       if (Array.isArray(data.products) && data.products.length > 0) {
-        saveStoredProducts(data.products);
-        return data.products;
+        const normalized = data.products.map(normalizeProduct);
+        saveStoredProducts(normalized);
+        return normalized;
       }
     }
   } catch {}
@@ -98,21 +135,25 @@ export async function fetchCatalogProducts(): Promise<Product[]> {
 }
 
 export async function persistProduct(product: Product): Promise<Product[]> {
+  const clean = normalizeProduct(product);
   const current = getStoredProducts();
-  const existingIdx = current.findIndex(p => p.id === product.id);
+  const existingIdx = current.findIndex(p => p.id === clean.id);
   let updated: Product[];
   if (existingIdx >= 0) {
-    updated = current.map(p => (p.id === product.id ? product : p));
+    updated = current.map(p => (p.id === clean.id ? clean : p));
   } else {
-    updated = [product, ...current];
+    updated = [clean, ...current];
   }
   saveStoredProducts(updated);
 
   try {
     await fetch('/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(product),
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(clean),
     });
   } catch (e) {
     console.warn('Network product save notice (fallback active):', e);
@@ -129,6 +170,9 @@ export async function removeProduct(productId: string): Promise<Product[]> {
   try {
     await fetch(`/api/products?id=${productId}`, {
       method: 'DELETE',
+      headers: {
+        ...getAuthHeaders(),
+      },
     });
   } catch (e) {
     console.warn('Network product delete notice:', e);

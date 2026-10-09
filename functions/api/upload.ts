@@ -1,4 +1,5 @@
 /// <reference types="@cloudflare/workers-types" />
+import { verifyAuthToken, unauthorizedResponse } from './_auth';
 
 interface Env {
   CATALOG_BUCKET?: R2Bucket;
@@ -6,12 +7,19 @@ interface Env {
   R2_PUBLIC_URL?: string;
   PUBLIC_R2_URL?: string;
   CDN_URL?: string;
+  ADMIN_PASSWORD?: string;
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
   try {
+    const authHeader = request.headers.get('Authorization');
+    const isAuthorized = await verifyAuthToken(authHeader, env);
+    if (!isAuthorized) {
+      return unauthorizedResponse('Authentication required to upload media assets.');
+    }
+
     const contentType = request.headers.get('content-type') || '';
     if (!contentType.includes('multipart/form-data')) {
       return new Response(JSON.stringify({ success: false, error: 'Expected multipart/form-data payload' }), {

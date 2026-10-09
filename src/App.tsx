@@ -1,7 +1,28 @@
+import { useState, useEffect } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { CatalogEngine } from './components/CatalogEngine';
 import { Admin } from './pages/Admin';
+import { AdminLogin } from './components/AdminLogin';
+import { isAuthenticated, AUTH_CHANGE_EVENT } from './lib/auth';
 import { Settings } from 'lucide-react';
+
+function ProtectedAdminRoute() {
+  const [authed, setAuthed] = useState(() => isAuthenticated());
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setAuthed(isAuthenticated());
+    };
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+  }, []);
+
+  if (!authed) {
+    return <AdminLogin onSuccess={() => setAuthed(true)} />;
+  }
+
+  return <Admin onLogout={() => setAuthed(false)} />;
+}
 
 export default function App() {
   return (
@@ -22,7 +43,7 @@ export default function App() {
           </div>
         }
       />
-      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin" element={<ProtectedAdminRoute />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

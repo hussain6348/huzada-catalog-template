@@ -1,7 +1,15 @@
+/// <reference types="@cloudflare/workers-types" />
 import { createClient } from '@libsql/client/web';
+import { verifyAuthToken, unauthorizedResponse } from './_auth';
 
 export const onRequestGet = async (context: any) => {
-  const { env } = context;
+  const { request, env } = context;
+
+  const authHeader = request.headers.get('Authorization');
+  const isAuthorized = await verifyAuthToken(authHeader, env);
+  if (!isAuthorized) {
+    return unauthorizedResponse('Authentication required to view orders.');
+  }
   
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
@@ -54,6 +62,13 @@ export const onRequestGet = async (context: any) => {
 
 export const onRequestPatch = async (context: any) => {
   const { request, env } = context;
+
+  const authHeader = request.headers.get('Authorization');
+  const isAuthorized = await verifyAuthToken(authHeader, env);
+  if (!isAuthorized) {
+    return unauthorizedResponse('Authentication required to update order status.');
+  }
+
   const body = await request.json();
   const { id, status } = body;
 

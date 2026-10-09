@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 import { createClient } from '@libsql/client/web';
 
 export const onRequestPost = async (context: any) => {

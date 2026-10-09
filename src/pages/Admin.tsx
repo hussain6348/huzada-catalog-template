@@ -31,9 +31,11 @@ import {
   Image as ImageIcon,
   LoaderCircle,
   Sparkles,
-  Upload
+  Upload,
+  LogOut
 } from 'lucide-react';
 import type { Order, OrderStatus, Product } from '../lib/types';
+import { clearAdminToken, getAuthHeaders } from '../lib/auth';
 import {
   getStoredProducts,
   fetchCatalogProducts,
@@ -57,6 +59,7 @@ const FALLBACK_ORDERS: Order[] = [
         price: 1250,
         quantity: 2,
         category: 'Lifestyle',
+        images: ['https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'],
         image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
       },
       {
@@ -66,6 +69,7 @@ const FALLBACK_ORDERS: Order[] = [
         price: 1850,
         quantity: 1,
         category: 'Workspace',
+        images: ['https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80'],
         image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
       },
     ],
@@ -87,6 +91,7 @@ const FALLBACK_ORDERS: Order[] = [
         price: 950,
         quantity: 2,
         category: 'Lifestyle',
+        images: ['https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80'],
         image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80',
       },
     ],
@@ -108,6 +113,7 @@ const FALLBACK_ORDERS: Order[] = [
         price: 1400,
         quantity: 1,
         category: 'Workspace',
+        images: ['https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80'],
         image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80',
       },
     ],
@@ -126,7 +132,11 @@ const PRESET_SAMPLE_IMAGES = [
   { label: 'Desk Pad', url: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80' },
 ];
 
-export function Admin() {
+interface AdminProps {
+  onLogout?: () => void;
+}
+
+export function Admin({ onLogout }: AdminProps = {}) {
   const [activeTab, setActiveTab] = useState<'orders' | 'inventory'>('orders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [inventory, setInventory] = useState<Product[]>(() => getStoredProducts());
@@ -137,16 +147,32 @@ export function Admin() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [copiedId, setCopiedId] = useState(false);
 
+  const handleLogout = () => {
+    clearAdminToken();
+    if (onLogout) {
+      onLogout();
+    }
+  };
+
   // Product Modal State
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productForm, setProductForm] = useState({
+  const [productForm, setProductForm] = useState<{
+    name: string;
+    category: string;
+    customCategory: string;
+    price: number;
+    description: string;
+    images: string[];
+    stock: number;
+    badge: string;
+  }>({
     name: '',
     category: 'Workspace',
     customCategory: '',
     price: 1200,
     description: '',
-    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'],
     stock: 15,
     badge: '',
   });
@@ -154,49 +180,159 @@ export function Admin() {
   const [productError, setProductError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Media Asset Upload State
+  // Multi-Media Asset Upload State
+  interface UploadingAsset {
+    id: string;
+    previewUrl: string;
+    name: string;
+  }
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingAssets, setUploadingAssets] = useState<UploadingAsset[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+  const [customImageUrl, setCustomImageUrl] = useState('');
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setUploadError('Please select a valid image file (PNG, JPG, WEBP, AVIF).');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('File exceeds 10MB limit.');
+  const handleFilesUpload = async (filesList: FileList | File[]) => {
+    const rawFiles = Array.from(filesList);
+    const validFiles = rawFiles.filter(f => f.type.startsWith('image/'));
+
+    if (validFiles.length === 0) {
+      setUploadError('Please select valid image files (PNG, JPG, WEBP, AVIF).');
       return;
     }
 
-    setUploadingImage(true);
+    const currentCount = productForm.images.length + uploadingAssets.length;
+    const availableSlots = 5 - currentCount;
+
+    if (availableSlots <= 0) {
+      setUploadError('Maximum limit of 5 media assets reached. Remove an image to add more.');
+      return;
+    }
+
+    const filesToUpload = validFiles.slice(0, availableSlots);
+    if (validFiles.length > availableSlots) {
+      setUploadNotice(`Added first ${availableSlots} files (maximum 5 assets limit).`);
+    } else {
+      setUploadNotice(null);
+    }
+
     setUploadError(null);
 
-    // Instant local object URL preview
-    const localBlob = URL.createObjectURL(file);
-    setProductForm(prev => ({ ...prev, image: localBlob }));
+    // Create temporary preview assets
+    const newAssets: UploadingAsset[] = filesToUpload.map(file => ({
+      id: `asset-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      previewUrl: URL.createObjectURL(file),
+      name: file.name,
+    }));
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+    setUploadingAssets(prev => [...prev, ...newAssets]);
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data: any = await res.json();
-      if (data.success && data.imageUrl) {
-        setProductForm(prev => ({ ...prev, image: data.imageUrl }));
-      } else {
-        throw new Error(data.error || 'Server upload failed');
+    // Concurrent upload
+    const uploadTasks = newAssets.map(async (asset, index) => {
+      const file = filesToUpload[index];
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            ...getAuthHeaders(),
+          },
+          body: formData,
+        });
+        if (res.status === 401) {
+          clearAdminToken();
+          if (onLogout) onLogout();
+          return { success: false, id: asset.id, error: 'Session expired. Please log in again.', previewUrl: asset.previewUrl };
+        }
+        const data: any = await res.json();
+        if (data.success && data.imageUrl) {
+          return { success: true, id: asset.id, imageUrl: data.imageUrl, previewUrl: asset.previewUrl };
+        }
+        return { success: false, id: asset.id, error: data.error || 'Upload failed', previewUrl: asset.previewUrl };
+      } catch (err: any) {
+        return { success: false, id: asset.id, error: err.message || 'Upload failed', previewUrl: asset.previewUrl };
       }
-    } catch (err: any) {
-      console.warn('Media upload note:', err);
-    } finally {
-      setUploadingImage(false);
+    });
+
+    const results = await Promise.all(uploadTasks);
+    const successfulUrls: string[] = [];
+    const failedIds: string[] = [];
+
+    results.forEach(res => {
+      URL.revokeObjectURL(res.previewUrl);
+      if (res.success && res.imageUrl) {
+        successfulUrls.push(res.imageUrl);
+      } else {
+        failedIds.push(res.id);
+      }
+    });
+
+    if (successfulUrls.length > 0) {
+      setProductForm(prev => ({
+        ...prev,
+        images: [...prev.images, ...successfulUrls].slice(0, 5),
+      }));
     }
+
+    setUploadingAssets(prev => prev.filter(item => !results.some(r => r.id === item.id)));
+
+    if (failedIds.length > 0) {
+      setUploadError(`${failedIds.length} image(s) could not be uploaded. Please retry.`);
+    }
+  };
+
+  const handleAddDirectUrl = () => {
+    const trimmed = customImageUrl.trim();
+    if (!trimmed) return;
+    if (!/^https?:\/\//i.test(trimmed)) {
+      setUploadError('Please enter a valid URL starting with http:// or https://');
+      return;
+    }
+    if (productForm.images.length >= 5) {
+      setUploadError('Maximum limit of 5 assets reached.');
+      return;
+    }
+    setProductForm(prev => ({
+      ...prev,
+      images: [...prev.images, trimmed].slice(0, 5),
+    }));
+    setCustomImageUrl('');
+    setUploadError(null);
+  };
+
+  const handleAddPreset = (url: string) => {
+    if (productForm.images.length >= 5) {
+      setUploadError('Maximum limit of 5 assets reached. Remove an image first.');
+      return;
+    }
+    setProductForm(prev => ({
+      ...prev,
+      images: [...prev.images, url].slice(0, 5),
+    }));
+    setUploadError(null);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setProductForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+    setUploadError(null);
+    setUploadNotice(null);
+  };
+
+  const handleSetPrimaryCover = (index: number) => {
+    if (index === 0) return;
+    setProductForm(prev => {
+      const chosen = prev.images[index];
+      const remaining = prev.images.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        images: [chosen, ...remaining],
+      };
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -211,8 +347,8 @@ export function Admin() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesUpload(e.dataTransfer.files);
     }
   };
 
@@ -221,7 +357,16 @@ export function Admin() {
     setIsSyncing(true);
     setSystemStatus('syncing');
     try {
-      const res = await fetch('/api/orders');
+      const res = await fetch('/api/orders', {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+      if (res.status === 401) {
+        clearAdminToken();
+        if (onLogout) onLogout();
+        return;
+      }
       if (!res.ok) throw new Error('Network error');
       const data: any = await res.json();
       if (data.orders && data.orders.length > 0) {
@@ -266,11 +411,19 @@ export function Admin() {
   // Update order status
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
-      await fetch('/api/orders', {
+      const res = await fetch('/api/orders', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({ id: orderId, status: newStatus }),
       });
+      if (res.status === 401) {
+        clearAdminToken();
+        if (onLogout) onLogout();
+        return;
+      }
     } catch (e) {
       console.warn('Status patch network note:', e);
     }
@@ -298,13 +451,15 @@ export function Admin() {
       customCategory: '',
       price: 1200,
       description: '',
-      image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80',
+      images: ['https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80'],
       stock: 15,
       badge: '',
     });
     setProductError(null);
     setUploadError(null);
-    setUploadingImage(false);
+    setUploadNotice(null);
+    setUploadingAssets([]);
+    setCustomImageUrl('');
     setIsProductModalOpen(true);
   };
 
@@ -312,19 +467,25 @@ export function Admin() {
     setEditingProduct(prod);
     const standardCategories = ['Workspace', 'Lifestyle', 'Accessories'];
     const isStandard = standardCategories.includes(prod.category);
+    const existingImages = (Array.isArray(prod.images) && prod.images.length > 0)
+      ? prod.images.slice(0, 5)
+      : (prod.image ? [prod.image] : []);
+
     setProductForm({
       name: prod.name,
       category: isStandard ? prod.category : 'Custom',
       customCategory: isStandard ? '' : prod.category,
       price: prod.price,
       description: prod.description || '',
-      image: prod.image,
+      images: existingImages.length > 0 ? existingImages : ['https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80'],
       stock: prod.stock ?? 10,
       badge: prod.badge || '',
     });
     setProductError(null);
     setUploadError(null);
-    setUploadingImage(false);
+    setUploadNotice(null);
+    setUploadingAssets([]);
+    setCustomImageUrl('');
     setIsProductModalOpen(true);
   };
 
@@ -338,8 +499,8 @@ export function Admin() {
       setProductError('Price must be greater than 0.');
       return;
     }
-    if (!productForm.image.trim()) {
-      setProductError('Please provide an image URL.');
+    if (productForm.images.length === 0) {
+      setProductError('Please provide at least one image for the product gallery.');
       return;
     }
 
@@ -351,13 +512,16 @@ export function Admin() {
         ? productForm.customCategory.trim() || 'General'
         : productForm.category;
 
+    const finalImages = productForm.images.slice(0, 5);
+
     const productPayload: Product = {
       id: editingProduct ? editingProduct.id : `prod-${Date.now().toString().slice(-6)}`,
       name: productForm.name.trim(),
       category: finalCategory,
       price: Number(productForm.price),
       description: productForm.description.trim(),
-      image: productForm.image.trim(),
+      images: finalImages,
+      image: finalImages[0] || '',
       stock: Number(productForm.stock),
       badge: productForm.badge.trim() || undefined,
     };
@@ -458,10 +622,21 @@ export function Admin() {
 
           <Link
             to="/"
-            className="bg-black hover:bg-zinc-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+            className="bg-black hover:bg-zinc-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer hidden sm:inline-flex items-center"
           >
             Open Storefront
           </Link>
+
+          {/* Secure Logout Action */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="border border-zinc-200 hover:border-red-200 bg-white hover:bg-red-50 text-zinc-600 hover:text-red-700 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Log out and end administrative session"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Secure Logout</span>
+          </button>
         </div>
       </header>
 
@@ -719,12 +894,22 @@ export function Admin() {
                   >
                     {/* Item info */}
                     <div className="flex items-start sm:items-center gap-3 min-w-0">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        referrerPolicy="no-referrer"
-                        className="w-14 h-14 rounded-xl object-cover bg-zinc-100 shrink-0 border border-zinc-200 shadow-2xs"
-                      />
+                      <div className="relative shrink-0">
+                        <img
+                          src={item.images?.[0] || item.image || 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'}
+                          alt={item.name}
+                          referrerPolicy="no-referrer"
+                          className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 shadow-2xs"
+                        />
+                        {item.images && item.images.length > 1 && (
+                          <span
+                            title={`${item.images.length} product photos`}
+                            className="absolute -bottom-1 -right-1 bg-zinc-900 text-white font-mono text-[9px] font-semibold px-1 py-0.2 rounded-full border border-white shadow-xs"
+                          >
+                            +{item.images.length - 1}
+                          </span>
+                        )}
+                      </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="text-xs font-semibold text-zinc-900 truncate">{item.name}</h4>
@@ -1168,123 +1353,199 @@ export function Admin() {
                 />
               </div>
 
-              {/* Product Media / Image Asset */}
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 mb-1.5 flex items-center justify-between">
-                  <span>Product Media / Image Asset <span className="text-red-500">*</span></span>
-                  {uploadingImage && (
-                    <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-1">
-                      <LoaderCircle className="w-3 h-3 animate-spin text-zinc-900" />
-                      Uploading asset...
+              {/* Product Media Gallery (Up to 5 images) */}
+              <div className="pt-1">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-zinc-900">
+                      Media Gallery <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[11px] font-mono text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-full border border-zinc-200">
+                      {productForm.images.length} / 5 assets
+                    </span>
+                  </div>
+                  {uploadingAssets.length > 0 ? (
+                    <span className="text-[11px] text-zinc-600 font-mono flex items-center gap-1.5">
+                      <LoaderCircle className="w-3.5 h-3.5 animate-spin text-zinc-900" />
+                      Uploading {uploadingAssets.length} file{uploadingAssets.length > 1 ? 's' : ''}...
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-zinc-400 font-sans hidden sm:inline">
+                      First image serves as primary cover
                     </span>
                   )}
-                </label>
+                </div>
 
-                {/* Upload Dropzone */}
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => !uploadingImage && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors cursor-pointer ${
-                    isDragging
-                      ? 'border-zinc-900 bg-zinc-100'
-                      : 'border-zinc-200 hover:border-zinc-400 bg-zinc-50/60 hover:bg-zinc-50'
-                  }`}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleFileUpload(e.target.files[0]);
-                      }
-                    }}
-                  />
+                {/* Media Gallery Live Thumbnails Grid */}
+                {(productForm.images.length > 0 || uploadingAssets.length > 0) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-3">
+                    {/* Uploaded images */}
+                    {productForm.images.map((imgUrl, idx) => (
+                      <div
+                        key={`${imgUrl}-${idx}`}
+                        className={`relative aspect-square rounded-xl overflow-hidden border bg-zinc-50 group shadow-2xs transition-all ${
+                          idx === 0 ? 'border-zinc-900 ring-1 ring-zinc-900/30' : 'border-zinc-200 hover:border-zinc-400'
+                        }`}
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`Asset ${idx + 1}`}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                          onError={(e: any) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
+                          }}
+                        />
 
-                  {uploadingImage ? (
-                    <div className="py-2.5 flex flex-col items-center justify-center space-y-1.5">
-                      <LoaderCircle className="w-6 h-6 animate-spin text-zinc-900" />
-                      <p className="text-xs font-medium text-zinc-700">Uploading and processing media asset...</p>
-                      <p className="text-[10px] text-zinc-400 font-mono">Storing to high-speed asset distribution</p>
-                    </div>
-                  ) : (
+                        {/* Primary Cover Badge */}
+                        {idx === 0 ? (
+                          <span className="absolute top-1.5 left-1.5 bg-zinc-900 text-white text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shadow-xs">
+                            Cover
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimaryCover(idx)}
+                            className="absolute bottom-1.5 left-1.5 right-1.5 bg-zinc-900/85 hover:bg-zinc-900 text-white text-[9px] font-medium py-1 px-1 rounded backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-center"
+                            title="Set as storefront primary cover"
+                          >
+                            Set Cover
+                          </button>
+                        )}
+
+                        {/* Remove Image Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/90 hover:bg-white text-zinc-600 hover:text-red-600 shadow-xs flex items-center justify-center cursor-pointer transition-colors"
+                          title="Remove image"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* In-Flight Uploading Thumbnails */}
+                    {uploadingAssets.map(asset => (
+                      <div
+                        key={asset.id}
+                        className="relative aspect-square rounded-xl overflow-hidden border border-zinc-300 bg-zinc-900 shadow-2xs"
+                      >
+                        <img
+                          src={asset.previewUrl}
+                          alt="Uploading..."
+                          className="w-full h-full object-cover opacity-40"
+                        />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-1 text-white text-center">
+                          <LoaderCircle className="w-4 h-4 animate-spin mb-1 text-white" />
+                          <span className="text-[9px] font-mono tracking-wide">Uploading</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Quick Add Slot in Grid (if slots available) */}
+                    {productForm.images.length + uploadingAssets.length < 5 && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed border-zinc-200 hover:border-zinc-400 bg-zinc-50/50 hover:bg-zinc-50 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-700 transition-colors cursor-pointer p-2 group"
+                      >
+                        <Plus className="w-4 h-4 mb-0.5 group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-medium font-mono">Add Photo</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Multi-Image Drag & Drop Upload Zone */}
+                {productForm.images.length < 5 ? (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors cursor-pointer ${
+                      isDragging
+                        ? 'border-zinc-900 bg-zinc-100'
+                        : 'border-zinc-200 hover:border-zinc-400 bg-zinc-50/60 hover:bg-zinc-50'
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          handleFilesUpload(e.target.files);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+
                     <div className="space-y-1.5 py-1">
                       <Upload className="w-5 h-5 text-zinc-500 mx-auto" />
                       <p className="text-xs text-zinc-700">
-                        Drag & drop product image here, or{' '}
+                        Drag & drop multiple product images here, or{' '}
                         <span className="font-semibold text-zinc-900 underline underline-offset-2">
                           Browse Device
                         </span>
                       </p>
                       <p className="text-[10px] text-zinc-400 font-mono">
-                        PNG, JPG, WEBP, AVIF up to 10MB
+                        Select up to {5 - productForm.images.length} more images (PNG, JPG, WEBP, AVIF up to 10MB each)
                       </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-center">
+                    <p className="text-xs text-zinc-700 font-medium">
+                      Maximum media capacity reached (5 of 5 images loaded).
+                    </p>
+                    <p className="text-[11px] text-zinc-400 mt-0.5 font-mono">
+                      Remove any photo above to upload or assign a replacement.
+                    </p>
+                  </div>
+                )}
 
+                {/* Upload Error / Notice Alerts */}
                 {uploadError && (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
+                  <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>{uploadError}</span>
                   </p>
                 )}
 
+                {uploadNotice && (
+                  <p className="text-xs text-amber-700 mt-2 flex items-center gap-1 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{uploadNotice}</span>
+                  </p>
+                )}
+
                 {/* Direct Image URL input */}
-                <div className="mt-2.5">
+                <div className="flex items-center gap-1.5 mt-2.5">
                   <input
                     type="url"
                     placeholder="Or enter direct image URL (https://...)"
-                    value={productForm.image}
-                    onChange={e => setProductForm({ ...productForm, image: e.target.value })}
-                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                    value={customImageUrl}
+                    onChange={e => setCustomImageUrl(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddDirectUrl();
+                      }
+                    }}
+                    className="flex-1 bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900"
                   />
-                </div>
-
-                {/* Live Thumbnail Preview */}
-                <div className="mt-2.5 p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-200 shrink-0 border border-zinc-300 flex items-center justify-center">
-                      {productForm.image ? (
-                        <img
-                          src={productForm.image}
-                          alt="Preview"
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover"
-                          onError={(e: any) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <ImageIcon className="w-5 h-5 text-zinc-400" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block">
-                        Live Media Preview
-                      </span>
-                      <p className="text-xs font-semibold text-zinc-800 truncate">
-                        {productForm.name || 'Product Title'}
-                      </p>
-                      <p className="text-[11px] text-zinc-500 font-mono">
-                        Rs. {Number(productForm.price || 0).toLocaleString()} · {productForm.stock} in stock
-                      </p>
-                    </div>
-                  </div>
-
-                  {productForm.image && (
-                    <button
-                      type="button"
-                      onClick={() => setProductForm({ ...productForm, image: '' })}
-                      className="p-1 text-zinc-400 hover:text-red-600 rounded cursor-pointer"
-                      title="Clear image"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleAddDirectUrl}
+                    disabled={!customImageUrl.trim() || productForm.images.length >= 5}
+                    className="px-3 py-1.5 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 text-white rounded-lg transition-colors cursor-pointer shrink-0"
+                  >
+                    Add URL
+                  </button>
                 </div>
 
                 {/* Quick Sample Image Presets */}
@@ -1294,8 +1555,9 @@ export function Admin() {
                     <button
                       key={preset.label}
                       type="button"
-                      onClick={() => setProductForm({ ...productForm, image: preset.url })}
-                      className="text-[10px] bg-zinc-100 hover:bg-zinc-200 text-zinc-700 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                      onClick={() => handleAddPreset(preset.url)}
+                      disabled={productForm.images.length >= 5}
+                      className="text-[10px] bg-zinc-100 hover:bg-zinc-200 disabled:opacity-40 text-zinc-700 px-2 py-0.5 rounded cursor-pointer transition-colors"
                     >
                       {preset.label}
                     </button>
