@@ -86,7 +86,7 @@ export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
 
 export function resolveImageUrl(
   url?: string | null,
-  fallback = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'
+  fallback = ''
 ): string {
   if (!url || typeof url !== 'string') return fallback;
   const trimmed = url.trim();
@@ -109,7 +109,7 @@ export function resolveImageUrl(
 
 export function getProductPrimaryImage(
   product?: Partial<Product> | null,
-  fallback = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'
+  fallback = ''
 ): string {
   if (!product) return fallback;
   const raw =
@@ -128,15 +128,33 @@ function normalizeProduct(p: any): Product {
     try {
       const parsed = JSON.parse(p.images);
       if (Array.isArray(parsed)) parsedImages = parsed.filter(Boolean);
+      else if (typeof parsed === 'string' && parsed) parsedImages = [parsed];
     } catch {
-      parsedImages = [];
+      const trimmed = p.images.trim();
+      if (trimmed.startsWith('http') || trimmed.startsWith('data:')) {
+        parsedImages = [trimmed];
+      } else {
+        parsedImages = [];
+      }
     }
   }
 
-  const primaryImage = (parsedImages[0] || p.image || p.image_path || '') as string;
+  const primaryCandidate = (
+    parsedImages[0] ||
+    p.image ||
+    p.image_path ||
+    (typeof p.images === 'string' && p.images.startsWith('http') ? p.images.trim() : '') ||
+    ''
+  );
+  const primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
   if (parsedImages.length === 0 && primaryImage) {
     parsedImages = [primaryImage];
   }
+
+  const cleanImages = parsedImages
+    .slice(0, 5)
+    .map(img => (typeof img === 'string' ? resolveImageUrl(img, img) : ''))
+    .filter(Boolean);
 
   return {
     ...p,
@@ -145,9 +163,9 @@ function normalizeProduct(p: any): Product {
     category: String(p.category || 'General'),
     description: String(p.description || ''),
     price: Number(p.price || 0),
-    images: parsedImages.slice(0, 5).map(img => resolveImageUrl(img, '')),
-    image: resolveImageUrl(primaryImage, primaryImage),
-    image_path: resolveImageUrl(primaryImage, primaryImage),
+    images: cleanImages.length > 0 ? cleanImages : (primaryImage ? [primaryImage] : []),
+    image: primaryImage,
+    image_path: primaryImage,
     stock: p.stock ?? 10,
   };
 }

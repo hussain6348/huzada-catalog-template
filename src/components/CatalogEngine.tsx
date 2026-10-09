@@ -393,20 +393,22 @@ export function CatalogEngine({
                             key={item.id}
                             className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-zinc-100 bg-zinc-50/50"
                           >
-                            <img
-                              src={resolveImageUrl(item.images?.[0] || item.image || item.image_path)}
-                              alt={item.name}
-                              referrerPolicy="no-referrer"
-                              loading="lazy"
-                              className="w-12 h-12 rounded-lg object-cover bg-zinc-200 shrink-0"
-                              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                                const target = e.currentTarget;
-                                if (!target.dataset.hasFailed) {
-                                  target.dataset.hasFailed = 'true';
-                                  target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
-                                }
-                              }}
-                            />
+                            {item.images?.[0] || item.image || item.image_path ? (
+                              <img
+                                src={item.images?.[0] || item.image || item.image_path}
+                                alt={item.name}
+                                referrerPolicy="no-referrer"
+                                loading="lazy"
+                                className="w-12 h-12 rounded-lg object-cover bg-zinc-200 shrink-0"
+                                onError={() => {
+                                  console.error('Cart image load failed:', item.name);
+                                }}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 shrink-0">
+                                <Package className="w-5 h-5 text-zinc-400" />
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <h5 className="text-xs font-semibold text-zinc-900 truncate">
                                 {item.name}
@@ -570,10 +572,10 @@ function ProductCardItem({
   onAddToCart,
   onUpdateQuantity,
 }: ProductCardItemProps) {
-  const primaryImg = product.images?.[0] || product.image || product.image_path;
+  const rawCandidate = (product.images && product.images[0]) || product.image || product.image_path || '';
   const images = (Array.isArray(product.images) && product.images.length > 0)
-    ? product.images
-    : (primaryImg ? [primaryImg] : ['https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80']);
+    ? product.images.filter(Boolean)
+    : (rawCandidate ? [rawCandidate] : []);
 
   const [activeImgIdx, setActiveImgIdx] = useState(0);
 
@@ -587,24 +589,28 @@ function ProductCardItem({
     setActiveImgIdx(prev => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
+  const currentImg = images[activeImgIdx] || rawCandidate || images[0] || '';
+
   return (
     <div className="group bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col hover:border-zinc-300 transition-all shadow-2xs hover:shadow-sm">
       {/* Product Image with Hover Zoom & Carousel */}
       <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
-        <img
-          src={resolveImageUrl(images[activeImgIdx] || primaryImg || images[0])}
-          alt={`${product.name} - view ${activeImgIdx + 1}`}
-          referrerPolicy="no-referrer"
-          loading="lazy"
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-            const target = e.currentTarget;
-            if (!target.dataset.hasFailed) {
-              target.dataset.hasFailed = 'true';
-              target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
-            }
-          }}
-        />
+        {currentImg ? (
+          <img
+            src={currentImg}
+            alt={`${product.name} - view ${activeImgIdx + 1}`}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+            onError={() => {
+              console.error('Product image load failed for URL:', currentImg);
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-zinc-100 text-zinc-400">
+            <Package className="w-8 h-8 text-zinc-400" />
+          </div>
+        )}
 
         {product.badge && (
           <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-zinc-900 text-[11px] font-semibold px-2 py-0.5 rounded shadow-xs z-10">

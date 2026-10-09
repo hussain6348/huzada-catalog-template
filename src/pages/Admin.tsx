@@ -897,37 +897,41 @@ export function Admin({ onLogout }: AdminProps = {}) {
                   </button>
                 </div>
               ) : (
-                inventory.map(item => (
-                  <div
-                    key={item.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-50/50 transition-colors"
-                  >
-                    {/* Item info */}
-                    <div className="flex items-start sm:items-center gap-3 min-w-0">
-                      <div className="relative shrink-0">
-                        <img
-                          src={resolveImageUrl(item.images?.[0] || item.image || item.image_path)}
-                          alt={item.name}
-                          referrerPolicy="no-referrer"
-                          loading="lazy"
-                          className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 shadow-2xs"
-                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                            const target = e.currentTarget;
-                            if (!target.dataset.hasFailed) {
-                              target.dataset.hasFailed = 'true';
-                              target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
-                            }
-                          }}
-                        />
-                        {item.images && item.images.length > 1 && (
-                          <span
-                            title={`${item.images.length} product photos`}
-                            className="absolute -bottom-1 -right-1 bg-zinc-900 text-white font-mono text-[9px] font-semibold px-1 py-0.2 rounded-full border border-white shadow-xs"
-                          >
-                            +{item.images.length - 1}
-                          </span>
-                        )}
-                      </div>
+                inventory.map(item => {
+                  const rawImg = (item.images && item.images[0]) || item.image || item.image_path;
+                  return (
+                    <div
+                      key={item.id}
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-50/50 transition-colors"
+                    >
+                      {/* Item info */}
+                      <div className="flex items-start sm:items-center gap-3 min-w-0">
+                        <div className="relative shrink-0">
+                          {rawImg ? (
+                            <img
+                              src={rawImg}
+                              alt={item.name}
+                              referrerPolicy="no-referrer"
+                              loading="lazy"
+                              className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 shadow-2xs"
+                              onError={() => {
+                                console.error('Image load failed for URL:', rawImg);
+                              }}
+                            />
+                          ) : (
+                            <div className="w-14 h-14 bg-neutral-200 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400">
+                              <Package className="w-6 h-6 text-zinc-400" />
+                            </div>
+                          )}
+                          {item.images && item.images.length > 1 && (
+                            <span
+                              title={`${item.images.length} product photos`}
+                              className="absolute -bottom-1 -right-1 bg-zinc-900 text-white font-mono text-[9px] font-semibold px-1 py-0.2 rounded-full border border-white shadow-xs"
+                            >
+                              +{item.images.length - 1}
+                            </span>
+                          )}
+                        </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="text-xs font-semibold text-zinc-900 truncate">{item.name}</h4>
@@ -1018,7 +1022,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
                       </div>
                     </div>
                   </div>
-                ))
+                );
+              })
               )}
             </div>
           )}
@@ -1167,25 +1172,27 @@ export function Admin({ onLogout }: AdminProps = {}) {
                     Itemized Order Breakdown
                   </span>
                   <div className="border border-zinc-200 rounded-xl divide-y divide-zinc-100 overflow-hidden">
-                    {selectedOrder.items.map(item => (
-                      <div key={item.id} className="p-3 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {(item.images?.[0] || item.image || (item as any).image_path) && (
-                            <img
-                              src={resolveImageUrl(item.images?.[0] || item.image || (item as any).image_path)}
-                              alt={item.name}
-                              referrerPolicy="no-referrer"
-                              loading="lazy"
-                              className="w-8 h-8 rounded-md object-cover bg-zinc-100 shrink-0"
-                              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                                const target = e.currentTarget;
-                                if (!target.dataset.hasFailed) {
-                                  target.dataset.hasFailed = 'true';
-                                  target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
-                                }
-                              }}
-                            />
-                          )}
+                    {selectedOrder.items.map(item => {
+                      const orderImg = (item.images && item.images[0]) || item.image || (item as any).image_path;
+                      return (
+                        <div key={item.id} className="p-3 flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {orderImg ? (
+                              <img
+                                src={orderImg}
+                                alt={item.name}
+                                referrerPolicy="no-referrer"
+                                loading="lazy"
+                                className="w-8 h-8 rounded-md object-cover bg-zinc-100 shrink-0"
+                                onError={() => {
+                                  console.error('Order item image failed:', orderImg);
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-md bg-zinc-100 flex items-center justify-center text-zinc-400 shrink-0">
+                                <Package className="w-4 h-4" />
+                              </div>
+                            )}
                           <div className="min-w-0">
                             <p className="font-medium text-zinc-900 truncate">{item.name}</p>
                             <p className="text-[11px] text-zinc-500 font-mono">
@@ -1197,7 +1204,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
                           Rs. {(item.price * item.quantity).toLocaleString()}
                         </span>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 </div>
 
@@ -1421,17 +1429,13 @@ export function Admin({ onLogout }: AdminProps = {}) {
                         }`}
                       >
                         <img
-                          src={resolveImageUrl(imgUrl)}
+                          src={imgUrl}
                           alt={`Asset ${idx + 1}`}
                           referrerPolicy="no-referrer"
                           loading="lazy"
                           className="w-full h-full object-cover"
-                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                            const target = e.currentTarget;
-                            if (!target.dataset.hasFailed) {
-                              target.dataset.hasFailed = 'true';
-                              target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
-                            }
+                          onError={() => {
+                            console.error('Thumbnail load failed for URL:', imgUrl);
                           }}
                         />
 

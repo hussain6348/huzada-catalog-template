@@ -54,14 +54,27 @@ export const onRequestGet = async (context: any) => {
           try {
             const parsed = JSON.parse(row.images);
             if (Array.isArray(parsed)) parsedImages = parsed.filter(Boolean);
+            else if (typeof parsed === 'string' && parsed) parsedImages = [parsed];
           } catch (e) {
-            parsedImages = [];
+            const trimmed = row.images.trim();
+            if (trimmed.startsWith('http') || trimmed.startsWith('data:')) {
+              parsedImages = [trimmed];
+            } else {
+              parsedImages = [];
+            }
           }
         } else if (Array.isArray(row.images)) {
           parsedImages = row.images.filter(Boolean);
         }
 
-        const primaryImage = (parsedImages[0] || row.image || row.image_path || '') as string;
+        const primaryCandidate = (
+          row.image ||
+          row.image_path ||
+          parsedImages[0] ||
+          (typeof row.images === 'string' && row.images.startsWith('http') ? row.images.trim() : '') ||
+          ''
+        );
+        const primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
         if (parsedImages.length === 0 && primaryImage) {
           parsedImages = [primaryImage];
         }
