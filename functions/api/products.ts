@@ -18,11 +18,25 @@ async function initProductsTable(db: any) {
     )
   `);
 
-  // Ensure 'images' column exists if products table was created in a previous schema version
-  try {
-    await db.execute(`ALTER TABLE products ADD COLUMN images TEXT`);
-  } catch {
-    // Column already exists or table is up to date
+  // Ensure all expected columns are automatically ensured before insertion.
+  // Run safe migration queries inside isolated try-catch blocks and silently ignore if column already exists.
+  const migrations = [
+    'ALTER TABLE products ADD COLUMN category TEXT',
+    'ALTER TABLE products ADD COLUMN images TEXT',
+    'ALTER TABLE products ADD COLUMN image TEXT',
+    'ALTER TABLE products ADD COLUMN description TEXT',
+    'ALTER TABLE products ADD COLUMN price REAL',
+    'ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10',
+    'ALTER TABLE products ADD COLUMN badge TEXT',
+    'ALTER TABLE products ADD COLUMN created_at TEXT',
+  ];
+
+  for (const sql of migrations) {
+    try {
+      await db.execute(sql);
+    } catch {
+      // Catch and silently ignore any "duplicate column name" errors so it never throws on columns that already exist.
+    }
   }
 }
 
@@ -108,6 +122,9 @@ export const onRequestPost = async (context: any) => {
     : (product.image ? [String(product.image)] : []);
   const primaryImage = imagesArray[0] || (product.image ? String(product.image) : '');
   const imagesJson = JSON.stringify(imagesArray);
+  const cleanCategory = (typeof product.category === 'string' && product.category.trim().length > 0)
+    ? product.category.trim()
+    : 'General';
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
@@ -131,7 +148,7 @@ export const onRequestPost = async (context: any) => {
           String(product.name || '').trim(),
           String(product.description || '').trim(),
           Number(product.price || 0),
-          String(product.category || 'General').trim(),
+          cleanCategory,
           imagesJson,
           primaryImage,
           Number(product.stock ?? 10),
@@ -146,7 +163,7 @@ export const onRequestPost = async (context: any) => {
         name: String(product.name || '').trim(),
         description: String(product.description || '').trim(),
         price: Number(product.price || 0),
-        category: String(product.category || 'General').trim(),
+        category: cleanCategory,
         images: imagesArray,
         image: primaryImage,
         stock: Number(product.stock ?? 10),
