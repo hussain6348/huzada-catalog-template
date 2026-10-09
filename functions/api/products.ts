@@ -67,17 +67,35 @@ export const onRequestGet = async (context: any) => {
           parsedImages = row.images.filter(Boolean);
         }
 
-        const primaryCandidate = (
+        const RELIABLE_PLACEHOLDER = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
+
+        let primaryCandidate = (
           row.image ||
           row.image_path ||
           parsedImages[0] ||
           (typeof row.images === 'string' && row.images.startsWith('http') ? row.images.trim() : '') ||
           ''
         );
-        const primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
-        if (parsedImages.length === 0 && primaryImage) {
-          parsedImages = [primaryImage];
+        let primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
+        if (
+          !primaryImage ||
+          primaryImage.includes('test-shirt') ||
+          primaryImage.includes('default-client')
+        ) {
+          primaryImage = RELIABLE_PLACEHOLDER;
         }
+
+        const cleanImages = parsedImages
+          .slice(0, 5)
+          .map(img => {
+            const str = String(img || '').trim();
+            if (!str || str.includes('test-shirt') || str.includes('default-client')) {
+              return RELIABLE_PLACEHOLDER;
+            }
+            return str;
+          });
+
+        const finalImages = cleanImages.length > 0 ? cleanImages : [primaryImage];
 
         return {
           id: String(row.id),
@@ -85,7 +103,7 @@ export const onRequestGet = async (context: any) => {
           description: String(row.description || ''),
           price: Number(parseFloat(row.price as any) || 0),
           category: String(row.category || 'General'),
-          images: parsedImages.slice(0, 5),
+          images: finalImages,
           image: primaryImage,
           image_path: primaryImage,
           stock: Number(parseInt(row.stock as any, 10) || 10),

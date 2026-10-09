@@ -1,19 +1,20 @@
 import type { Product } from './types';
 import { getAuthHeaders } from './auth';
 
+export const DEFAULT_UNSPLASH_IMAGE =
+  'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
+
 export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-1',
-    name: 'Minimalist Steel Water Bottle',
-    description: 'Double-wall vacuum insulated flask with matte textured finish (750ml).',
+    name: 'Classic White T-Shirt',
+    description: '100% organic heavyweight cotton tee with tailored crewneck fit.',
     price: 1250,
     category: 'Lifestyle',
     images: [
-      'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
-      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80',
-      'https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=800&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
     ],
-    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
     stock: 18,
     badge: 'Popular',
   },
@@ -86,11 +87,20 @@ export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
 
 export function resolveImageUrl(
   url?: string | null,
-  fallback = ''
+  fallback = DEFAULT_UNSPLASH_IMAGE
 ): string {
   if (!url || typeof url !== 'string') return fallback;
   const trimmed = url.trim();
   if (!trimmed) return fallback;
+
+  // Replace broken local sample assets or test shirt paths
+  if (
+    trimmed.includes('/default-client/test-shirt.jpg') ||
+    trimmed.includes('test-shirt') ||
+    trimmed.includes('default-client')
+  ) {
+    return DEFAULT_UNSPLASH_IMAGE;
+  }
 
   // Remote HTTPS/HTTP, data URIs, and blob URLs are returned raw directly
   if (
@@ -109,7 +119,7 @@ export function resolveImageUrl(
 
 export function getProductPrimaryImage(
   product?: Partial<Product> | null,
-  fallback = ''
+  fallback = DEFAULT_UNSPLASH_IMAGE
 ): string {
   if (!product) return fallback;
   const raw =
@@ -139,22 +149,45 @@ function normalizeProduct(p: any): Product {
     }
   }
 
-  const primaryCandidate = (
+  let primaryCandidate = (
     parsedImages[0] ||
     p.image ||
     p.image_path ||
     (typeof p.images === 'string' && p.images.startsWith('http') ? p.images.trim() : '') ||
     ''
   );
-  const primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
+  let primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
+  if (
+    !primaryImage ||
+    primaryImage.includes('test-shirt') ||
+    primaryImage.includes('default-client')
+  ) {
+    primaryImage = DEFAULT_UNSPLASH_IMAGE;
+  }
+
   if (parsedImages.length === 0 && primaryImage) {
     parsedImages = [primaryImage];
   }
 
   const cleanImages = parsedImages
     .slice(0, 5)
-    .map(img => (typeof img === 'string' ? resolveImageUrl(img, img) : ''))
+    .map(img => {
+      if (typeof img === 'string') {
+        const trimmed = img.trim();
+        if (
+          trimmed.includes('test-shirt') ||
+          trimmed.includes('default-client') ||
+          !trimmed
+        ) {
+          return DEFAULT_UNSPLASH_IMAGE;
+        }
+        return resolveImageUrl(trimmed, DEFAULT_UNSPLASH_IMAGE);
+      }
+      return '';
+    })
     .filter(Boolean);
+
+  const finalImages = cleanImages.length > 0 ? cleanImages : [primaryImage];
 
   return {
     ...p,
@@ -163,7 +196,7 @@ function normalizeProduct(p: any): Product {
     category: String(p.category || 'General'),
     description: String(p.description || ''),
     price: Number(p.price || 0),
-    images: cleanImages.length > 0 ? cleanImages : (primaryImage ? [primaryImage] : []),
+    images: finalImages,
     image: primaryImage,
     image_path: primaryImage,
     stock: p.stock ?? 10,

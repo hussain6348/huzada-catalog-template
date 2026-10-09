@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { Product, CartItem } from '../lib/types';
 import { getStoredProducts, fetchCatalogProducts, CATALOG_UPDATED_EVENT, resolveImageUrl } from '../lib/products';
+import { ProductModal } from './ProductModal';
 
 const STORE_WHATSAPP = '923322264855';
 const CURRENCY_SYMBOL = 'Rs.';
@@ -53,6 +54,7 @@ export function CatalogEngine({
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
@@ -301,6 +303,7 @@ export function CatalogEngine({
                 inCart={inCart}
                 onAddToCart={() => addToCart(product)}
                 onUpdateQuantity={(delta) => updateQuantity(product.id, delta)}
+                onSelect={() => setSelectedProduct(product)}
               />
             );
           })}
@@ -555,6 +558,14 @@ export function CatalogEngine({
           </div>
         </div>
       )}
+
+      {/* Product Detail Modal */}
+      <ProductModal
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={(prod) => addToCart(prod)}
+      />
     </div>
   );
 }
@@ -564,6 +575,7 @@ interface ProductCardItemProps {
   inCart?: CartItem;
   onAddToCart: () => void;
   onUpdateQuantity: (delta: number) => void;
+  onSelect?: () => void;
 }
 
 function ProductCardItem({
@@ -571,11 +583,13 @@ function ProductCardItem({
   inCart,
   onAddToCart,
   onUpdateQuantity,
+  onSelect,
 }: ProductCardItemProps) {
-  const rawCandidate = (product.images && product.images[0]) || product.image || product.image_path || '';
+  const defaultPlaceholder = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80";
+  const rawCandidate = (product.images && product.images[0]) || product.image || product.image_path || defaultPlaceholder;
   const images = (Array.isArray(product.images) && product.images.length > 0)
     ? product.images.filter(Boolean)
-    : (rawCandidate ? [rawCandidate] : []);
+    : [rawCandidate];
 
   const [activeImgIdx, setActiveImgIdx] = useState(0);
 
@@ -589,28 +603,25 @@ function ProductCardItem({
     setActiveImgIdx(prev => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const currentImg = images[activeImgIdx] || rawCandidate || images[0] || '';
+  const currentImg = images[activeImgIdx] || rawCandidate || defaultPlaceholder;
 
   return (
-    <div className="group bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col hover:border-zinc-300 transition-all shadow-2xs hover:shadow-sm">
+    <div
+      onClick={onSelect}
+      className="group bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col hover:border-zinc-300 transition-all shadow-2xs hover:shadow-sm cursor-pointer"
+    >
       {/* Product Image with Hover Zoom & Carousel */}
       <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
-        {currentImg ? (
-          <img
-            src={currentImg}
-            alt={`${product.name} - view ${activeImgIdx + 1}`}
-            referrerPolicy="no-referrer"
-            loading="lazy"
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-            onError={() => {
-              console.error('Product image load failed for URL:', currentImg);
-            }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-zinc-100 text-zinc-400">
-            <Package className="w-8 h-8 text-zinc-400" />
-          </div>
-        )}
+        <img
+          src={currentImg}
+          alt={product.name}
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+          onError={() => {
+            console.error('Product image load failed for URL:', currentImg);
+          }}
+        />
 
         {product.badge && (
           <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-zinc-900 text-[11px] font-semibold px-2 py-0.5 rounded shadow-xs z-10">
@@ -688,7 +699,10 @@ function ProductCardItem({
           {inCart ? (
             <div className="flex items-center gap-1.5 bg-zinc-100 p-1 rounded-lg border border-zinc-200">
               <button
-                onClick={() => onUpdateQuantity(-1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdateQuantity(-1);
+                }}
                 className="w-6 h-6 rounded bg-white hover:bg-zinc-200 text-zinc-700 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <Minus className="w-3 h-3" />
@@ -697,15 +711,21 @@ function ProductCardItem({
                 {inCart.quantity}
               </span>
               <button
-                onClick={() => onUpdateQuantity(1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdateQuantity(1);
+                }}
                 className="w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors cursor-pointer"
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
             <button
-              onClick={onAddToCart}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCart();
+              }}
               className="bg-zinc-100 hover:bg-zinc-900 hover:text-white text-zinc-800 text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />

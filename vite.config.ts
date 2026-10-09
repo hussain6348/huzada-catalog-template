@@ -12,12 +12,12 @@ const devOrders: any[] = [
     items: [
       {
         id: 'prod-1',
-        name: 'Minimalist Steel Water Bottle',
+        name: 'Classic White T-Shirt',
         price: 1250,
         quantity: 2,
         category: 'Lifestyle',
-        images: ['https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'],
-        image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'
+        images: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80'],
+        image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80'
       },
       {
         id: 'prod-2',
@@ -80,16 +80,14 @@ const devOrders: any[] = [
 const devProducts: any[] = [
   {
     id: 'prod-1',
-    name: 'Minimalist Steel Water Bottle',
-    description: 'Double-wall vacuum insulated flask with matte textured finish (750ml).',
+    name: 'Classic White T-Shirt',
+    description: '100% organic heavyweight cotton tee with tailored crewneck fit.',
     price: 1250,
     category: 'Lifestyle',
     images: [
-      'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
-      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80',
-      'https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=800&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
     ],
-    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
     stock: 18,
     badge: 'Popular',
   },

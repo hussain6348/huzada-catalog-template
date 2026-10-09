@@ -55,13 +55,13 @@ const FALLBACK_ORDERS: Order[] = [
     items: [
       {
         id: 'prod-1',
-        name: 'Minimalist Steel Water Bottle',
+        name: 'Classic White T-Shirt',
         description: '',
         price: 1250,
         quantity: 2,
         category: 'Lifestyle',
-        images: ['https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'],
-        image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
+        images: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80'],
+        image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
       },
       {
         id: 'prod-2',
@@ -125,6 +125,7 @@ const FALLBACK_ORDERS: Order[] = [
 ];
 
 const PRESET_SAMPLE_IMAGES = [
+  { label: 'Classic T-Shirt', url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80' },
   { label: 'Bottle', url: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80' },
   { label: 'Desk Tray', url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80' },
   { label: 'Mug', url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80' },
@@ -907,22 +908,12 @@ export function Admin({ onLogout }: AdminProps = {}) {
                       {/* Item info */}
                       <div className="flex items-start sm:items-center gap-3 min-w-0">
                         <div className="relative shrink-0">
-                          {rawImg ? (
-                            <img
-                              src={rawImg}
-                              alt={item.name}
-                              referrerPolicy="no-referrer"
-                              loading="lazy"
-                              className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 shadow-2xs"
-                              onError={() => {
-                                console.error('Image load failed for URL:', rawImg);
-                              }}
-                            />
-                          ) : (
-                            <div className="w-14 h-14 bg-neutral-200 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400">
-                              <Package className="w-6 h-6 text-zinc-400" />
-                            </div>
-                          )}
+                          <img
+                            src={item.images?.[0] || item.image || item.image_path || "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80"}
+                            alt={item.name}
+                            referrerPolicy="no-referrer"
+                            className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-neutral-200"
+                          />
                           {item.images && item.images.length > 1 && (
                             <span
                               title={`${item.images.length} product photos`}
