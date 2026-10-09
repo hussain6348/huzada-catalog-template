@@ -85,13 +85,33 @@ const STORAGE_KEY = 'merchant_catalog_products';
 export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
 
 function normalizeProduct(p: any): Product {
-  const images = Array.isArray(p.images) && p.images.length > 0
-    ? p.images.slice(0, 5)
-    : (p.image ? [p.image] : []);
+  let parsedImages: string[] = [];
+  if (Array.isArray(p.images) && p.images.length > 0) {
+    parsedImages = p.images.filter(Boolean);
+  } else if (typeof p.images === 'string' && p.images.trim()) {
+    try {
+      const parsed = JSON.parse(p.images);
+      if (Array.isArray(parsed)) parsedImages = parsed.filter(Boolean);
+    } catch {
+      parsedImages = [];
+    }
+  }
+
+  const primaryImage = (parsedImages[0] || p.image || p.image_path || '') as string;
+  if (parsedImages.length === 0 && primaryImage) {
+    parsedImages = [primaryImage];
+  }
+
   return {
     ...p,
-    images,
-    image: images[0] || p.image || '',
+    id: String(p.id),
+    name: String(p.name || ''),
+    category: String(p.category || 'General'),
+    description: String(p.description || ''),
+    price: Number(p.price || 0),
+    images: parsedImages.slice(0, 5),
+    image: primaryImage,
+    image_path: primaryImage,
     stock: p.stock ?? 10,
   };
 }

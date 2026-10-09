@@ -394,7 +394,7 @@ export function CatalogEngine({
                             className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-zinc-100 bg-zinc-50/50"
                           >
                             <img
-                              src={item.images?.[0] || item.image}
+                              src={item.images?.[0] || item.image || item.image_path}
                               alt={item.name}
                               referrerPolicy="no-referrer"
                               className="w-12 h-12 rounded-lg object-cover bg-zinc-200 shrink-0"
@@ -562,9 +562,10 @@ function ProductCardItem({
   onAddToCart,
   onUpdateQuantity,
 }: ProductCardItemProps) {
+  const primaryImg = product.images?.[0] || product.image || product.image_path;
   const images = (Array.isArray(product.images) && product.images.length > 0)
     ? product.images
-    : [product.image || 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'];
+    : (primaryImg ? [primaryImg] : ['https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80']);
 
   const [activeImgIdx, setActiveImgIdx] = useState(0);
 
@@ -583,7 +584,7 @@ function ProductCardItem({
       {/* Product Image with Hover Zoom & Carousel */}
       <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
         <img
-          src={images[activeImgIdx] || images[0]}
+          src={images[activeImgIdx] || primaryImg || images[0]}
           alt={`${product.name} - view ${activeImgIdx + 1}`}
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"

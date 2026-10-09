@@ -6,6 +6,7 @@ export interface Product {
   category: string;
   images: string[];
   image?: string;
+  image_path?: string;
   stock?: number;
   badge?: string;
 }

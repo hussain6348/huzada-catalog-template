@@ -469,7 +469,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
     const isStandard = standardCategories.includes(prod.category);
     const existingImages = (Array.isArray(prod.images) && prod.images.length > 0)
       ? prod.images.slice(0, 5)
-      : (prod.image ? [prod.image] : []);
+      : (prod.image ? [prod.image] : (prod.image_path ? [prod.image_path] : []));
 
     setProductForm({
       name: prod.name,
@@ -477,7 +477,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
       customCategory: isStandard ? '' : prod.category,
       price: prod.price,
       description: prod.description || '',
-      images: existingImages.length > 0 ? existingImages : ['https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80'],
+      images: existingImages.length > 0 ? existingImages : (prod.image || prod.image_path ? [prod.image || prod.image_path!] : []),
       stock: prod.stock ?? 10,
       badge: prod.badge || '',
     });
@@ -903,7 +903,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                     <div className="flex items-start sm:items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
                         <img
-                          src={item.images?.[0] || item.image || 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'}
+                          src={item.images?.[0] || item.image || item.image_path || 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'}
                           alt={item.name}
                           referrerPolicy="no-referrer"
                           className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 shadow-2xs"
@@ -1159,9 +1159,9 @@ export function Admin({ onLogout }: AdminProps = {}) {
                     {selectedOrder.items.map(item => (
                       <div key={item.id} className="p-3 flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          {item.image && (
+                          {(item.images?.[0] || item.image || (item as any).image_path) && (
                             <img
-                              src={item.image}
+                              src={item.images?.[0] || item.image || (item as any).image_path}
                               alt={item.name}
                               referrerPolicy="no-referrer"
                               className="w-8 h-8 rounded-md object-cover bg-zinc-100 shrink-0"

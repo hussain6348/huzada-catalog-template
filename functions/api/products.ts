@@ -48,37 +48,35 @@ export const onRequestGet = async (context: any) => {
       await initProductsTable(db);
 
       const result = await db.execute('SELECT * FROM products ORDER BY rowid DESC');
-      const products = result.rows.map(r => {
+      const products = result.rows.map((row: any) => {
         let parsedImages: string[] = [];
-        try {
-          if (typeof r.images === 'string' && r.images.trim().length > 0) {
-            const parsed = JSON.parse(r.images);
-            if (Array.isArray(parsed)) {
-              parsedImages = parsed.filter(url => typeof url === 'string' && url.trim().length > 0);
-            }
-          } else if (Array.isArray(r.images)) {
-            parsedImages = r.images.filter(url => typeof url === 'string' && url.trim().length > 0);
+        if (typeof row.images === 'string' && row.images.trim()) {
+          try {
+            const parsed = JSON.parse(row.images);
+            if (Array.isArray(parsed)) parsedImages = parsed.filter(Boolean);
+          } catch (e) {
+            parsedImages = [];
           }
-        } catch {
-          parsedImages = [];
+        } else if (Array.isArray(row.images)) {
+          parsedImages = row.images.filter(Boolean);
         }
 
-        const primaryImage = String(r.image || r.image_path || parsedImages[0] || '');
-
+        const primaryImage = (parsedImages[0] || row.image || row.image_path || '') as string;
         if (parsedImages.length === 0 && primaryImage) {
           parsedImages = [primaryImage];
         }
 
         return {
-          id: String(r.id),
-          name: String(r.name || ''),
-          description: String(r.description || ''),
-          price: Number(parseFloat(r.price as any) || 0),
-          category: String(r.category || 'General'),
+          id: String(row.id),
+          name: String(row.name || ''),
+          description: String(row.description || ''),
+          price: Number(parseFloat(row.price as any) || 0),
+          category: String(row.category || 'General'),
           images: parsedImages.slice(0, 5),
           image: primaryImage,
-          stock: Number(parseInt(r.stock as any, 10) || 10),
-          badge: r.badge ? String(r.badge) : undefined,
+          image_path: primaryImage,
+          stock: Number(parseInt(row.stock as any, 10) || 10),
+          badge: row.badge ? String(row.badge) : undefined,
         };
       });
 
