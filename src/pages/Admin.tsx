@@ -41,7 +41,8 @@ import {
   fetchCatalogProducts,
   persistProduct,
   removeProduct,
-  CATALOG_UPDATED_EVENT
+  CATALOG_UPDATED_EVENT,
+  resolveImageUrl
 } from '../lib/products';
 
 const FALLBACK_ORDERS: Order[] = [
@@ -396,7 +397,9 @@ export function Admin({ onLogout }: AdminProps = {}) {
 
     // Fetch and sync live catalog products
     fetchCatalogProducts().then(items => {
-      setInventory(items);
+      if (Array.isArray(items)) {
+        setInventory(items);
+      }
     });
 
     const handleCatalogUpdate = (e: any) => {
@@ -903,10 +906,18 @@ export function Admin({ onLogout }: AdminProps = {}) {
                     <div className="flex items-start sm:items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
                         <img
-                          src={item.images?.[0] || item.image || item.image_path || 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'}
+                          src={resolveImageUrl(item.images?.[0] || item.image || item.image_path)}
                           alt={item.name}
                           referrerPolicy="no-referrer"
+                          loading="lazy"
                           className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 shadow-2xs"
+                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                            const target = e.currentTarget;
+                            if (!target.dataset.hasFailed) {
+                              target.dataset.hasFailed = 'true';
+                              target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
+                            }
+                          }}
                         />
                         {item.images && item.images.length > 1 && (
                           <span
@@ -1161,10 +1172,18 @@ export function Admin({ onLogout }: AdminProps = {}) {
                         <div className="flex items-center gap-2.5 min-w-0">
                           {(item.images?.[0] || item.image || (item as any).image_path) && (
                             <img
-                              src={item.images?.[0] || item.image || (item as any).image_path}
+                              src={resolveImageUrl(item.images?.[0] || item.image || (item as any).image_path)}
                               alt={item.name}
                               referrerPolicy="no-referrer"
+                              loading="lazy"
                               className="w-8 h-8 rounded-md object-cover bg-zinc-100 shrink-0"
+                              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                                const target = e.currentTarget;
+                                if (!target.dataset.hasFailed) {
+                                  target.dataset.hasFailed = 'true';
+                                  target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
+                                }
+                              }}
                             />
                           )}
                           <div className="min-w-0">
@@ -1402,12 +1421,17 @@ export function Admin({ onLogout }: AdminProps = {}) {
                         }`}
                       >
                         <img
-                          src={imgUrl}
+                          src={resolveImageUrl(imgUrl)}
                           alt={`Asset ${idx + 1}`}
                           referrerPolicy="no-referrer"
+                          loading="lazy"
                           className="w-full h-full object-cover"
-                          onError={(e: any) => {
-                            e.target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
+                          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                            const target = e.currentTarget;
+                            if (!target.dataset.hasFailed) {
+                              target.dataset.hasFailed = 'true';
+                              target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
+                            }
                           }}
                         />
 
@@ -1448,6 +1472,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
                         <img
                           src={asset.previewUrl}
                           alt="Uploading..."
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
                           className="w-full h-full object-cover opacity-40"
                         />
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-1 text-white text-center">

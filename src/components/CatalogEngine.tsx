@@ -16,7 +16,7 @@ import {
   Package
 } from 'lucide-react';
 import type { Product, CartItem } from '../lib/types';
-import { getStoredProducts, fetchCatalogProducts, CATALOG_UPDATED_EVENT } from '../lib/products';
+import { getStoredProducts, fetchCatalogProducts, CATALOG_UPDATED_EVENT, resolveImageUrl } from '../lib/products';
 
 const STORE_WHATSAPP = '923322264855';
 const CURRENCY_SYMBOL = 'Rs.';
@@ -394,10 +394,18 @@ export function CatalogEngine({
                             className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-zinc-100 bg-zinc-50/50"
                           >
                             <img
-                              src={item.images?.[0] || item.image || item.image_path}
+                              src={resolveImageUrl(item.images?.[0] || item.image || item.image_path)}
                               alt={item.name}
                               referrerPolicy="no-referrer"
+                              loading="lazy"
                               className="w-12 h-12 rounded-lg object-cover bg-zinc-200 shrink-0"
+                              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                                const target = e.currentTarget;
+                                if (!target.dataset.hasFailed) {
+                                  target.dataset.hasFailed = 'true';
+                                  target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
+                                }
+                              }}
                             />
                             <div className="flex-1 min-w-0">
                               <h5 className="text-xs font-semibold text-zinc-900 truncate">
@@ -584,10 +592,18 @@ function ProductCardItem({
       {/* Product Image with Hover Zoom & Carousel */}
       <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
         <img
-          src={images[activeImgIdx] || primaryImg || images[0]}
+          src={resolveImageUrl(images[activeImgIdx] || primaryImg || images[0])}
           alt={`${product.name} - view ${activeImgIdx + 1}`}
           referrerPolicy="no-referrer"
+          loading="lazy"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+            const target = e.currentTarget;
+            if (!target.dataset.hasFailed) {
+              target.dataset.hasFailed = 'true';
+              target.src = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80';
+            }
+          }}
         />
 
         {product.badge && (

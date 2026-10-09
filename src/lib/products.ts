@@ -84,6 +84,42 @@ export const INITIAL_PRODUCTS: Product[] = [
 const STORAGE_KEY = 'merchant_catalog_products';
 export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
 
+export function resolveImageUrl(
+  url?: string | null,
+  fallback = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'
+): string {
+  if (!url || typeof url !== 'string') return fallback;
+  const trimmed = url.trim();
+  if (!trimmed) return fallback;
+
+  // Remote HTTPS/HTTP, data URIs, and blob URLs are returned raw directly
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:image') ||
+    trimmed.startsWith('blob:')
+  ) {
+    return trimmed;
+  }
+
+  // Only prepend leading slash for local asset or storage paths
+  const cleanPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  return `/${cleanPath}`;
+}
+
+export function getProductPrimaryImage(
+  product?: Partial<Product> | null,
+  fallback = 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80'
+): string {
+  if (!product) return fallback;
+  const raw =
+    (Array.isArray(product.images) && product.images[0]) ||
+    product.image ||
+    product.image_path ||
+    '';
+  return resolveImageUrl(raw, fallback);
+}
+
 function normalizeProduct(p: any): Product {
   let parsedImages: string[] = [];
   if (Array.isArray(p.images) && p.images.length > 0) {
@@ -109,9 +145,9 @@ function normalizeProduct(p: any): Product {
     category: String(p.category || 'General'),
     description: String(p.description || ''),
     price: Number(p.price || 0),
-    images: parsedImages.slice(0, 5),
-    image: primaryImage,
-    image_path: primaryImage,
+    images: parsedImages.slice(0, 5).map(img => resolveImageUrl(img, '')),
+    image: resolveImageUrl(primaryImage, primaryImage),
+    image_path: resolveImageUrl(primaryImage, primaryImage),
     stock: p.stock ?? 10,
   };
 }
@@ -144,13 +180,20 @@ export async function fetchCatalogProducts(): Promise<Product[]> {
     const res = await fetch('/api/products');
     if (res.ok) {
       const data: any = await res.json();
-      if (Array.isArray(data.products) && data.products.length > 0) {
-        const normalized = data.products.map(normalizeProduct);
-        saveStoredProducts(normalized);
-        return normalized;
+      if (data && Array.isArray(data.products)) {
+        if (data.products.length > 0) {
+          const normalized = data.products.map(normalizeProduct);
+          saveStoredProducts(normalized);
+          return normalized;
+        } else if (data.success && data.source !== 'fallback') {
+          saveStoredProducts([]);
+          return [];
+        }
       }
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Live catalog fetch error:', err);
+  }
   return getStoredProducts();
 }
 
