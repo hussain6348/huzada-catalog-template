@@ -1,0 +1,15 @@
+# Node
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# AI Studio / Bun lockfiles
+bun.lock
+bun.lockb
