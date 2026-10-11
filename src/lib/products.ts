@@ -309,3 +309,25 @@ export async function removeProduct(productId: string): Promise<Product[]> {
 
   return updated;
 }
+
+/**
+ * Inline SVG fallback placeholder — renders a neutral grey box with a package
+ * outline. Fully self-contained (no network dependency), so it can never fail.
+ */
+export const FALLBACK_PLACEHOLDER =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f4f4f5'/%3E%3Crect x='155' y='160' width='90' height='80' rx='6' fill='none' stroke='%23d4d4d8' stroke-width='2.5'/%3E%3Cpath d='M155 185h90' fill='none' stroke='%23d4d4d8' stroke-width='2.5'/%3E%3Cpath d='M200 160v-12M188 148h24' fill='none' stroke='%23d4d4d8' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E";
+
+/**
+ * Attach as `onError={handleImageError}` on any `<img>` element.
+ * Swaps the broken `src` to {@link FALLBACK_PLACEHOLDER} and sets a
+ * `data-errored` attribute to prevent infinite error loops.
+ */
+export function handleImageError(
+  e: { currentTarget: HTMLImageElement }
+): void {
+  const img = e.currentTarget;
+  if (!img.dataset.errored) {
+    img.dataset.errored = '1';
+    img.src = FALLBACK_PLACEHOLDER;
+  }
+}

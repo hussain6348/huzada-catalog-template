@@ -42,7 +42,9 @@ import {
   persistProduct,
   removeProduct,
   CATALOG_UPDATED_EVENT,
-  resolveImageUrl
+  resolveImageUrl,
+  getProductPrimaryImage,
+  handleImageError,
 } from '../lib/products';
 
 const FALLBACK_ORDERS: Order[] = [
@@ -899,7 +901,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                 </div>
               ) : (
                 inventory.map(item => {
-                  const rawImg = (item.images && item.images[0]) || item.image || item.image_path;
+                  const itemImg = getProductPrimaryImage(item);
                   return (
                     <div
                       key={item.id}
@@ -909,10 +911,12 @@ export function Admin({ onLogout }: AdminProps = {}) {
                       <div className="flex items-start sm:items-center gap-3 min-w-0">
                         <div className="relative shrink-0">
                           <img
-                            src={item.images?.[0] || item.image || item.image_path || "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80"}
+                            src={itemImg}
                             alt={item.name}
                             referrerPolicy="no-referrer"
-                            className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-neutral-200"
+                            loading="lazy"
+                            onError={handleImageError}
+                            className="w-14 h-14 aspect-square rounded-lg object-cover flex-shrink-0 border border-neutral-200 bg-zinc-100"
                           />
                           {item.images && item.images.length > 1 && (
                             <span
@@ -1164,26 +1168,18 @@ export function Admin({ onLogout }: AdminProps = {}) {
                   </span>
                   <div className="border border-zinc-200 rounded-xl divide-y divide-zinc-100 overflow-hidden">
                     {selectedOrder.items.map(item => {
-                      const orderImg = (item.images && item.images[0]) || item.image || (item as any).image_path;
+                      const orderImg = getProductPrimaryImage(item);
                       return (
                         <div key={item.id} className="p-3 flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            {orderImg ? (
-                              <img
-                                src={orderImg}
-                                alt={item.name}
-                                referrerPolicy="no-referrer"
-                                loading="lazy"
-                                className="w-8 h-8 rounded-md object-cover bg-zinc-100 shrink-0"
-                                onError={() => {
-                                  console.error('Order item image failed:', orderImg);
-                                }}
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-md bg-zinc-100 flex items-center justify-center text-zinc-400 shrink-0">
-                                <Package className="w-4 h-4" />
-                              </div>
-                            )}
+                            <img
+                              src={orderImg}
+                              alt={item.name}
+                              referrerPolicy="no-referrer"
+                              loading="lazy"
+                              onError={handleImageError}
+                              className="w-8 h-8 aspect-square rounded-md object-cover bg-zinc-100 shrink-0 border border-zinc-200/50"
+                            />
                           <div className="min-w-0">
                             <p className="font-medium text-zinc-900 truncate">{item.name}</p>
                             <p className="text-[11px] text-zinc-500 font-mono">
@@ -1420,14 +1416,12 @@ export function Admin({ onLogout }: AdminProps = {}) {
                         }`}
                       >
                         <img
-                          src={imgUrl}
+                          src={resolveImageUrl(imgUrl)}
                           alt={`Asset ${idx + 1}`}
                           referrerPolicy="no-referrer"
                           loading="lazy"
                           className="w-full h-full object-cover"
-                          onError={() => {
-                            console.error('Thumbnail load failed for URL:', imgUrl);
-                          }}
+                          onError={handleImageError}
                         />
 
                         {/* Primary Cover Badge */}

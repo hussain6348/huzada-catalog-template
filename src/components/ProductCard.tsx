@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import type { Product, CartItem } from '../lib/types';
 import { Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
-
-const CURRENCY_SYMBOL = 'Rs.';
+import { clientConfig } from '../config/client';
+import { getProductPrimaryImage, resolveImageUrl, handleImageError } from '../lib/products';
 
 export interface ProductCardProps {
   product: Product;
@@ -19,22 +19,23 @@ export function ProductCard({
   onUpdateQuantity,
   onSelect,
 }: ProductCardProps) {
-  const defaultPlaceholder = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80";
-  const primaryImg = product.images?.[0] || product.image || product.image_path || defaultPlaceholder;
-  const images = (Array.isArray(product.images) && product.images.length > 0)
-    ? product.images.filter(Boolean)
-    : [primaryImg];
+  const primaryImg = getProductPrimaryImage(product);
+  const rawImages =
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images.filter(Boolean).map((img) => resolveImageUrl(img))
+      : [primaryImg];
+  const images = rawImages.length > 0 ? rawImages : [primaryImg];
 
   const [activeImgIdx, setActiveImgIdx] = useState(0);
 
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveImgIdx(prev => (prev === 0 ? images.length - 1 : prev - 1));
+    setActiveImgIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveImgIdx(prev => (prev === images.length - 1 ? 0 : prev + 1));
+    setActiveImgIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
   const currentImg = images[activeImgIdx] || primaryImg;
@@ -52,9 +53,7 @@ export function ProductCard({
           referrerPolicy="no-referrer"
           loading="lazy"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-          onError={() => {
-            console.error('Product image load failed for URL:', currentImg);
-          }}
+          onError={handleImageError}
         />
 
         {product.badge && (
@@ -123,8 +122,8 @@ export function ProductCard({
         <div className="pt-2 border-t border-zinc-100 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-zinc-400 block uppercase font-mono">Price</span>
-            <span className="text-sm font-bold text-zinc-900 tabular-nums">
-              {CURRENCY_SYMBOL} {product.price.toLocaleString()}
+            <span className="text-sm font-bold text-zinc-900 tabular-nums font-mono">
+              {clientConfig.currencySymbol} {product.price.toLocaleString()}
             </span>
           </div>
 

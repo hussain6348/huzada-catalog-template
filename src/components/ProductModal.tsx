@@ -1,8 +1,8 @@
 import React from 'react';
 import type { Product } from '../lib/types';
 import { X, Plus } from 'lucide-react';
-
-const CURRENCY_SYMBOL = 'Rs.';
+import { clientConfig } from '../config/client';
+import { getProductPrimaryImage, handleImageError } from '../lib/products';
 
 export interface ProductModalProps {
   product: Product | null;
@@ -19,11 +19,7 @@ export function ProductModal({
 }: ProductModalProps) {
   if (!isOpen || !product) return null;
 
-  const imgSrc =
-    product.images?.[0] ||
-    product.image ||
-    product.image_path ||
-    "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80";
+  const imgSrc = getProductPrimaryImage(product);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -46,10 +42,9 @@ export function ProductModal({
               src={imgSrc}
               alt={product.name}
               referrerPolicy="no-referrer"
+              loading="lazy"
               className="w-full h-full object-cover"
-              onError={() => {
-                console.error('Modal image load failed for:', imgSrc);
-              }}
+              onError={handleImageError}
             />
           </div>
 
@@ -68,8 +63,8 @@ export function ProductModal({
           <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
             <div>
               <span className="text-xs text-zinc-400 block uppercase font-mono">Price</span>
-              <span className="text-lg font-bold text-zinc-900 tabular-nums">
-                {CURRENCY_SYMBOL} {product.price.toLocaleString()}
+              <span className="text-lg font-bold text-zinc-900 tabular-nums font-mono">
+                {clientConfig.currencySymbol} {product.price.toLocaleString()}
               </span>
             </div>
 
