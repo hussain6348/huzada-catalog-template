@@ -330,16 +330,67 @@ export default defineConfig({
               res.end(JSON.stringify({ success: false, error: 'Unauthorized: Authentication required.' }));
               return;
             }
-            const sampleFallbackImages = [
-              'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80',
-              'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&q=80',
-              'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
-              'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
-              'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80',
-            ];
-            const fallbackImage = sampleFallbackImages[Math.floor(Math.random() * sampleFallbackImages.length)];
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, imageUrl: fallbackImage, key: `asset-${Date.now()}` }));
+
+            const chunks: Buffer[] = [];
+            req.on('data', chunk => {
+              chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            });
+            req.on('end', async () => {
+              try {
+                const rawBuffer = Buffer.concat(chunks);
+                const contentType = req.headers['content-type'] || '';
+
+                if (contentType.includes('multipart/form-data')) {
+                  const webRes = new Response(rawBuffer, {
+                    headers: { 'Content-Type': contentType },
+                  });
+                  const formData = await webRes.formData();
+                  const file = formData.get('file') as File | null;
+
+                  if (!file) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: 'No media file provided' }));
+                    return;
+                  }
+
+                  const arrayBuffer = await file.arrayBuffer();
+                  const base64 = Buffer.from(arrayBuffer).toString('base64');
+                  const mimeType = file.type || 'image/jpeg';
+                  const dataUrl = `data:${mimeType};base64,${base64}`;
+
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(
+                    JSON.stringify({
+                      success: true,
+                      imageUrl: dataUrl,
+                      key: `asset-${Date.now()}`,
+                    })
+                  );
+                  return;
+                }
+
+                if (contentType.includes('application/json')) {
+                  const parsed = JSON.parse(rawBuffer.toString('utf8') || '{}');
+                  if (parsed.dataUrl || parsed.imageUrl) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(
+                      JSON.stringify({
+                        success: true,
+                        imageUrl: parsed.dataUrl || parsed.imageUrl,
+                        key: `asset-${Date.now()}`,
+                      })
+                    );
+                    return;
+                  }
+                }
+
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: 'Unsupported upload payload' }));
+              } catch (err: any) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: err?.message || 'Upload failed' }));
+              }
+            });
             return;
           }
 

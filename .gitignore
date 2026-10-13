@@ -1,4 +1,17 @@
+# Node
+node_modules/
 
+# Build output
+dist/
+dist-ssr/
+
+# Environment variables & credentials
+.env
+.env.*
+!.env.example
+.dev.vars
+.antigravity/
+.vscode/
+
+# Cloudflare
 .wrangler/
-node_modules/.cache/
-

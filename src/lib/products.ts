@@ -84,6 +84,7 @@ export const INITIAL_PRODUCTS: Product[] = [
 
 const STORAGE_KEY = 'merchant_catalog_products';
 export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
+let memoryProductsCache: Product[] | null = null;
 
 export function resolveImageUrl(
   url?: string | null,
@@ -106,7 +107,7 @@ export function resolveImageUrl(
   if (
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
-    trimmed.startsWith('data:image') ||
+    trimmed.startsWith('data:') ||
     trimmed.startsWith('blob:')
   ) {
     return trimmed;
@@ -141,7 +142,12 @@ function normalizeProduct(p: any): Product {
       else if (typeof parsed === 'string' && parsed) parsedImages = [parsed];
     } catch {
       const trimmed = p.images.trim();
-      if (trimmed.startsWith('http') || trimmed.startsWith('data:')) {
+      if (
+        trimmed.startsWith('http') ||
+        trimmed.startsWith('data:') ||
+        trimmed.startsWith('blob:') ||
+        trimmed.startsWith('/')
+      ) {
         parsedImages = [trimmed];
       } else {
         parsedImages = [];
@@ -153,7 +159,10 @@ function normalizeProduct(p: any): Product {
     parsedImages[0] ||
     p.image ||
     p.image_path ||
-    (typeof p.images === 'string' && p.images.startsWith('http') ? p.images.trim() : '') ||
+    (typeof p.images === 'string' &&
+    (p.images.startsWith('http') || p.images.startsWith('data:'))
+      ? p.images.trim()
+      : '') ||
     ''
   );
   let primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
@@ -188,6 +197,7 @@ function normalizeProduct(p: any): Product {
     .filter(Boolean);
 
   const finalImages = cleanImages.length > 0 ? cleanImages : [primaryImage];
+  const resolvedPrimary = finalImages[0] || primaryImage;
 
   return {
     ...p,
@@ -197,19 +207,24 @@ function normalizeProduct(p: any): Product {
     description: String(p.description || ''),
     price: Number(p.price || 0),
     images: finalImages,
-    image: primaryImage,
-    image_path: primaryImage,
+    image: resolvedPrimary,
+    image_path: resolvedPrimary,
     stock: p.stock ?? 10,
   };
 }
 
 export function getStoredProducts(): Product[] {
+  if (memoryProductsCache && memoryProductsCache.length > 0) {
+    return memoryProductsCache;
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(normalizeProduct);
+        const normalized = parsed.map(normalizeProduct);
+        memoryProductsCache = normalized;
+        return normalized;
       }
     }
   } catch {}
@@ -217,13 +232,14 @@ export function getStoredProducts(): Product[] {
 }
 
 export function saveStoredProducts(products: Product[]) {
+  const normalized = products.map(normalizeProduct);
+  memoryProductsCache = normalized;
   try {
-    const normalized = products.map(normalizeProduct);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-    window.dispatchEvent(new CustomEvent(CATALOG_UPDATED_EVENT, { detail: normalized }));
   } catch (e) {
-    console.error('Storage write error:', e);
+    console.warn('Storage write notice (using in-memory catalog cache):', e);
   }
+  window.dispatchEvent(new CustomEvent(CATALOG_UPDATED_EVENT, { detail: normalized }));
 }
 
 export async function fetchCatalogProducts(): Promise<Product[]> {

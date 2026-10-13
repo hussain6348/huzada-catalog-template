@@ -197,6 +197,74 @@ export function Admin({ onLogout }: AdminProps = {}) {
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [isDragging, setIsDragging] = useState(false);
 
+  const optimizeImageFile = (file: File): Promise<{ file: File; dataUrl: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.onload = () => {
+        const rawDataUrl = reader.result as string;
+        if (file.type === 'image/svg+xml' || file.type === 'image/gif') {
+          resolve({ file, dataUrl: rawDataUrl });
+          return;
+        }
+
+        const img = new Image();
+        img.onerror = () => resolve({ file, dataUrl: rawDataUrl });
+        img.onload = () => {
+          try {
+            const maxDim = 1200;
+            let { width, height } = img;
+            if (width <= maxDim && height <= maxDim && file.size <= 350 * 1024) {
+              resolve({ file, dataUrl: rawDataUrl });
+              return;
+            }
+            if (width > maxDim || height > maxDim) {
+              if (width >= height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve({ file, dataUrl: rawDataUrl });
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const outputMime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+            const quality = outputMime === 'image/jpeg' ? 0.85 : undefined;
+            const compressedDataUrl = canvas.toDataURL(outputMime, quality);
+            canvas.toBlob(
+              blob => {
+                if (!blob) {
+                  resolve({ file, dataUrl: compressedDataUrl });
+                  return;
+                }
+                const ext = outputMime === 'image/png' ? 'png' : 'jpg';
+                const baseName = file.name.replace(/\.[^/.]+$/, '');
+                const optimizedFile = new File([blob], `${baseName}.${ext}`, {
+                  type: outputMime,
+                });
+                resolve({ file: optimizedFile, dataUrl: compressedDataUrl });
+              },
+              outputMime,
+              quality
+            );
+          } catch {
+            resolve({ file, dataUrl: rawDataUrl });
+          }
+        };
+        img.src = rawDataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFilesUpload = async (filesList: FileList | File[]) => {
     const rawFiles = Array.from(filesList);
     const validFiles = rawFiles.filter(f => f.type.startsWith('image/'));
@@ -234,10 +302,11 @@ export function Admin({ onLogout }: AdminProps = {}) {
 
     // Concurrent upload
     const uploadTasks = newAssets.map(async (asset, index) => {
-      const file = filesToUpload[index];
+      const rawFile = filesToUpload[index];
       try {
+        const { file: optimizedFile, dataUrl: localDataUrl } = await optimizeImageFile(rawFile);
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', optimizedFile);
         const res = await fetch('/api/upload', {
           method: 'POST',
           headers: {
@@ -250,12 +319,24 @@ export function Admin({ onLogout }: AdminProps = {}) {
           if (onLogout) onLogout();
           return { success: false, id: asset.id, error: 'Session expired. Please log in again.', previewUrl: asset.previewUrl };
         }
-        const data: any = await res.json();
-        if (data.success && data.imageUrl) {
-          return { success: true, id: asset.id, imageUrl: data.imageUrl, previewUrl: asset.previewUrl };
+        if (res.ok) {
+          const data: any = await res.json();
+          if (data.success && data.imageUrl) {
+            return { success: true, id: asset.id, imageUrl: data.imageUrl, previewUrl: asset.previewUrl };
+          }
         }
-        return { success: false, id: asset.id, error: data.error || 'Upload failed', previewUrl: asset.previewUrl };
+        // Fallback to actual uploaded image data URL if endpoint is unavailable
+        if (localDataUrl) {
+          return { success: true, id: asset.id, imageUrl: localDataUrl, previewUrl: asset.previewUrl };
+        }
+        return { success: false, id: asset.id, error: 'Upload failed', previewUrl: asset.previewUrl };
       } catch (err: any) {
+        try {
+          const { dataUrl: localDataUrl } = await optimizeImageFile(rawFile);
+          if (localDataUrl) {
+            return { success: true, id: asset.id, imageUrl: localDataUrl, previewUrl: asset.previewUrl };
+          }
+        } catch {}
         return { success: false, id: asset.id, error: err.message || 'Upload failed', previewUrl: asset.previewUrl };
       }
     });
@@ -290,8 +371,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
   const handleAddDirectUrl = () => {
     const trimmed = customImageUrl.trim();
     if (!trimmed) return;
-    if (!/^https?:\/\//i.test(trimmed)) {
-      setUploadError('Please enter a valid URL starting with http:// or https://');
+    if (!/^(https?:\/\/|data:image\/)/i.test(trimmed)) {
+      setUploadError('Please enter a valid URL starting with http://, https://, or data:image/');
       return;
     }
     if (productForm.images.length >= 5) {
