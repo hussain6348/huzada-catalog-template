@@ -1,67 +1,34 @@
-const AUTH_STORAGE_KEY = 'merchant_admin_session_token';
-export const AUTH_CHANGE_EVENT = 'merchant_auth_change';
+export const AUTH_CHANGE_EVENT = 'auth-changed';
+const TOKEN_KEY = 'huzada_admin_token';
 
-export function getAdminToken(): string | null {
+export function getAuthToken(): string | null {
   try {
-    return sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
 }
 
-export function setAdminToken(token: string, persist = false): void {
-  try {
-    sessionStorage.setItem(AUTH_STORAGE_KEY, token);
-    if (persist) {
-      localStorage.setItem(AUTH_STORAGE_KEY, token);
-    }
-    window.dispatchEvent(new CustomEvent(AUTH_CHANGE_EVENT, { detail: { token } }));
-  } catch (err) {
-    console.warn('Failed to store auth session token:', err);
-  }
-}
-
-export function clearAdminToken(): void {
-  try {
-    sessionStorage.removeItem(AUTH_STORAGE_KEY);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    window.dispatchEvent(new CustomEvent(AUTH_CHANGE_EVENT, { detail: { token: null } }));
-  } catch (err) {
-    console.warn('Failed to clear auth session token:', err);
-  }
-}
-
 export function isAuthenticated(): boolean {
-  const token = getAdminToken();
-  return typeof token === 'string' && token.length > 5;
+  return Boolean(getAuthToken());
 }
 
-export function getAuthHeaders(): Record<string, string> {
-  const token = getAdminToken();
-  if (token) {
-    return {
-      Authorization: `Bearer ${token}`,
-    };
-  }
-  return {};
-}
-
-export async function loginAdmin(password: string): Promise<{ success: boolean; token?: string; error?: string }> {
+export async function loginAdmin(
+  password: string
+): Promise<{ success: boolean; token?: string; error?: string }> {
   try {
     const res = await fetch('/api/auth', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
 
-    const data: any = await res.json();
+    const data = await res.json();
     if (res.ok && data.success && data.token) {
-      setAdminToken(data.token, true);
+      localStorage.setItem(TOKEN_KEY, data.token);
+      window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
       return { success: true, token: data.token };
     }
-
     return {
       success: false,
       error: data.error || 'Invalid credentials. Access denied.',
@@ -69,7 +36,17 @@ export async function loginAdmin(password: string): Promise<{ success: boolean; 
   } catch (err: any) {
     return {
       success: false,
-      error: err.message || 'Unable to establish secure connection.',
+      error: err.message || 'Network error during authentication.',
     };
   }
+}
+
+export function logoutAdmin(): void {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }

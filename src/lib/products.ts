@@ -1,349 +1,208 @@
+import React from 'react';
 import type { Product } from './types';
-import { getAuthHeaders } from './auth';
 
-export const DEFAULT_UNSPLASH_IMAGE =
+export const CATALOG_UPDATED_EVENT = 'catalog:updated';
+export const RELIABLE_PLACEHOLDER =
   'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
 
-export const INITIAL_PRODUCTS: Product[] = [
+export const INITIAL_SAMPLE_PRODUCTS: Product[] = [
   {
-    id: 'prod-1',
-    name: 'Classic White T-Shirt',
-    description: '100% organic heavyweight cotton tee with tailored crewneck fit.',
-    price: 1250,
-    category: 'Lifestyle',
-    images: [
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
-    ],
-    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
-    stock: 18,
-    badge: 'Popular',
-  },
-  {
-    id: 'prod-2',
-    name: 'Walnut Desktop Organizer',
-    description: 'Precision milled solid walnut tray for pens, phone, and desktop cables.',
-    price: 1850,
-    category: 'Workspace',
-    images: [
-      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
-      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
-    ],
-    image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
-    stock: 9,
-  },
-  {
-    id: 'prod-3',
-    name: 'Matte Ceramic Pour-Over Mug',
-    description: 'Artisanal stoneware ceramic mug with ergonomic unglazed clay base (320ml).',
-    price: 950,
-    category: 'Lifestyle',
-    images: [
-      'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80',
-      'https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=800&q=80',
-    ],
-    image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&q=80',
-    stock: 24,
-  },
-  {
-    id: 'prod-4',
-    name: 'Padded Keyboard Wrist Rest',
-    description: 'High-density memory foam wrist rest with anti-fray stitched fabric rim.',
-    price: 1400,
-    category: 'Workspace',
-    images: [
-      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80',
-    ],
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80',
+    id: 'prod-001',
+    name: 'Classic Vintage Denim Jacket',
+    description: 'Heavyweight premium denim jacket with timeless cut and buttoned chest pockets.',
+    category: 'Apparel',
+    price: 4500,
     stock: 12,
+    badge: 'Popular',
+    image: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&q=80'],
   },
   {
-    id: 'prod-5',
-    name: 'Anodized Brass Rollerball Pen',
-    description: 'Balanced solid brass casing engineered for ultra-smooth fluid ink delivery.',
-    price: 850,
+    id: 'prod-002',
+    name: 'Heavyweight Minimalist Tee',
+    description: '240 GSM 100% combed cotton basic t-shirt with ribbed collar and relaxed fit.',
+    category: 'Apparel',
+    price: 1850,
+    stock: 25,
+    badge: 'Bestseller',
+    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80'],
+  },
+  {
+    id: 'prod-003',
+    name: 'Full-Grain Leather Bi-Fold Wallet',
+    description: 'Handcrafted genuine leather wallet with 8 card slots, currency divider, and RFID shield.',
     category: 'Accessories',
-    images: [
-      'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&q=80',
-    ],
-    image: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&q=80',
-    stock: 35,
+    price: 2400,
+    stock: 15,
+    image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?w=800&q=80'],
   },
   {
-    id: 'prod-6',
-    name: 'Felt Desk Pad Protector',
-    description: 'Premium wool blend desk pad with non-slip natural rubber backing (80x40cm).',
-    price: 1650,
-    category: 'Workspace',
-    images: [
-      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
-    ],
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80',
-    stock: 15,
+    id: 'prod-004',
+    name: 'Matte Black Chrono Watch',
+    description: 'Sleek analog dial with stainless steel mesh strap, quartz movement, and 50m water resistance.',
+    category: 'Watches',
+    price: 6800,
+    stock: 8,
+    badge: 'Limited',
+    image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800&q=80'],
+  },
+  {
+    id: 'prod-005',
+    name: 'Rugged Canvas Travel Duffel',
+    description: 'Water-resistant waxed canvas weekender bag with reinforced leather handles and luggage strap.',
+    category: 'Bags',
+    price: 5200,
+    stock: 10,
+    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80'],
+  },
+  {
+    id: 'prod-006',
+    name: 'Polarized Vintage Acetate Shades',
+    description: 'UV400 protective polarized sunglasses with lightweight amber acetate frame.',
+    category: 'Accessories',
+    price: 2950,
+    stock: 18,
+    image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&q=80'],
   },
 ];
 
-const STORAGE_KEY = 'merchant_catalog_products';
-export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
-let memoryProductsCache: Product[] | null = null;
-
-export function resolveImageUrl(
-  url?: string | null,
-  fallback = DEFAULT_UNSPLASH_IMAGE
-): string {
-  if (!url || typeof url !== 'string') return fallback;
-  const trimmed = url.trim();
-  if (!trimmed) return fallback;
-
-  // Replace broken local sample assets or test shirt paths
-  if (
-    trimmed.includes('/default-client/test-shirt.jpg') ||
-    trimmed.includes('test-shirt') ||
-    trimmed.includes('default-client')
-  ) {
-    return DEFAULT_UNSPLASH_IMAGE;
-  }
-
-  // Remote HTTPS/HTTP, data URIs, and blob URLs are returned raw directly
-  if (
-    trimmed.startsWith('http://') ||
-    trimmed.startsWith('https://') ||
-    trimmed.startsWith('data:') ||
-    trimmed.startsWith('blob:')
-  ) {
-    return trimmed;
-  }
-
-  // Only prepend leading slash for local asset or storage paths
-  const cleanPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
-  return `/${cleanPath}`;
-}
-
 export function getProductPrimaryImage(
-  product?: Partial<Product> | null,
-  fallback = DEFAULT_UNSPLASH_IMAGE
+  product?: { image?: string; image_path?: string; images?: string[] } | null
 ): string {
-  if (!product) return fallback;
-  const raw =
-    (Array.isArray(product.images) && product.images[0]) ||
+  if (!product) return RELIABLE_PLACEHOLDER;
+  const primary =
     product.image ||
     product.image_path ||
-    '';
-  return resolveImageUrl(raw, fallback);
+    (Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : '');
+
+  const cleaned = String(primary || '').trim();
+  if (
+    !cleaned ||
+    cleaned.includes('test-shirt') ||
+    cleaned.includes('default-client')
+  ) {
+    return RELIABLE_PLACEHOLDER;
+  }
+  return cleaned;
 }
 
-function normalizeProduct(p: any): Product {
-  let parsedImages: string[] = [];
-  if (Array.isArray(p.images) && p.images.length > 0) {
-    parsedImages = p.images.filter(Boolean);
-  } else if (typeof p.images === 'string' && p.images.trim()) {
-    try {
-      const parsed = JSON.parse(p.images);
-      if (Array.isArray(parsed)) parsedImages = parsed.filter(Boolean);
-      else if (typeof parsed === 'string' && parsed) parsedImages = [parsed];
-    } catch {
-      const trimmed = p.images.trim();
-      if (
-        trimmed.startsWith('http') ||
-        trimmed.startsWith('data:') ||
-        trimmed.startsWith('blob:') ||
-        trimmed.startsWith('/')
-      ) {
-        parsedImages = [trimmed];
-      } else {
-        parsedImages = [];
-      }
-    }
+export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event>) {
+  const target = e.currentTarget;
+  if (target.src !== RELIABLE_PLACEHOLDER) {
+    target.src = RELIABLE_PLACEHOLDER;
   }
-
-  let primaryCandidate = (
-    parsedImages[0] ||
-    p.image ||
-    p.image_path ||
-    (typeof p.images === 'string' &&
-    (p.images.startsWith('http') || p.images.startsWith('data:'))
-      ? p.images.trim()
-      : '') ||
-    ''
-  );
-  let primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
-  if (
-    !primaryImage ||
-    primaryImage.includes('test-shirt') ||
-    primaryImage.includes('default-client')
-  ) {
-    primaryImage = DEFAULT_UNSPLASH_IMAGE;
-  }
-
-  if (parsedImages.length === 0 && primaryImage) {
-    parsedImages = [primaryImage];
-  }
-
-  const cleanImages = parsedImages
-    .slice(0, 5)
-    .map(img => {
-      if (typeof img === 'string') {
-        const trimmed = img.trim();
-        if (
-          trimmed.includes('test-shirt') ||
-          trimmed.includes('default-client') ||
-          !trimmed
-        ) {
-          return DEFAULT_UNSPLASH_IMAGE;
-        }
-        return resolveImageUrl(trimmed, DEFAULT_UNSPLASH_IMAGE);
-      }
-      return '';
-    })
-    .filter(Boolean);
-
-  const finalImages = cleanImages.length > 0 ? cleanImages : [primaryImage];
-  const resolvedPrimary = finalImages[0] || primaryImage;
-
-  return {
-    ...p,
-    id: String(p.id),
-    name: String(p.name || ''),
-    category: String(p.category || 'General'),
-    description: String(p.description || ''),
-    price: Number(p.price || 0),
-    images: finalImages,
-    image: resolvedPrimary,
-    image_path: resolvedPrimary,
-    stock: p.stock ?? 10,
-  };
 }
 
 export function getStoredProducts(): Product[] {
-  if (memoryProductsCache && memoryProductsCache.length > 0) {
-    return memoryProductsCache;
-  }
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem('huzada_catalog_products');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const normalized = parsed.map(normalizeProduct);
-        memoryProductsCache = normalized;
-        return normalized;
+        return parsed;
       }
     }
-  } catch {}
-  return INITIAL_PRODUCTS;
+  } catch (err) {
+    console.warn('Failed to parse cached products from localStorage', err);
+  }
+  return INITIAL_SAMPLE_PRODUCTS;
 }
 
-export function saveStoredProducts(products: Product[]) {
-  const normalized = products.map(normalizeProduct);
-  memoryProductsCache = normalized;
+export function setStoredProducts(products: Product[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-  } catch (e) {
-    console.warn('Storage write notice (using in-memory catalog cache):', e);
+    localStorage.setItem('huzada_catalog_products', JSON.stringify(products));
+    window.dispatchEvent(
+      new CustomEvent(CATALOG_UPDATED_EVENT, { detail: products })
+    );
+  } catch (err) {
+    console.warn('Failed to save products to localStorage', err);
   }
-  window.dispatchEvent(new CustomEvent(CATALOG_UPDATED_EVENT, { detail: normalized }));
 }
 
 export async function fetchCatalogProducts(): Promise<Product[]> {
   try {
     const res = await fetch('/api/products');
     if (res.ok) {
-      const data: any = await res.json();
-      if (data && Array.isArray(data.products)) {
-        if (data.products.length > 0) {
-          const normalized = data.products.map(normalizeProduct);
-          saveStoredProducts(normalized);
-          return normalized;
-        } else if (data.success && data.source !== 'fallback') {
-          saveStoredProducts([]);
-          return [];
-        }
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.products) && data.products.length > 0) {
+        setStoredProducts(data.products);
+        return data.products;
       }
     }
   } catch (err) {
-    console.warn('Live catalog fetch error:', err);
+    console.warn('Network error fetching catalog products, using stored products', err);
   }
   return getStoredProducts();
 }
 
-export async function persistProduct(product: Product): Promise<Product[]> {
-  const clean = normalizeProduct(product);
-  const current = getStoredProducts();
-  const existingIdx = current.findIndex(p => p.id === clean.id);
-  let updated: Product[];
-  if (existingIdx >= 0) {
-    updated = current.map(p => (p.id === clean.id ? clean : p));
-  } else {
-    updated = [clean, ...current];
-  }
-  saveStoredProducts(updated);
-
+export async function saveProductApi(
+  product: Partial<Product>,
+  token?: string
+): Promise<{ success: boolean; product?: Product; error?: string }> {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch('/api/products', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify(clean),
+      headers,
+      body: JSON.stringify(product),
     });
 
-    if (res.ok) {
-      const data: any = await res.json();
-      if (data.success && data.product) {
-        const savedProduct = normalizeProduct(data.product);
-        const latestCurrent = getStoredProducts();
-        const idx = latestCurrent.findIndex(p => p.id === savedProduct.id);
-        if (idx >= 0) {
-          updated = latestCurrent.map(p => (p.id === savedProduct.id ? savedProduct : p));
-        } else {
-          updated = [savedProduct, ...latestCurrent];
-        }
-        saveStoredProducts(updated);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const current = getStoredProducts();
+      const updatedProduct = data.product || product;
+      const index = current.findIndex((p) => p.id === updatedProduct.id);
+      let updatedList: Product[];
+      if (index >= 0) {
+        updatedList = [...current];
+        updatedList[index] = { ...updatedList[index], ...updatedProduct };
+      } else {
+        updatedList = [updatedProduct, ...current];
       }
+      setStoredProducts(updatedList);
+      return { success: true, product: updatedProduct };
     }
-  } catch (e) {
-    console.warn('Network product save notice (fallback active):', e);
+    return { success: false, error: data.error || 'Failed to save product' };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network request failed' };
   }
-
-  return updated;
 }
 
-export async function removeProduct(productId: string): Promise<Product[]> {
-  const current = getStoredProducts();
-  const updated = current.filter(p => p.id !== productId);
-  saveStoredProducts(updated);
-
+export async function deleteProductApi(
+  id: string,
+  token?: string
+): Promise<{ success: boolean; error?: string }> {
   try {
-    await fetch(`/api/products?id=${productId}`, {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, {
       method: 'DELETE',
-      headers: {
-        ...getAuthHeaders(),
-      },
+      headers,
     });
-  } catch (e) {
-    console.warn('Network product delete notice:', e);
-  }
 
-  return updated;
-}
-
-/**
- * Inline SVG fallback placeholder — renders a neutral grey box with a package
- * outline. Fully self-contained (no network dependency), so it can never fail.
- */
-export const FALLBACK_PLACEHOLDER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f4f4f5'/%3E%3Crect x='155' y='160' width='90' height='80' rx='6' fill='none' stroke='%23d4d4d8' stroke-width='2.5'/%3E%3Cpath d='M155 185h90' fill='none' stroke='%23d4d4d8' stroke-width='2.5'/%3E%3Cpath d='M200 160v-12M188 148h24' fill='none' stroke='%23d4d4d8' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E";
-
-/**
- * Attach as `onError={handleImageError}` on any `<img>` element.
- * Swaps the broken `src` to {@link FALLBACK_PLACEHOLDER} and sets a
- * `data-errored` attribute to prevent infinite error loops.
- */
-export function handleImageError(
-  e: { currentTarget: HTMLImageElement }
-): void {
-  const img = e.currentTarget;
-  if (!img.dataset.errored) {
-    img.dataset.errored = '1';
-    img.src = FALLBACK_PLACEHOLDER;
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const current = getStoredProducts();
+      const updatedList = current.filter((p) => p.id !== id);
+      setStoredProducts(updatedList);
+      return { success: true };
+    }
+    return { success: false, error: data.error || 'Failed to delete product' };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network request failed' };
   }
 }

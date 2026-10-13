@@ -1,8 +1,0 @@
-name = "huzada-catalog-template"
-pages_build_output_dir = "dist"
-compatibility_date = "2026-09-26"
-compatibility_flags = ["nodejs_compat"]
-
-[[r2_buckets]]
-binding = "UPLOAD_BUCKET"
-bucket_name = "huzada-uploads"

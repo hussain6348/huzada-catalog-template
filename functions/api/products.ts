@@ -70,10 +70,10 @@ export const onRequestGet = async (context: any) => {
         const RELIABLE_PLACEHOLDER = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
 
         let primaryCandidate = (
-          parsedImages[0] ||
           row.image ||
           row.image_path ||
-          (typeof row.images === 'string' && (row.images.startsWith('http') || row.images.startsWith('data:')) ? row.images.trim() : '') ||
+          parsedImages[0] ||
+          (typeof row.images === 'string' && row.images.startsWith('http') ? row.images.trim() : '') ||
           ''
         );
         let primaryImage = typeof primaryCandidate === 'string' ? primaryCandidate.trim() : '';
