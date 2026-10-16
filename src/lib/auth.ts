@@ -50,3 +50,15 @@ export function logoutAdmin(): void {
   }
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
+
+export function clearAdminToken(): void {
+  logoutAdmin();
+}
+
+export function getAuthHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
+}

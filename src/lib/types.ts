@@ -2,20 +2,20 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  category: string;
   price: number;
-  stock?: number;
+  category: string;
+  images: string[];
   image?: string;
   image_path?: string;
-  images?: string[];
+  stock?: number;
   badge?: string;
-  created_at?: string;
 }
 
 export interface CartItem extends Product {
   quantity: number;
-  image: string;
 }
+
+export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
 
 export interface Order {
   id: string;
@@ -25,6 +25,6 @@ export interface Order {
   notes?: string;
   items: CartItem[];
   total: number;
-  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
-  createdAt?: string;
+  status: OrderStatus;
+  createdAt: string;
 }
