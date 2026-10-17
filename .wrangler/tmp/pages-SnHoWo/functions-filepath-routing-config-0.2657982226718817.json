@@ -1,0 +1,53 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/products/:id",
+      "mountPath": "/api/products",
+      "method": "DELETE",
+      "module": [
+        "api/products/[id].ts:onRequestDelete"
+      ]
+    },
+    {
+      "routePath": "/api/products/:id",
+      "mountPath": "/api/products",
+      "method": "PUT",
+      "module": [
+        "api/products/[id].ts:onRequestPut"
+      ]
+    },
+    {
+      "routePath": "/api/order",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/order.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/products",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/products.ts:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/products",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/products.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/upload",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/upload.ts:onRequestPost"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}
