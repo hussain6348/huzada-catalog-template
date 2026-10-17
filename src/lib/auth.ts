@@ -16,23 +16,25 @@ export async function loginToAdmin(password: string) {
       if (password === "admin123") { 
         localStorage.setItem("isAdminAuthenticated", "true");
         window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
-        return true;
+        return { success: true };
       }
-      return false;
+      return { success: false, error: "Invalid password" };
     }
 
     if (response.ok) {
       localStorage.setItem("isAdminAuthenticated", "true");
       window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
-      return true;
+      return { success: true };
     }
     
-    return false;
+    return { success: false, error: "Invalid credentials" };
   } catch (error) {
     console.error("Login failed", error);
-    return false;
+    return { success: false, error: "Network error connecting to server" };
   }
 }
+
+export const loginAdmin = loginToAdmin;
 
 export function clearAdminToken() {
   localStorage.removeItem("isAdminAuthenticated");
@@ -44,5 +46,3 @@ export function getAuthHeaders() {
     'Content-Type': 'application/json'
   };
 }
-
-export const loginAdmin = loginToAdmin;
