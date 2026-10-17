@@ -1,4 +1,10 @@
-﻿export async function loginToAdmin(password: string) {
+﻿export const AUTH_CHANGE_EVENT = "auth_change";
+
+export function isAuthenticated() {
+  return localStorage.getItem("isAdminAuthenticated") === "true";
+}
+
+export async function loginToAdmin(password: string) {
   try {
     const response = await fetch('/auth/login', {
       method: 'POST',
@@ -9,6 +15,7 @@
     if (response.status === 404) {
       if (password === "admin123") { 
         localStorage.setItem("isAdminAuthenticated", "true");
+        window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
         return true;
       }
       return false;
@@ -16,6 +23,7 @@
 
     if (response.ok) {
       localStorage.setItem("isAdminAuthenticated", "true");
+      window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
       return true;
     }
     
@@ -24,4 +32,15 @@
     console.error("Login failed", error);
     return false;
   }
+}
+
+export function clearAdminToken() {
+  localStorage.removeItem("isAdminAuthenticated");
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
+
+export function getAuthHeaders() {
+  return {
+    'Content-Type': 'application/json'
+  };
 }
