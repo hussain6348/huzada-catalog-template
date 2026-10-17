@@ -1,48 +1,39 @@
-﻿export const AUTH_CHANGE_EVENT = "auth_change";
+export const AUTH_CHANGE_EVENT = "auth_change";
 
 export function isAuthenticated() {
-  return localStorage.getItem("isAdminAuthenticated") === "true";
+  return localStorage.getItem("waas_admin_auth") === "true";
 }
 
 export async function loginToAdmin(password: string) {
   try {
-    const response = await fetch('/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password })
     });
 
-    if (response.status === 404) {
-      if (password === "admin123") { 
-        localStorage.setItem("isAdminAuthenticated", "true");
-        window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
-        return { success: true };
-      }
-      return { success: false, error: "Invalid password" };
-    }
-
     if (response.ok) {
-      localStorage.setItem("isAdminAuthenticated", "true");
+      localStorage.setItem("waas_admin_auth", "true");
       window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
       return { success: true };
     }
-    
-    return { success: false, error: "Invalid credentials" };
+
+    return { success: false, error: "Invalid password" };
   } catch (error) {
     console.error("Login failed", error);
-    return { success: false, error: "Network error connecting to server" };
+    return { success: false, error: "Network error" };
   }
 }
 
 export const loginAdmin = loginToAdmin;
 
 export function clearAdminToken() {
-  localStorage.removeItem("isAdminAuthenticated");
+  localStorage.removeItem("waas_admin_auth");
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
 export function getAuthHeaders() {
   return {
-    'Content-Type': 'application/json'
+    "Content-Type": "application/json"
   };
 }
