@@ -1,4 +1,4 @@
-﻿export async function onRequestPost(context) {
+export async function onRequestPost(context) {
   const { request, env } = context;
   const body = await request.json();
   const validPassword = env.ADMIN_PASSWORD || "agency-default-secure";
@@ -8,7 +8,7 @@
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: {
-        "Set-Cookie": "admin_session=" + secureToken + "; HttpOnly; Secure; Path=/; SameSite=Strict; Max-Age=86400,
+        "Set-Cookie": "admin_session=" + secureToken + "; HttpOnly; Secure; Path=/; SameSite=Strict; Max-Age=86400",
         "Content-Type": "application/json"
       }
     });
