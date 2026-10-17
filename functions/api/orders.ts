@@ -1,7 +1,13 @@
 import { createClient } from "@libsql/client/web";
 
 export const onRequestGet = async (context: any) => {
-  const { env } = context;
+  const { request, env } = context;
+
+  // DIRECT API KEY CHECK
+  const adminKey = request.headers.get("x-admin-key");
+  if (!adminKey || adminKey !== env.ADMIN_PASSWORD) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
@@ -51,6 +57,13 @@ export const onRequestGet = async (context: any) => {
 
 export const onRequestPatch = async (context: any) => {
   const { request, env } = context;
+
+  // DIRECT API KEY CHECK
+  const adminKey = request.headers.get("x-admin-key");
+  if (!adminKey || adminKey !== env.ADMIN_PASSWORD) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
   const body = await request.json();
   const { id, status } = body;
 

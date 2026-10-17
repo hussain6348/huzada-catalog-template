@@ -1,7 +1,7 @@
 export const AUTH_CHANGE_EVENT = "auth_change";
 
 export function isAuthenticated() {
-  return !!localStorage.getItem("waas_admin_token");
+  return !!localStorage.getItem("waas_admin_key");
 }
 
 export async function loginToAdmin(password: string) {
@@ -13,8 +13,7 @@ export async function loginToAdmin(password: string) {
     });
 
     if (response.ok) {
-      const data = await response.json();
-      localStorage.setItem("waas_admin_token", data.token);
+      localStorage.setItem("waas_admin_key", password);
       window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
       return { success: true };
     }
@@ -28,14 +27,14 @@ export async function loginToAdmin(password: string) {
 export const loginAdmin = loginToAdmin;
 
 export function clearAdminToken() {
-  localStorage.removeItem("waas_admin_token");
+  localStorage.removeItem("waas_admin_key");
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
 export function getAuthHeaders() {
-  const token = localStorage.getItem("waas_admin_token");
+  const key = localStorage.getItem("waas_admin_key");
   return {
     "Content-Type": "application/json",
-    "Authorization": token ? "Bearer " + token : ""
+    "x-admin-key": key || ""
   };
 }

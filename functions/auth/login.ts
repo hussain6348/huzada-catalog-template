@@ -1,10 +1,9 @@
 export async function onRequestPost(context) {
   try {
-    const body = await context.request.json();
-    const validPassword = context.env.ADMIN_PASSWORD;
-    if (body.password === validPassword) {
-      const secureToken = "waas_auth_token_" + Date.now();
-      return new Response(JSON.stringify({ success: true, token: secureToken }), {
+    const { request, env } = context;
+    const body = await request.json();
+    if (body.password === env.ADMIN_PASSWORD) {
+      return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
       });
