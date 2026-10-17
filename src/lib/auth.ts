@@ -1,24 +1,23 @@
 export const AUTH_CHANGE_EVENT = "auth_change";
 
 export function isAuthenticated() {
-  return localStorage.getItem("waas_admin_auth") === "true";
+  return !!localStorage.getItem("waas_admin_token");
 }
 
 export async function loginToAdmin(password: string) {
   try {
     const response = await fetch("/auth/login", {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password })
     });
 
     if (response.ok) {
-      localStorage.setItem("waas_admin_auth", "true");
+      const data = await response.json();
+      localStorage.setItem("waas_admin_token", data.token);
       window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
       return { success: true };
     }
-
     return { success: false, error: "Invalid password" };
   } catch (error) {
     console.error("Login failed", error);
@@ -29,12 +28,14 @@ export async function loginToAdmin(password: string) {
 export const loginAdmin = loginToAdmin;
 
 export function clearAdminToken() {
-  localStorage.removeItem("waas_admin_auth");
+  localStorage.removeItem("waas_admin_token");
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
 export function getAuthHeaders() {
+  const token = localStorage.getItem("waas_admin_token");
   return {
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Authorization": token ? "Bearer " + token : ""
   };
 }
