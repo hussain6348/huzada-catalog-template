@@ -44,3 +44,5 @@ export function getAuthHeaders() {
     'Content-Type': 'application/json'
   };
 }
+
+export const loginAdmin = loginToAdmin;
