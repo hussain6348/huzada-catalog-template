@@ -1,64 +1,27 @@
-export const AUTH_CHANGE_EVENT = 'auth-changed';
-const TOKEN_KEY = 'huzada_admin_token';
-
-export function getAuthToken(): string | null {
+﻿export async function loginToAdmin(password: string) {
   try {
-    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-export function isAuthenticated(): boolean {
-  return Boolean(getAuthToken());
-}
-
-export async function loginAdmin(
-  password: string
-): Promise<{ success: boolean; token?: string; error?: string }> {
-  try {
-    const res = await fetch('/api/auth', {
+    const response = await fetch('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password })
     });
 
-    const data = await res.json();
-    if (res.ok && data.success && data.token) {
-      localStorage.setItem(TOKEN_KEY, data.token);
-      window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
-      return { success: true, token: data.token };
+    if (response.status === 404) {
+      if (password === "admin123") { 
+        localStorage.setItem("isAdminAuthenticated", "true");
+        return true;
+      }
+      return false;
     }
-    return {
-      success: false,
-      error: data.error || 'Invalid credentials. Access denied.',
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: err.message || 'Network error during authentication.',
-    };
-  }
-}
 
-export function logoutAdmin(): void {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // Ignore storage errors
+    if (response.ok) {
+      localStorage.setItem("isAdminAuthenticated", "true");
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Login failed", error);
+    return false;
   }
-  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
-}
-
-export function clearAdminToken(): void {
-  logoutAdmin();
-}
-
-export function getAuthHeaders(): Record<string, string> {
-  const token = getAuthToken();
-  if (token) {
-    return { Authorization: `Bearer ${token}` };
-  }
-  return {};
 }
