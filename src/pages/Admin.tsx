@@ -307,7 +307,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
         const { file: optimizedFile, dataUrl: localDataUrl } = await optimizeImageFile(rawFile);
         const formData = new FormData();
         formData.append('file', optimizedFile);
-        const res = await fetch('/api/upload', {
+        const res = await fetch('/api/upload', { credentials: 'include',
           method: 'POST',
           headers: {
             ...getAuthHeaders(),
@@ -442,7 +442,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
     setIsSyncing(true);
     setSystemStatus('syncing');
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch('/api/orders', { credentials: 'include',
         headers: {
           ...getAuthHeaders(),
         },
@@ -498,7 +498,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
   // Update order status
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch('/api/orders', { credentials: 'include',
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -691,14 +691,14 @@ export function Admin({ onLogout }: AdminProps = {}) {
             {/* White-Label Business Status Indicator */}
             <div
               className="hidden sm:flex items-center gap-2 bg-emerald-50/80 border border-emerald-200/80 px-2.5 py-1 rounded-md text-[11px] font-medium text-emerald-800"
-              title="Database Health: Optimal · System Operational"
+              title="Database Health: Optimal Â· System Operational"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               <span>Live Sync Active</span>
-              <span className="text-emerald-300">·</span>
+              <span className="text-emerald-300">Â·</span>
               <span className="text-emerald-700">System Operational</span>
             </div>
           </div>
@@ -877,7 +877,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                           <div className="text-[11px] text-zinc-500 flex items-center gap-1">
                             <Phone className="w-3 h-3 text-zinc-400" />
                             <span>{order.customerPhone}</span>
-                            <span className="text-zinc-300 mx-1">·</span>
+                            <span className="text-zinc-300 mx-1">Â·</span>
                             <Clock className="w-3 h-3 text-zinc-400" />
                             <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
@@ -1018,7 +1018,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                           )}
                         </div>
                         <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
-                          {item.category} · Rs. {item.price.toLocaleString()}
+                          {item.category} Â· Rs. {item.price.toLocaleString()}
                         </p>
                         {item.description && (
                           <p className="text-[11px] text-zinc-400 line-clamp-1 max-w-sm mt-0.5">
@@ -1264,7 +1264,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                           <div className="min-w-0">
                             <p className="font-medium text-zinc-900 truncate">{item.name}</p>
                             <p className="text-[11px] text-zinc-500 font-mono">
-                              Rs. {item.price.toLocaleString()} × {item.quantity}
+                              Rs. {item.price.toLocaleString()} Ã— {item.quantity}
                             </p>
                           </div>
                         </div>
@@ -1316,7 +1316,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                   {editingProduct ? 'Edit Catalog Product' : 'Upload New Product'}
                 </h3>
                 <p className="text-[11px] text-zinc-500 mt-0.5">
-                  Merchant Inventory Registry · Instant Storefront Sync
+                  Merchant Inventory Registry Â· Instant Storefront Sync
                 </p>
               </div>
               <button
