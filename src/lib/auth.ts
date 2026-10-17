@@ -8,6 +8,7 @@ export async function loginToAdmin(password: string) {
   try {
     const response = await fetch("/auth/login", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password })
     });
