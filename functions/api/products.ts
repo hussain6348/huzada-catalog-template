@@ -2,7 +2,7 @@ import { createClient } from "@libsql/client/web";
 import { requireAdmin, json } from "../_lib/guard";
 
 async function initProductsTable(db: any) {
-  await db.execute(CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, description TEXT, category TEXT, price REAL, stock INTEGER DEFAULT 10, image TEXT, image_path TEXT, images TEXT, created_at TEXT));
+  await db.execute(`CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, description TEXT, category TEXT, price REAL, stock INTEGER DEFAULT 10, image TEXT, image_path TEXT, images TEXT, created_at TEXT)`);
   const migrations = ["ALTER TABLE products ADD COLUMN category TEXT", "ALTER TABLE products ADD COLUMN price REAL", "ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10", "ALTER TABLE products ADD COLUMN image TEXT", "ALTER TABLE products ADD COLUMN image_path TEXT", "ALTER TABLE products ADD COLUMN images TEXT", "ALTER TABLE products ADD COLUMN description TEXT", "ALTER TABLE products ADD COLUMN created_at TEXT"];
   for (const sql of migrations) { try { await db.execute(sql); } catch {} }
 }
