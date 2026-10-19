@@ -1,15 +1,16 @@
-export async function onRequestPost(context) {
-  try {
-    const { request, env } = context;
-    const body = await request.json();
-    if (body.password === env.ADMIN_PASSWORD) {
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    return new Response(JSON.stringify({ error: "Invalid password" }), { status: 401 });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "Bad request" }), { status: 400 });
+import { safeEqual, json } from "../_lib/guard";
+
+export async function onRequestPost(context: any) {
+  const { request, env } = context;
+  if (!env.ADMIN_PASSWORD) return json({ error: "Server misconfigured" }, 500);
+
+  let body: any;
+  try { body = await request.json(); } catch { return json({ error: "Bad request" }, 400); }
+  if (typeof body?.password !== "string") return json({ error: "Bad request" }, 400);
+
+  const isMatch = await safeEqual(body.password, env.ADMIN_PASSWORD);
+  if (isMatch) {
+    return json({ success: true });
   }
+  return json({ error: "Invalid password" }, 401);
 }

@@ -3,3 +3,6 @@ dist
 dist-ssr
 .vite
 .env
+
+.dev.vars
+.wrangler/

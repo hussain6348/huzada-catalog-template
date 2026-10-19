@@ -1,91 +1,62 @@
 import { createClient } from "@libsql/client/web";
+import { requireAdmin, json } from "../_lib/guard";
 
 export const onRequestGet = async (context: any) => {
   const { request, env } = context;
-
-  // DIRECT API KEY CHECK
-  const adminKey = request.headers.get("x-admin-key");
-  if (!adminKey || adminKey !== env.ADMIN_PASSWORD) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-  }
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
-
       await db.execute(`
         CREATE TABLE IF NOT EXISTS orders (
-          id TEXT PRIMARY KEY,
-          customer_name TEXT,
-          customer_phone TEXT,
-          customer_address TEXT,
-          notes TEXT,
-          items TEXT,
-          total REAL,
-          status TEXT DEFAULT "pending",
-          created_at TEXT
+          id TEXT PRIMARY KEY, customer_name TEXT, customer_phone TEXT, customer_address TEXT,
+          notes TEXT, items TEXT, total REAL, status TEXT DEFAULT "pending", created_at TEXT
         )
       `);
-
       const result = await db.execute("SELECT * FROM orders ORDER BY rowid DESC LIMIT 100");
       const orders = result.rows.map(r => ({
-        id: r.id,
-        customerName: r.customer_name,
-        customerPhone: r.customer_phone,
-        customerAddress: r.customer_address,
-        notes: r.notes || "",
+        id: r.id, customerName: r.customer_name, customerPhone: r.customer_phone,
+        customerAddress: r.customer_address, notes: r.notes || "",
         items: typeof r.items === "string" ? JSON.parse(r.items || "[]") : (r.items || []),
-        total: Number(r.total || 0),
-        status: r.status || "pending",
+        total: Number(r.total || 0), status: r.status || "pending",
         createdAt: r.created_at || new Date().toISOString(),
       }));
-
-      return new Response(JSON.stringify({ success: true, orders, source: "turso" }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ success: true, orders, source: "turso" });
     } catch (e: any) {
-      return new Response(JSON.stringify({ success: false, error: e.message, orders: [] }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      console.error(e);
+      return json({ success: false, error: "Server error", orders: [] }, 500);
     }
   }
-
-  return new Response(JSON.stringify({ success: true, orders: [], source: "fallback" }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ success: true, orders: [], source: "fallback" });
 };
 
 export const onRequestPatch = async (context: any) => {
   const { request, env } = context;
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
 
-  // DIRECT API KEY CHECK
-  const adminKey = request.headers.get("x-admin-key");
-  if (!adminKey || adminKey !== env.ADMIN_PASSWORD) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  let body: any;
+  try { body = await request.json(); } catch { return json({ error: "Bad JSON" }, 400); }
+
+  const ALLOWED = ["pending", "processing", "completed", "cancelled"];
+  if (typeof body.id !== "string" || body.id.length > 64 || !ALLOWED.includes(body.status)) {
+    return json({ error: "Invalid input" }, 400);
   }
-
-  const body = await request.json();
-  const { id, status } = body;
 
   if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
     try {
       const db = createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
       await db.execute({
         sql: "UPDATE orders SET status = ? WHERE id = ?",
-        args: [status, id],
+        args: [body.status, body.id],
       });
-      return new Response(JSON.stringify({ success: true, id, status }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ success: true, id: body.id, status: body.status });
     } catch (e: any) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.error(e);
+      return json({ success: false, error: "Server error" }, 500);
     }
   }
-
-  return new Response(JSON.stringify({ success: true, id, status, mock: true }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ success: true, id: body.id, status: body.status, mock: true });
 };
