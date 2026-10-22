@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Product, CartItem } from '../lib/types';
-import { Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Minus, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { clientConfig } from '../config/client';
 import { getProductPrimaryImage, resolveImageUrl, handleImageError } from '../lib/products';
 
@@ -10,6 +10,7 @@ export interface ProductCardProps {
   onAddToCart: () => void;
   onUpdateQuantity: (delta: number) => void;
   onSelect?: () => void;
+  onOpenLightbox?: (product: Product, index?: number) => void;
 }
 
 export function ProductCard({
@@ -18,6 +19,7 @@ export function ProductCard({
   onAddToCart,
   onUpdateQuantity,
   onSelect,
+  onOpenLightbox,
 }: ProductCardProps) {
   const primaryImg = getProductPrimaryImage(product);
   const rawImages =
@@ -38,6 +40,19 @@ export function ProductCard({
     setActiveImgIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
+  const handleThumbnailClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenLightbox) {
+      onOpenLightbox(product, activeImgIdx);
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('huzada_open_lightbox', {
+          detail: { product, index: activeImgIdx },
+        })
+      );
+    }
+  };
+
   const currentImg = images[activeImgIdx] || primaryImg;
 
   return (
@@ -45,8 +60,12 @@ export function ProductCard({
       onClick={onSelect}
       className="group bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col hover:border-zinc-300 transition-all shadow-2xs hover:shadow-sm"
     >
-      {/* Product Image with Hover Zoom & Carousel */}
-      <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
+      {/* Product Image with Hover Zoom & Carousel - Click to open Lightbox */}
+      <div
+        onClick={handleThumbnailClick}
+        className="relative aspect-4/3 overflow-hidden bg-zinc-100 cursor-pointer"
+        title="Click to view full-screen photo gallery"
+      >
         <img
           src={currentImg}
           alt={product.name}
@@ -65,6 +84,14 @@ export function ProductCard({
         <span className="absolute bottom-3 right-3 bg-zinc-900/80 backdrop-blur-xs text-white text-[11px] font-mono px-2 py-0.5 rounded z-10">
           {product.category}
         </span>
+
+        {/* View gallery hover affordance */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-950/80 text-white text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1.5 shadow-xs">
+            <Maximize2 className="w-3 h-3" />
+            <span>View Gallery</span>
+          </span>
+        </div>
 
         {/* Multi-Image Controls & Indicators */}
         {images.length > 1 && (
@@ -142,7 +169,7 @@ export function ProductCard({
                 onClick={(e) => { e.stopPropagation(); onUpdateQuantity(1); }}
                 className="w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors cursor-pointer"
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (

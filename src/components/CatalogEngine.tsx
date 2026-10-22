@@ -27,11 +27,13 @@ import { CheckoutModal } from './CheckoutModal';
 interface CatalogEngineProps {
   products?: Product[];
   onOrderSuccess?: (orderId: string) => void;
+  onOpenLightbox?: (product: Product, index?: number) => void;
 }
 
 export function CatalogEngine({
   products: initialProducts,
   onOrderSuccess,
+  onOpenLightbox,
 }: CatalogEngineProps) {
   const [activeProducts, setActiveProducts] = useState<Product[]>(
     () => initialProducts || getStoredProducts()
@@ -233,6 +235,7 @@ export function CatalogEngine({
                 onAddToCart={() => addToCart(product)}
                 onUpdateQuantity={(delta) => updateQuantity(product.id, delta)}
                 onSelect={() => setSelectedProduct(product)}
+                onOpenLightbox={onOpenLightbox}
               />
             );
           })}
