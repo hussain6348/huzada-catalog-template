@@ -1,0 +1,19 @@
+# Dependencies & Builds
+node_modules/
+dist/
+dist-ssr/
+
+# Cloudflare & Env
+.wrangler/
+.dev.vars
+.env
+.env.*
+.env.local
+
+# Compiled TypeScript Junk
+functions/*.js
+functions/api/*.js
+functions/api/**/*.js
+src/**/*.js
+src/**/*.jsx
+tsconfig.tsbuildinfo

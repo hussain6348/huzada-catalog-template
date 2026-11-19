@@ -1,0 +1,12 @@
+name = "huzada-booking-template"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "dist"
+compatibility_flags = ["nodejs_compat"]
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "huzada-uploads"
+
+[[r2_buckets]]
+binding = "R2_STORAGE"
+bucket_name = "huzada-uploads"

@@ -1,0 +1,1441 @@
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Calendar,
+  MapPin,
+  Phone,
+  Clock,
+  ArrowUpRight,
+  ShoppingBag,
+  Menu,
+  X,
+} from 'lucide-react';
+import { EditableImage } from './EditableImage';
+
+// ─── Fallback image used when a service has no image ─────────────────────────
+const SERVICE_IMAGE_FALLBACK =
+  'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80';
+
+export interface ServiceItem {
+  id?: string | number;
+  name?: string;
+  description?: string;
+  price?: number | string;
+  category?: string;
+  image?: string;
+  images?: string[];
+  image_path?: string;
+  duration?: string | number;
+  duration_minutes?: number;
+  badge?: string;
+  featured?: boolean;
+}
+
+export interface BusinessInfo {
+  name?: string;
+  tagline?: string;
+  promoText?: string;
+  whatsapp?: string;
+  phone?: string;
+  currency?: string;
+  currencySymbol?: string;
+  address?: string;
+  hours?: string;
+  rating?: string;
+  reviewCount?: string;
+  mapsUrl?: string;
+  imageSlots?: Record<string, string>;
+  heroHeadline?: string;
+  heroSubheadline?: string;
+  aboutDescription?: string;
+  ctaHeadline?: string;
+  heroImage?: string;
+  heroImage2?: string;
+  heroImage3?: string;
+  logo?: string;
+}
+
+interface AIThemeProps {
+  services?: ServiceItem[];
+  businessInfo?: Partial<BusinessInfo>;
+}
+
+function resolveServiceImage(service: ServiceItem): string {
+  const raw =
+    (Array.isArray(service.images) && service.images[0]) ||
+    service.image ||
+    service.image_path ||
+    '';
+  if (!raw || raw.includes('test-shirt') || raw.includes('default-client')) {
+    return SERVICE_IMAGE_FALLBACK;
+  }
+  return raw;
+}
+
+function formatPrice(price: number | string | undefined, symbol: string): string {
+  if (price === undefined || price === null || price === '') return '';
+  const num = typeof price === 'number' ? price : parseFloat(String(price));
+  if (isNaN(num)) return `${symbol}${price}`;
+  return `${symbol}${num.toLocaleString()}`;
+}
+
+// ─── Memory-Safe Animated Social Proof Counter ─────────────────────────────────
+interface AnimatedCounterProps {
+  end: number | string;
+  decimals?: number;
+  duration?: number;
+}
+
+const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
+  end,
+  decimals = 0,
+  duration = 1200,
+}) => {
+  const numericEnd = useMemo(() => {
+    if (typeof end === 'number') return end;
+    const parsed = parseFloat(String(end).replace(/[^0-9.]/g, ''));
+    return isNaN(parsed) ? 0 : parsed;
+  }, [end]);
+
+  const [displayValue, setDisplayValue] = useState<number>(0);
+
+  useEffect(() => {
+    let startTime: number | null = null;
+    let frameId: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(easeOut * numericEnd);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(numericEnd);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [numericEnd, duration]);
+
+  return <>{displayValue.toFixed(decimals)}</>;
+};
+
+// ─── Apple-Style Blur-Fade Scroll Reveal Wrapper ──────────────────────────────
+const FadeInSection = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
+  const [isVisible, setVisible] = useState(false);
+  const domRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const currentRef = domRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setVisible(true);
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    if (currentRef) observer.observe(currentRef);
+    return () => {
+      if (currentRef) observer.unobserve(currentRef);
+    };
+  }, []);
+
+  return (
+    <div ref={domRef} className={`reveal-blur ${isVisible ? 'reveal-visible' : ''} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+// ─── Cache-Safe Frosted Glass Skeleton Loader ────────────────────────────────
+const GlassImage = ({
+  src,
+  alt,
+  className,
+  onClick,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  onClick?: () => void;
+}) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (imgRef.current?.complete) {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  return (
+    <div className={`relative overflow-hidden ${className || ''}`} onClick={onClick}>
+      {!isLoaded && (
+        <div
+          className="absolute inset-0 backdrop-blur-md animate-pulse z-0"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)' }}
+        />
+      )}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        onLoad={() => setIsLoaded(true)}
+        className={`w-full h-full object-cover transition-opacity duration-700 ease-out z-10 relative ${
+          isLoaded ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+    </div>
+  );
+};
+
+export default function AITheme({ services = [], businessInfo = {} }: AIThemeProps) {
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    PKR: 'Rs.',
+    AED: 'AED ',
+    CAD: '$',
+    AUD: '$',
+  };
+
+  const currencyCode = businessInfo.currency || 'USD';
+  const currencySymbol =
+    businessInfo.currencySymbol ||
+    CURRENCY_SYMBOLS[currencyCode] ||
+    (currencyCode === 'PKR' ? 'Rs.' : '$');
+
+  const biz = {
+    name: businessInfo.name || 'Huzada Booking',
+    tagline: businessInfo.tagline || 'Professional Appointments Tailored to You',
+    whatsapp: businessInfo.whatsapp || '',
+    phone: businessInfo.phone || '+1 (409) 256-3597',
+    currency: currencyCode,
+    currencySymbol: currencySymbol,
+    address: businessInfo.address || '811 6th St N #200, Texas City, TX 77590',
+    hours: businessInfo.hours || 'Mon–Sat, 9:00 AM – 6:00 PM',
+    rating: businessInfo.rating || '4.9',
+    reviewCount: businessInfo.reviewCount || '48+',
+    mapsUrl: businessInfo.mapsUrl || 'https://maps.google.com/',
+    imageSlots: businessInfo.imageSlots || {},
+  };
+
+  const promoText =
+    businessInfo?.promoText !== undefined && businessInfo?.promoText !== ''
+      ? businessInfo.promoText
+      : '⚡ FAST & RELIABLE APPOINTMENTS • BOOK YOUR SESSION TODAY ⚡';
+
+  const safeServices = Array.isArray(services) ? services : [];
+
+  const categories = useMemo(() => {
+    const unique = Array.from(new Set(safeServices.map((s) => s.category).filter(Boolean)));
+    return unique.length > 0 ? (unique as string[]) : [];
+  }, [safeServices]);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isMobileMenuOpen = isMenuOpen;
+  const setIsMobileMenuOpen = setIsMenuOpen;
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
+
+  const [isThemeReady, setIsThemeReady] = useState(false);
+  const [themeLogo, setThemeLogo] = useState<string | null>(null);
+  const lastThemeFetchTime = useRef<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const timer = setTimeout(() => {
+      if (isMounted) setIsThemeReady(true);
+    }, 1500);
+
+    const fetchHydratedData = async () => {
+      // 1. Throttle: Prevent DB spam from notification shade fidgeting
+      const now = Date.now();
+      if (now - lastThemeFetchTime.current < 30000) return; 
+      lastThemeFetchTime.current = now;
+
+      try {
+        // 2. Native fetch with NO CORS preflight penalties
+        const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
+        const raw = await res.json();
+        
+        // 3. Memory Leak Protection: Abort if unmounted
+        if (!isMounted) return;
+        
+        // 4. Update existing state safely
+        const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
+        if (themeData) {
+          if (themeData.logo) setThemeLogo(themeData.logo);
+          if (typeof document !== 'undefined') {
+            if (themeData.primaryColor) document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
+            if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
+            if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+          }
+        }
+      } catch (err) {
+        console.error("Hydration failed", err);
+      } finally {
+        if (isMounted) setIsThemeReady(true);
+      }
+    };
+
+    // Initial fetch on mount
+    fetchHydratedData();
+
+    // BFCache Defeat: Listen for foreground return
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchHydratedData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Strict Cleanup: Prevent memory leaks
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
+  const activeLogo = themeLogo || businessInfo?.logo || businessInfo?.imageSlots?.logo;
+
+  const defaultHero =
+    biz.imageSlots?.hero ||
+    'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80';
+
+  const slideImages = [
+    businessInfo?.heroImage?.trim() ? businessInfo.heroImage : defaultHero,
+    businessInfo?.heroImage2?.trim()
+      ? businessInfo.heroImage2
+      : 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800',
+    businessInfo?.heroImage3?.trim()
+      ? businessInfo.heroImage3
+      : 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800',
+  ];
+
+  const [hasIntersected, setHasIntersected] = useState(false);
+  const [isIntroAnimating, setIsIntroAnimating] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setHasIntersected(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasIntersected) return;
+
+    const timer = setTimeout(() => {
+      setIsIntroAnimating(false);
+    }, 1500);
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slideImages.length);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [hasIntersected, slideImages.length]);
+
+  const filteredServices =
+    selectedCategory === 'all'
+      ? safeServices
+      : safeServices.filter((s) => s.category === selectedCategory);
+
+  const markImageFailed = (key: string) =>
+    setFailedImages((prev) => ({ ...prev, [key]: true }));
+
+  // ─── Event Bridge: Double-Dispatch on window and document ─────────────────
+  const dispatchBooking = (serviceName: string) => {
+    const payload = {
+      service: serviceName,
+      serviceName,
+      name: serviceName,
+      whatsapp: biz.whatsapp,
+      businessName: biz.name,
+    };
+    window.dispatchEvent(new CustomEvent('open-master-booking', { detail: payload }));
+    document.dispatchEvent(new CustomEvent('open-master-booking', { detail: payload }));
+  };
+
+  const dispatchDetails = (service: ServiceItem) => {
+    const payload = { service, businessName: biz.name };
+    window.dispatchEvent(new CustomEvent('open-master-details', { detail: payload }));
+    document.dispatchEvent(new CustomEvent('open-master-details', { detail: payload }));
+  };
+
+  const dispatchImageOpen = (src: string, alt: string) => {
+    const payload = { src, alt, images: [src], name: alt };
+    window.dispatchEvent(new CustomEvent('open-master-image', { detail: payload }));
+    document.dispatchEvent(new CustomEvent('open-master-image', { detail: payload }));
+  };
+
+  // ─── Apple TV 3D Kinetic Tilt Physics ───────────────────────────────────────
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -8;
+    const rotateY = ((x - centerX) / centerX) * 8;
+    
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      e.currentTarget.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+    }
+  };
+
+  const handleCardMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
+    e.currentTarget.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+  };
+
+  const handleCardTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!e.touches || e.touches.length === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+  };
+
+  const handleCardTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.currentTarget.style.setProperty('--mouse-x', `-1000px`);
+    e.currentTarget.style.setProperty('--mouse-y', `-1000px`);
+  };
+
+  return (
+    <>
+      <div className={`min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative overflow-x-clip transition-opacity duration-700 ease-in-out ${isThemeReady ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+      {/* ── Zero-Dependency CSS Layer ───────────────────────────────────────── */}
+      <style>{`
+        :root {
+          --theme-primary: #0f172a;
+          --theme-primary-hover: #1e293b;
+          --theme-accent: var(--theme-primary);
+          --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 12%, transparent);
+          --theme-surface: color-mix(in srgb, var(--theme-text) 4%, var(--theme-bg));
+          --theme-surface-subtle: color-mix(in srgb, var(--theme-text) 8%, var(--theme-bg));
+          --theme-surface-translucent: color-mix(in srgb, var(--theme-bg) 94%, transparent);
+          --theme-bg: #f8fafc;
+          --theme-text: #0f172a;
+          --theme-text-muted: color-mix(in srgb, var(--theme-text) 70%, transparent);
+          --theme-text-subtle: color-mix(in srgb, var(--theme-text) 50%, transparent);
+          --theme-on-primary: var(--theme-bg);
+          --theme-on-primary-muted: color-mix(in srgb, var(--theme-bg) 75%, transparent);
+          --theme-on-primary-border: color-mix(in srgb, var(--theme-bg) 20%, transparent);
+          --theme-border: color-mix(in srgb, var(--theme-text) 15%, transparent);
+          --theme-border-strong: color-mix(in srgb, var(--theme-text) 25%, transparent);
+          --theme-radius: 0.75rem;
+          --theme-radius-inner: 0.5rem;
+          --font-display: 'Cormorant Garamond', Georgia, serif;
+          --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        html { scroll-padding-top: 80px; scroll-behavior: smooth; }
+
+        body {
+          font-family: var(--font-body);
+        }
+
+        .font-editorial { font-family: var(--font-display); }
+        .headline-balance { text-wrap: balance; }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -400px 0; }
+          100% { background-position: 400px 0; }
+        }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-shimmer {
+          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+          background-size: 400px 100%;
+          animation: shimmer 2.5s infinite linear;
+        }
+        .animate-marquee {
+          display: flex;
+          width: max-content;
+          animation: marquee 28s linear infinite;
+        }
+        .animate-marquee:hover { animation-play-state: paused; }
+
+        .glass-glow {
+          backdrop-filter: blur(12px);
+          background: rgba(255, 255, 255, 0.72);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          box-shadow: 0 4px 32px color-mix(in srgb, var(--theme-primary) 8%, transparent);
+        }
+
+        @keyframes wavy-float {
+          0% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
+          50% { transform: translateY(-12px) rotate(2.5deg) scale(1.02); filter: drop-shadow(0 25px 35px rgba(0,0,0,0.25)); }
+          100% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
+        }
+        .animate-wavy-float {
+          animation: wavy-float 6s ease-in-out infinite;
+          will-change: transform, filter;
+          transform-origin: center;
+        }
+
+        /* 1. Text Shimmer */
+        @keyframes text-shimmer {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+        .animate-text-shimmer {
+          background: linear-gradient(to right, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 50%, var(--theme-text)) 50%, var(--theme-primary) 100%);
+          background-size: 200% auto;
+          color: transparent !important;
+          -webkit-background-clip: text !important;
+          background-clip: text !important;
+          animation: text-shimmer 4s linear infinite;
+          display: inline-block;
+        }
+
+        /* 2. Aurora Glow */
+        @keyframes aurora-pulse {
+          0%, 100% { opacity: 0.15; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.1); }
+        }
+        .aurora-blob {
+          position: absolute;
+          filter: blur(100px);
+          border-radius: 50%;
+          animation: aurora-pulse 8s ease-in-out infinite;
+          will-change: transform, opacity;
+        }
+
+        /* 3. Radar Pulse */
+        @keyframes radar-ping {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        .btn-radar {
+          position: relative;
+          isolation: isolate;
+        }
+        .btn-radar::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border: 2px solid var(--theme-primary);
+          border-radius: inherit;
+          animation: radar-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+          z-index: -1;
+          pointer-events: none;
+        }
+
+        /* 1. Apple Blur-Fade Reveal */
+        .reveal-blur {
+          opacity: 0;
+          filter: blur(12px);
+          transform: translateY(30px);
+          transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
+                      filter 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
+                      transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+          will-change: opacity, filter, transform;
+        }
+        .reveal-visible {
+          opacity: 1;
+          filter: blur(0);
+          transform: translateY(0);
+        }
+
+        /* 2. Linear Spotlight Card */
+        .spotlight-card {
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+        }
+        .spotlight-card::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            600px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+            color-mix(in srgb, var(--theme-primary) 15%, transparent),
+            transparent 40%
+          );
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          z-index: -1;
+          pointer-events: none;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .spotlight-card:hover::before {
+            opacity: 1;
+          }
+        }
+      `}</style>
+
+      {/* ── True Glassmorphic Sticky Header & Marquee Wrapper ──────────────── */}
+      <div
+        className="sticky top-0 z-40 w-full backdrop-blur-md border-b transition-all"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--theme-bg) 75%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)'
+        }}
+      >
+        {/* ── Top-Level Marquee Announcement Bar ───────────────────────────────── */}
+        <div
+          className="w-full overflow-hidden py-2 border-b select-none relative"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--theme-text) 6%, transparent)',
+            color: 'var(--theme-text)',
+            borderColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)'
+          }}
+        >
+          <div className="animate-marquee whitespace-nowrap">
+            <div className="flex items-center shrink-0">
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+            </div>
+            <div className="flex items-center shrink-0" aria-hidden="true">
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+                {promoText}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Navigation Bar ──────────────────────────────────────────────────── */}
+        <header className="min-h-16 py-2.5 relative flex items-center">
+          <div className="w-full max-w-7xl mx-auto px-4 min-h-16 flex items-center justify-between gap-2 sm:gap-3">
+            {/* Left: Logo + Business Name (flex-1 with min-w-0 flex container) */}
+            <div className="min-w-0 flex-1 flex items-center gap-2 sm:gap-3">
+              {activeLogo && (
+                <img 
+                  src={activeLogo} 
+                  alt="Logo" 
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-[var(--theme-radius)] object-cover shrink-0 aspect-square"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="block whitespace-normal break-words [overflow-wrap:anywhere] leading-snug py-0.5 line-clamp-2 text-sm sm:text-base md:text-lg font-bold text-[var(--theme-text)]">
+                  {businessInfo?.name || 'Huzada Booking'}
+                </span>
+              </div>
+            </div>
+
+            {/* Center: Desktop Navigation (Hidden on mobile) */}
+            <nav className="hidden lg:flex items-center justify-center gap-8 flex-none">
+              <a href="#services" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Services</a>
+              <a href="#about" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">About</a>
+              <a href="#contact" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Contact</a>
+            </nav>
+
+            {/* Right: CTA Button & Mobile Hamburger Toggle */}
+            <div className="shrink-0 lg:flex-1 flex items-center justify-end gap-2 sm:gap-2.5">
+              <button
+                onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
+                className="shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-2.5 bg-[var(--theme-primary)] text-[var(--theme-bg)] text-xs sm:text-sm md:text-base font-semibold rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300 isolate outline-none focus:outline-none whitespace-nowrap cursor-pointer"
+                data-waas-book="Consultation"
+              >
+                <Calendar className="w-4 h-4 md:w-5 md:h-5 shrink-0"/>
+                <span className="hidden sm:inline">Book Now</span>
+                <span className="sm:hidden">Book</span>
+              </button>
+
+              {/* Mobile Hamburger Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="shrink-0 lg:hidden relative z-50 p-2 rounded-lg text-[var(--theme-text)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus:outline-none cursor-pointer"
+                aria-label="Toggle navigation menu"
+                aria-expanded={isMenuOpen}
+              >
+                {isMenuOpen ? (
+                  <X className="w-6 h-6 shrink-0" />
+                ) : (
+                  <Menu className="w-6 h-6 shrink-0" />
+                )}
+              </button>
+            </div>
+          </div>
+        </header>
+      </div>
+
+      {/* Mobile Dropdown Drawer (Escaped from sticky & backdrop-blur wrapper) */}
+      {isMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 h-[100dvh] w-full backdrop-blur-2xl p-6 flex flex-col justify-between overflow-y-auto animate-in fade-in duration-200"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--theme-bg) 98%, transparent)' }}
+        >
+          <div
+            className="flex items-center justify-between pb-4 border-b gap-3"
+            style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+          >
+            <div className="min-w-0 flex-1 flex items-center gap-2 sm:gap-3">
+              {activeLogo && (
+                <img 
+                  src={activeLogo} 
+                  alt="Logo" 
+                  className="w-8 h-8 rounded-[var(--theme-radius)] object-cover shrink-0 aspect-square"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="block whitespace-normal break-words [overflow-wrap:anywhere] leading-snug py-0.5 line-clamp-2 text-sm sm:text-base font-bold text-[var(--theme-text)]">
+                  {businessInfo?.name || 'Huzada Booking'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen(false)}
+              className="shrink-0 p-2 rounded-lg text-[var(--theme-text)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus:outline-none cursor-pointer"
+              aria-label="Close navigation menu"
+            >
+              <X className="w-6 h-6 shrink-0" />
+            </button>
+          </div>
+
+          <div className="flex-1 py-6 flex flex-col justify-center space-y-6">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-muted)]">
+              Navigation
+            </div>
+            <nav className="flex flex-col space-y-4">
+              {[
+                { href: '#services', label: 'Services' },
+                { href: '#about', label: 'About Us' },
+                { href: '#contact', label: 'Contact' },
+              ].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
+                  style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+                >
+                  <span>{item.label}</span>
+                  <ArrowUpRight className="w-5 h-5 opacity-60" />
+                </a>
+              ))}
+            </nav>
+
+            <div className="pt-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  dispatchBooking(safeServices[0]?.name || 'General Consultation');
+                }}
+                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-[var(--theme-primary)] text-[var(--theme-bg)] font-semibold text-base shadow-lg hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+              >
+                <Calendar className="w-5 h-5" />
+                <span>Book Appointment</span>
+              </button>
+
+              {biz.phone && (
+                <a
+                  href={`tel:${biz.phone.replace(/\s+/g, '')}`}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl border border-[var(--theme-border-strong)] text-[var(--theme-text)] font-semibold text-sm hover:border-[var(--theme-text)] transition-all cursor-pointer"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Call {biz.phone}</span>
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div
+            className="pt-4 pb-2 text-xs text-[var(--theme-text-subtle)] text-center border-t"
+            style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+          >
+            <p>{biz.address}</p>
+            <p className="mt-1">{biz.hours}</p>
+          </div>
+        </div>
+      )}
+
+      <main id="top" className="flex-grow flex flex-col">
+        {/* ── Hero Section ──────────────────────────────────────────────────── */}
+        <section className="relative overflow-hidden w-full">
+          {/* HARDWARE-ACCELERATED NEON PATTERN */}
+          <div 
+            className="absolute inset-0 pointer-events-none z-0"
+            style={{
+              backgroundImage: `radial-gradient(color-mix(in srgb, var(--theme-primary) 70%, transparent) 2px, transparent 2px)`,
+              backgroundSize: '32px 32px',
+              filter: 'drop-shadow(0 0 4px var(--theme-primary))',
+              transform: 'translateZ(0)', // Forces 60fps GPU acceleration
+              opacity: 0.5,
+              WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)'
+            }}
+          />
+
+          {/* Aurora Glow Wrapper (Isolated from image shadow) */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] -top-32 -left-32"></div>
+            <div className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] top-32 -right-32" style={{ animationDelay: '2s', opacity: 0.2 }}></div>
+          </div>
+
+          <div className="relative z-10 mx-auto max-w-7xl px-6 pt-10 sm:pt-12 lg:pt-16 pb-14 lg:px-8 lg:pb-20">
+            <div className="grid grid-cols-1 items-stretch gap-10 lg:grid-cols-12 lg:gap-12">
+            <div className="flex flex-col justify-between lg:col-span-6 py-2">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[var(--theme-text-muted)]">
+                  <span>{biz.address.split(',').slice(-2).join(',').trim()}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="tabular-nums text-[var(--theme-text)] font-semibold">
+                    <AnimatedCounter end={biz.rating} decimals={1} /> ★ Rated
+                  </span>
+                </div>
+
+                <h1 className="font-editorial headline-balance mt-5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-semibold leading-[1.08] tracking-tight animate-text-shimmer whitespace-normal break-words [overflow-wrap:anywhere]">
+                  {businessInfo?.heroHeadline || biz.tagline}
+                </h1>
+
+                <p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--theme-text-muted)] whitespace-normal break-words [overflow-wrap:anywhere]">
+                  {businessInfo?.heroSubheadline || (safeServices.length > 0
+                    ? `Explore our signature collection of ${safeServices.length} tailored offerings. Select your service, choose your preferred time, and book your appointment online.`
+                    : `${biz.name} delivers world-class care and personalized attention. Choose your service and reserve your visit online.`)}
+                </p>
+              </div>
+
+              <div className="mt-9 pt-6 border-t border-[var(--theme-border)]">
+                <div className="flex flex-wrap items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
+                    className="btn-radar inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                  >
+                    <span>Book Your Visit</span>
+                    <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                  </button>
+
+                  <a
+                    href="#services"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-6 py-3 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                  >
+                    View Services
+                  </a>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--theme-text-subtle)] tabular-nums">
+                  <span>{biz.address}</span>
+                  <span aria-hidden="true">·</span>
+                  <a
+                    href={`tel:${biz.phone.replace(/\s+/g, '')}`}
+                    className="font-medium text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors"
+                  >
+                    {biz.phone}
+                  </a>
+                  <span aria-hidden="true">·</span>
+                  <span>{biz.hours}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6 flex items-center justify-center">
+              <div
+                ref={heroRef}
+                onMouseMove={handleCardMouseMove}
+                onMouseLeave={handleCardMouseLeave}
+                onTouchStart={handleCardTouchMove}
+                onTouchMove={handleCardTouchMove}
+                onTouchEnd={handleCardTouchEnd}
+                onTouchCancel={handleCardTouchEnd}
+                onClick={() =>
+                  dispatchImageOpen(
+                    slideImages[currentSlide],
+                    `${biz.name} Studio`
+                  )
+                }
+                className="relative w-full max-w-md mx-auto aspect-[4/5] animate-float select-none cursor-pointer rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface-subtle)] shadow-2xl transition-transform duration-200 ease-out"
+              >
+                {slideImages.map((src, index) => {
+                  let dynamicClasses = '';
+
+                  if (index === 0) {
+                    if (isIntroAnimating) {
+                      dynamicClasses = 'opacity-100 z-30 translate-x-0 rotate-0';
+                    } else {
+                      const isCurrent = currentSlide === 0;
+                      dynamicClasses = `translate-x-0 rotate-0 ${isCurrent ? 'opacity-100 z-30' : 'opacity-0 z-10'}`;
+                    }
+                  } else if (index === 1) {
+                    if (!hasIntersected) {
+                      dynamicClasses = 'translate-x-0 rotate-0 opacity-0 z-10';
+                    } else if (isIntroAnimating) {
+                      dynamicClasses = '-translate-x-12 rotate-[-8deg] opacity-60 z-20';
+                    } else {
+                      const isCurrent = currentSlide === 1;
+                      dynamicClasses = `translate-x-0 rotate-0 ${isCurrent ? 'opacity-100 z-30' : 'opacity-0 z-10'}`;
+                    }
+                  } else if (index === 2) {
+                    if (!hasIntersected) {
+                      dynamicClasses = 'translate-x-0 rotate-0 opacity-0 z-10';
+                    } else if (isIntroAnimating) {
+                      dynamicClasses = 'translate-x-12 rotate-[8deg] opacity-60 z-20';
+                    } else {
+                      const isCurrent = currentSlide === 2;
+                      dynamicClasses = `translate-x-0 rotate-0 ${isCurrent ? 'opacity-100 z-30' : 'opacity-0 z-10'}`;
+                    }
+                  }
+
+                  return (
+                    <img
+                      key={index}
+                      src={src}
+                      alt={`${biz.name} visual ${index + 1}`}
+                      draggable={false}
+                      className={`absolute inset-0 object-cover w-full h-full rounded-[var(--theme-radius)] transition-all duration-1000 ease-out shadow-2xl pointer-events-none select-none ${dynamicClasses}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Trust Strip */}
+          <FadeInSection>
+            <div className="mt-12 grid grid-cols-1 divide-y divide-[var(--theme-border)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4">
+              {[
+                {
+                  value: (
+                    <>
+                      <AnimatedCounter end={biz.rating} decimals={1} /> / 5.0
+                    </>
+                  ),
+                  label: 'Client Rating',
+                  detail: (
+                    <>
+                      <AnimatedCounter end={biz.reviewCount} decimals={0} />+ Verified Reviews
+                    </>
+                  ),
+                },
+                {
+                  value: (
+                    <>
+                      <AnimatedCounter end={safeServices.length} decimals={0} />+
+                    </>
+                  ),
+                  label: 'Services Offered',
+                  detail: categories.length > 0 ? categories.slice(0, 3).join(' · ') : 'Curated Services',
+                },
+                {
+                  value: biz.currency,
+                  label: 'Transparent Pricing',
+                  detail: 'Direct booking & confirmation',
+                },
+                {
+                  value: biz.hours.split(',')[0] || 'Mon–Sat',
+                  label: 'Operating Hours',
+                  detail: biz.hours,
+                },
+              ].map((metric, mIdx) => (
+                <div key={mIdx} className="p-6">
+                  <p className="font-editorial text-2xl font-semibold tracking-tight text-[var(--theme-text)] tabular-nums">
+                    {metric.value}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--theme-text)]">{metric.label}</p>
+                  <p className="mt-0.5 text-xs text-[var(--theme-text-muted)] tabular-nums">{metric.detail}</p>
+                </div>
+              ))}
+            </div>
+          </FadeInSection>
+          </div>
+        </section>
+
+        {/* ── Services Section ──────────────────────────────────────────────── */}
+        <section
+          id="services"
+          className="scroll-mt-28 sm:scroll-mt-32 border-t border-[var(--theme-border)] py-16 lg:py-24"
+        >
+          <FadeInSection>
+            <div className="mx-auto max-w-7xl px-6 lg:px-8">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-xs font-medium text-[var(--theme-text-muted)]">
+                    Curated Service Menu · Transparent Rates in {biz.currency}
+                  </p>
+                  <h2 className="font-editorial headline-balance mt-2 text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl">
+                    Available Services &amp; Sessions
+                  </h2>
+                  <p className="mt-3 text-base leading-relaxed text-[var(--theme-text-muted)]">
+                    Select a service below to book your appointment or inspect full details.
+                  </p>
+                </div>
+
+                {categories.length > 0 && safeServices.length > 0 && (
+                  <div
+                    role="tablist"
+                    aria-label="Filter services by category"
+                    className="flex flex-wrap items-center gap-1.5 rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] p-1.5"
+                  >
+                    <button
+                      key="all"
+                      type="button"
+                      role="tab"
+                      aria-selected={selectedCategory === 'all'}
+                      onClick={() => setSelectedCategory('all')}
+                      className={`min-h-[36px] rounded-[var(--theme-radius-inner)] px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] ${
+                        selectedCategory === 'all'
+                          ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)]'
+                          : 'text-[var(--theme-text-muted)] hover:text-[var(--theme-text)]'
+                      }`}
+                    >
+                      All Services
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedCategory === cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`min-h-[36px] rounded-[var(--theme-radius-inner)] px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] ${
+                          selectedCategory === cat
+                            ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)]'
+                            : 'text-[var(--theme-text-muted)] hover:text-[var(--theme-text)]'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {filteredServices.length === 0 ? (
+                <div className="mt-10 flex flex-col items-center justify-center rounded-[var(--theme-radius)] border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] py-20 text-center">
+                  <ShoppingBag className="h-10 w-10 text-[var(--theme-primary)] opacity-40" stroke="currentColor" aria-hidden="true" />
+                  <p className="mt-4 text-base font-semibold text-[var(--theme-text)]">Services coming soon.</p>
+                  <p className="mt-1 text-sm text-[var(--theme-text-muted)]">
+                    Services coming soon.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-6">
+                  {filteredServices.slice(0, 8).map((service, idx) => {
+                    const imgSrc = resolveServiceImage(service);
+                    const imgKey = `service-${service.id || idx}`;
+                    const priceStr = formatPrice(service.price, biz.currencySymbol);
+                    const rawDuration = service.duration ?? service.duration_minutes;
+                    const durationStr = rawDuration
+                      ? (/^\d+$/.test(String(rawDuration).trim()) ? `${rawDuration} mins` : String(rawDuration))
+                      : null;
+
+                    return (
+                      <article
+                        key={service.id || idx}
+                        onMouseMove={handleCardMouseMove}
+                        onMouseLeave={handleCardMouseLeave}
+                        onTouchStart={handleCardTouchMove}
+                        onTouchMove={handleCardTouchMove}
+                        onTouchEnd={handleCardTouchEnd}
+                        onTouchCancel={handleCardTouchEnd}
+                        className="group flex flex-col h-full overflow-hidden isolation-isolate rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-lg hover:shadow-xl hover:border-[var(--theme-primary)] spotlight-card transition-transform duration-200 ease-out hover:z-10 relative active:scale-[0.98]"
+                      >
+                        <div className="relative aspect-[4/5] w-full overflow-hidden bg-[var(--theme-surface-subtle)] border-b border-[var(--theme-border)]">
+                          {imgSrc && !failedImages[imgKey] ? (
+                            <GlassImage
+                              src={imgSrc}
+                              alt={service.name || 'Service photo'}
+                              onClick={() => dispatchImageOpen(imgSrc, service.name || 'Service photo')}
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                            />
+                          ) : (
+                            <div
+                              className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-3 text-center"
+                              style={{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' }}
+                            >
+                              <ShoppingBag className="h-6 w-6 md:h-8 md:w-8 text-[var(--theme-primary)]" stroke="currentColor" aria-hidden="true" />
+                              <span className="mt-1.5 text-xs font-medium text-[var(--theme-text)] line-clamp-1">
+                                {service.name}
+                              </span>
+                            </div>
+                          )}
+                          {service.badge && (
+                            <div className="absolute top-2 right-2 z-10 bg-[var(--theme-surface-translucent)] backdrop-blur-md border border-[var(--theme-border)] px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold text-[var(--theme-primary)] shadow-xs">
+                              {service.badge}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="relative z-10 flex flex-col flex-grow justify-between p-3 md:p-4">
+                          <div>
+                            <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-[var(--theme-text-subtle)] tabular-nums">
+                              <span className="font-semibold text-[var(--theme-primary)]">
+                                {String(idx + 1).padStart(2, '0')}.
+                              </span>
+                              <span className="truncate">{service.category || 'Service'}</span>
+                              {durationStr && (
+                                <>
+                                  <span aria-hidden="true">·</span>
+                                  <span className="shrink-0 min-w-0 break-words">{durationStr}</span>
+                                </>
+                              )}
+                            </div>
+
+                            <div className="mt-1.5 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-2">
+                              <h3 className="font-editorial font-semibold text-[var(--theme-text)] line-clamp-2 break-words text-sm md:text-base">
+                                {service.name}
+                              </h3>
+                              {priceStr && (
+                                <span className="text-sm md:text-base font-semibold text-[var(--theme-text)] tabular-nums shrink-0">
+                                  {priceStr}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="mt-2 text-xs md:text-sm leading-relaxed text-[var(--theme-text-muted)] hidden md:block md:line-clamp-2">
+                              {service.description}
+                            </p>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-[var(--theme-border)] flex flex-col gap-1.5 w-full mt-auto">
+                            <button
+                              type="button"
+                              onClick={() => dispatchBooking(service.name || '')}
+                              className="w-full mt-auto inline-flex min-h-[36px] md:min-h-[40px] items-center justify-center gap-1.5 md:gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-3 py-2 text-xs font-semibold text-[var(--theme-on-primary)] whitespace-nowrap transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                            >
+                              <span>Book Service</span>
+                              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => dispatchDetails(service)}
+                              className="text-[11px] md:text-xs text-center font-medium text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] transition-colors cursor-pointer underline underline-offset-4 decoration-[var(--theme-border-strong)]"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                  <div className="w-full flex justify-center mt-8 pb-4">
+                    <Link
+                      to="/services"
+                      className="px-8 py-3 rounded-2xl border text-[var(--theme-text)] font-bold tracking-wide hover:brightness-110 active:scale-95 transition-all backdrop-blur-md cursor-pointer"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+                        borderColor: 'color-mix(in srgb, var(--theme-primary) 50%, transparent)'
+                      }}
+                    >
+                      VIEW ALL SERVICES
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </FadeInSection>
+        </section>
+
+        {/* ── Marquee Ticker ───────────────────────────────────────────────── */}
+        {safeServices.length > 0 && (
+          <div className="border-y border-[var(--theme-border)] bg-[var(--theme-surface)] py-3 overflow-hidden">
+            <div className="flex animate-marquee whitespace-nowrap" aria-hidden="true">
+              {[...safeServices, ...safeServices].map((s, i) => (
+                <span key={i} className="mx-6 text-xs font-medium text-[var(--theme-text-muted)]">
+                  {s.name}
+                  <span className="mx-3 text-[var(--theme-primary)] opacity-50">·</span>
+                  {formatPrice(s.price, biz.currencySymbol)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── About Section ─────────────────────────────────────────────────── */}
+        <section
+          id="about"
+          className="scroll-mt-28 sm:scroll-mt-32 border-t border-[var(--theme-border)] bg-[var(--theme-surface)] py-16 lg:py-24"
+        >
+          <FadeInSection>
+            <div className="mx-auto max-w-7xl px-6 lg:px-8">
+              <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
+                <div className="lg:col-span-5">
+                  <div className="overflow-hidden rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface-subtle)]">
+                    <EditableImage
+                      slot="about"
+                      src={biz.imageSlots?.about}
+                      alt={`${biz.name} studio`}
+                      className="aspect-[3/4] w-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                <div className="lg:col-span-7">
+                  <p className="text-xs font-medium text-[var(--theme-text-muted)]">About the Practice</p>
+                  <h2 className="font-editorial headline-balance mt-3 text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl whitespace-normal break-words [overflow-wrap:anywhere]">
+                    {biz.name}
+                  </h2>
+                  <p className="mt-5 text-base leading-relaxed text-[var(--theme-text-muted)]">
+                    {businessInfo?.aboutDescription || `${biz.tagline} We combine years of specialized craft with dedicated personal attention to deliver an unhurried, exceptional client experience.`}
+                  </p>
+                  <div className="mt-8 divide-y divide-[var(--theme-border)] border-y border-[var(--theme-border)]">
+                    {[
+                      (
+                        <>
+                          <AnimatedCounter end={biz.reviewCount} decimals={0} />+ verified client sessions
+                        </>
+                      ),
+                      `Transparent rates in ${biz.currency}`,
+                      `${safeServices.length > 0 ? safeServices.length + ' services' : 'Multiple services'} available for direct online reservation`,
+                    ].map((point, idx) => (
+                      <div key={idx} className="flex items-baseline gap-4 py-3.5 text-sm text-[var(--theme-text)]">
+                        <span className="text-xs font-semibold text-[var(--theme-primary)] tabular-nums shrink-0">
+                          0{idx + 1}.
+                        </span>
+                        <span className="font-medium">{point}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-8 flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
+                      className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-6 py-2.5 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                    >
+                      <Calendar className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                      <span>Book an Appointment</span>
+                    </button>
+
+                    <a
+                      href={`tel:${biz.phone.replace(/\s+/g, '')}`}
+                      className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] px-5 py-2.5 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                    >
+                      <Phone className="h-4 w-4 shrink-0 text-[var(--theme-primary)]" stroke="currentColor" aria-hidden="true" />
+                      <span className="tabular-nums">Call {biz.phone}</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeInSection>
+        </section>
+
+        {/* ── Contact / Direct Booking Banner ─────────────────────────────── */}
+        <section
+          id="contact"
+          className="scroll-mt-28 sm:scroll-mt-32 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] py-16 lg:py-20 tracking-[0.01em]"
+        >
+          <FadeInSection>
+            <div className="mx-auto max-w-7xl px-6 lg:px-8">
+              <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+                <div className="lg:col-span-7">
+                  <p className="text-xs font-medium text-[var(--theme-on-primary)] opacity-80">Reserve Your Visit</p>
+                  <h2 className="font-editorial headline-balance mt-2 text-3xl font-semibold text-[var(--theme-on-primary)] sm:text-4xl">
+                    {businessInfo?.ctaHeadline || 'Ready to Schedule Your Appointment?'}
+                  </h2>
+                  <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--theme-on-primary-muted)]">
+                    Book online in moments or reach out directly for tailored consultations, event bookings, and specialist inquiries.
+                  </p>
+
+                  <div className="mt-8 flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
+                      className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-on-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-primary)] whitespace-nowrap shrink-0 hover:brightness-110 active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-on-primary)]"
+                    >
+                      <Calendar className="h-4 w-4 shrink-0 text-[var(--theme-primary)]" stroke="currentColor" aria-hidden="true" />
+                      <span>Book Appointment Now</span>
+                    </button>
+
+                    <a
+                      href={biz.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-on-primary-border)] px-6 py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-on-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                    >
+                      <MapPin className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                      <span>Get Directions</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-5">
+                  <div className="divide-y divide-[var(--theme-on-primary-border)] rounded-[var(--theme-radius)] border border-[var(--theme-on-primary-border)] p-6 sm:p-8">
+                    <div className="pb-5">
+                      <div className="flex items-center gap-2.5 text-xs font-semibold text-[var(--theme-on-primary)]">
+                        <MapPin className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                        <span>Location</span>
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-[var(--theme-on-primary)]">
+                        {biz.address}
+                      </p>
+                    </div>
+
+                    <div className="py-5">
+                      <div className="flex items-center gap-2.5 text-xs font-semibold text-[var(--theme-on-primary)]">
+                        <Phone className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                        <span>Direct Contact</span>
+                      </div>
+                      <p className="mt-2 text-sm tabular-nums">
+                        <a
+                          href={`tel:${biz.phone.replace(/\s+/g, '')}`}
+                          className="font-medium text-[var(--theme-on-primary)] hover:underline transition-colors"
+                        >
+                          {biz.phone}
+                        </a>
+                      </p>
+                    </div>
+
+                    <div className="pt-5">
+                      <div className="flex items-center gap-2.5 text-xs font-semibold text-[var(--theme-on-primary)]">
+                        <Clock className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                        <span>Operating Hours</span>
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--theme-on-primary)] tabular-nums">
+                        {biz.hours}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeInSection>
+        </section>
+      </main>
+
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
+      <footer className="border-t border-[var(--theme-border)] bg-[var(--theme-surface)] py-10 pb-24 mt-auto print:hidden">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 sm:flex-row sm:items-center lg:px-8">
+          <div className="min-w-0 max-w-full">
+            <a href="#top" className="font-editorial text-lg sm:text-xl font-semibold text-[var(--theme-text)] whitespace-normal break-words [overflow-wrap:anywhere] block">
+              {biz.name}
+            </a>
+            <p className="mt-1 text-xs text-[var(--theme-text-muted)] tabular-nums whitespace-normal break-words [overflow-wrap:anywhere]">
+              {biz.address} · {biz.phone}
+            </p>
+          </div>
+
+          <nav aria-label="Footer Navigation" className="flex flex-wrap items-center gap-6 text-xs font-medium text-[var(--theme-text-muted)]">
+            {[
+              { label: 'Services', href: '#services' },
+              { label: 'About', href: '#about' },
+              { label: 'Contact', href: '#contact' },
+            ].map((link) => (
+              <a key={link.href} href={link.href} className="whitespace-nowrap transition-colors hover:text-[var(--theme-text)]">
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          <p className="text-xs text-[var(--theme-text-subtle)] tabular-nums whitespace-normal break-words [overflow-wrap:anywhere]">
+            &copy; {new Date().getFullYear()} {biz.name}. All rights reserved.
+          </p>
+        </div>
+
+        <div className="w-full shrink-0 relative z-10 flex justify-center pt-8 mt-6 border-t border-[var(--theme-border)]">
+          <a 
+            href="https://huzada.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            aria-label="Powered by Huzada Tech"
+            className="group relative isolation-isolate flex items-center gap-1.5 md:gap-2 text-[var(--theme-text)] opacity-30 hover:opacity-100 transition-opacity duration-500 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-text)] rounded-sm before:absolute before:inset-[-12px] before:content-['']"
+          >
+            {/* LHS: ASYNC JPEG WITH WEBKIT BLEND ISOLATION */}
+            <div className="shrink-0 transform-gpu group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
+              <img 
+                src="/huzadalogo.jpeg" 
+                alt="Huzada Tech Logo" 
+                width="20"
+                height="20"
+                loading="lazy"
+                decoding="async"
+                className="w-4 h-4 md:w-5 md:h-5 object-contain mix-blend-multiply dark:invert dark:mix-blend-screen" 
+              />
+            </div>
+            {/* RHS: AGENCY TEXT with leading-none for optical centering */}
+            <span className="text-[9px] md:text-[10px] font-bold tracking-[0.25em] leading-none whitespace-nowrap">
+              POWERED BY HUZADA TECH
+            </span>
+          </a>
+        </div>
+      </footer>
+    </div>
+
+    {/* NEW FLOATING CALL BUTTON - TAILWIND SPECIFICITY OVERRIDE */}
+    {businessInfo?.phone && (
+      <a
+        href={`tel:${(businessInfo?.phone || '').toString().replace(/[^0-9+]/g, '')}`}
+        className="!fixed !bottom-8 !right-6 md:!bottom-10 md:!right-8 !left-auto !m-0 !z-40 flex items-center justify-center w-14 h-14 bg-[var(--theme-primary)] text-[var(--theme-bg)] rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:brightness-110 active:scale-95 transition-all duration-300 btn-radar isolate touch-manipulation cursor-pointer"
+        aria-label="Call Us"
+      >
+        <Phone className="w-6 h-6 text-[var(--theme-bg)]" />
+      </a>
+    )}
+  </>
+  );
+}
