@@ -153,9 +153,11 @@ export function Catalog() {
           <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-[var(--theme-primary)] opacity-5 rounded-full blur-3xl pointer-events-none" />
         </div>
 
-        {/* Catalog Engine */}
+        {/* All Products Catalog Engine: Category Tab Sidebar + Paginated Right Pane */}
         <CatalogEngine
           currencySymbol={effectiveCurrency}
+          layoutMode="all-products"
+          pageSize={6}
           onOpenLightbox={(prod, idx) => {
             const fallbackImgs = (prod.image ? [prod.image] : [prod.image_path]).filter((img: any): img is string => typeof img === 'string' && Boolean(img));
             const imgs = Array.isArray(prod.images) && prod.images.length > 0

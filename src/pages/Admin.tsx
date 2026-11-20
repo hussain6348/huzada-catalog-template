@@ -19,6 +19,7 @@ import {
   XCircle,
   ShieldCheck,
   Activity,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
   ArrowLeft,
@@ -88,6 +89,10 @@ export function Admin({ onLogout }: AdminProps = {}) {
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [copiedOrderId, setCopiedOrderId] = useState(false);
+  const [ordersPage, setOrdersPage] = useState<number>(1);
+  const ordersPerPage = 8;
+  const [inventoryPage, setInventoryPage] = useState<number>(1);
+  const inventoryPerPage = 10;
 
   // ─── Order Alerts & Web Audio Chime State ──────────────────────────────
   type AlertState = 'loading' | 'subscribed' | 'ready' | 'ios_browser' | 'blocked' | 'unsupported';
@@ -1016,6 +1021,24 @@ export function Admin({ onLogout }: AdminProps = {}) {
     });
   }, [orders, orderStatusFilter, orderSearchQuery]);
 
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [orderStatusFilter, orderSearchQuery]);
+
+  const ordersTotalPages = Math.ceil(filteredOrders.length / ordersPerPage) || 1;
+  const safeOrdersPage = Math.min(Math.max(1, ordersPage), ordersTotalPages);
+  const paginatedOrders = useMemo(() => {
+    const start = (safeOrdersPage - 1) * ordersPerPage;
+    return filteredOrders.slice(start, start + ordersPerPage);
+  }, [filteredOrders, safeOrdersPage, ordersPerPage]);
+
+  const inventoryTotalPages = Math.ceil(inventory.length / inventoryPerPage) || 1;
+  const safeInventoryPage = Math.min(Math.max(1, inventoryPage), inventoryTotalPages);
+  const paginatedInventory = useMemo(() => {
+    const start = (safeInventoryPage - 1) * inventoryPerPage;
+    return inventory.slice(start, start + inventoryPerPage);
+  }, [inventory, safeInventoryPage, inventoryPerPage]);
+
   const selectedOrder = useMemo(() => {
     return (orders || []).find(o => o.id === selectedOrderId) || filteredOrders[0] || null;
   }, [orders, selectedOrderId, filteredOrders]);
@@ -1572,7 +1595,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Orders List */}
                 <div className="lg:col-span-7 space-y-3">
-                  {filteredOrders.map(order => {
+                  {paginatedOrders.map(order => {
                     const isSelected = selectedOrder?.id === order.id;
                     const itemCount = (order.items || []).reduce((s, i) => s + (i.quantity || 1), 0);
 
@@ -1642,6 +1665,34 @@ export function Admin({ onLogout }: AdminProps = {}) {
                       </div>
                     );
                   })}
+
+                  {ordersTotalPages > 1 && (
+                    <div className="bg-white rounded-xl border border-zinc-200 p-3 flex items-center justify-between text-xs text-zinc-600 shadow-2xs">
+                      <span className="font-mono text-[11px] text-zinc-500">
+                        Page {safeOrdersPage} of {ordersTotalPages} ({(safeOrdersPage - 1) * ordersPerPage + 1}–{Math.min(safeOrdersPage * ordersPerPage, filteredOrders.length)} of {filteredOrders.length})
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+                          disabled={safeOrdersPage <= 1}
+                          className="px-2.5 py-1 rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          <span>Prev</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrdersPage(p => Math.min(ordersTotalPages, p + 1))}
+                          disabled={safeOrdersPage >= ordersTotalPages}
+                          className="px-2.5 py-1 rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Next</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Selected Order Detail Pane */}
@@ -1830,7 +1881,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
               </div>
             ) : (
               <div className="divide-y divide-zinc-100">
-                {inventory.map((item) => {
+                {paginatedInventory.map((item) => {
                   const itemImg = getProductPrimaryImage(item);
                   return (
                     <div
@@ -1938,6 +1989,33 @@ export function Admin({ onLogout }: AdminProps = {}) {
                     </div>
                   );
                 })}
+                {inventoryTotalPages > 1 && (
+                  <div className="p-4 bg-zinc-50/50 border-t border-zinc-200 flex items-center justify-between text-xs text-zinc-600">
+                    <span className="font-mono text-[11px] text-zinc-500">
+                      Page {safeInventoryPage} of {inventoryTotalPages} ({(safeInventoryPage - 1) * inventoryPerPage + 1}–{Math.min(safeInventoryPage * inventoryPerPage, inventory.length)} of {inventory.length})
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setInventoryPage(p => Math.max(1, p - 1))}
+                        disabled={safeInventoryPage <= 1}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-zinc-200 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Prev</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInventoryPage(p => Math.min(inventoryTotalPages, p + 1))}
+                        disabled={safeInventoryPage >= inventoryTotalPages}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-zinc-200 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Next</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

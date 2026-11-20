@@ -32,7 +32,17 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       )
     `);
 
-    const result = await client.execute('SELECT * FROM services');
+    const url = new URL(context.request.url);
+    const rawPage = parseInt(url.searchParams.get("page") || "1", 10);
+    const rawLimit = parseInt(url.searchParams.get("limit") || url.searchParams.get("pageSize") || "50", 10);
+    const page = Math.max(1, isNaN(rawPage) ? 1 : rawPage);
+    const limit = Math.min(100, Math.max(1, isNaN(rawLimit) ? 50 : rawLimit));
+    const offset = (page - 1) * limit;
+
+    const result = await client.execute({
+      sql: 'SELECT * FROM services ORDER BY rowid DESC LIMIT ? OFFSET ?',
+      args: [limit, offset],
+    });
     const services = (result.rows || []).map((row: any) => ({
       id: String(row.id || ''), 
       name: String(row.name || ''), 

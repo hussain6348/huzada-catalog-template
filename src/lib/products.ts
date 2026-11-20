@@ -255,3 +255,50 @@ export function handleImageError(
     img.src = FALLBACK_PLACEHOLDER;
   }
 }
+
+/**
+ * Divides up to maxTotal (default 8) slots fairly across available categories using their latest items.
+ * Handles 0, 1, and N categories, uneven category sizes, and never exceeds maxTotal.
+ */
+export function selectCategoryDividedProducts(products: Product[], maxTotal = 8): Product[] {
+  if (!Array.isArray(products) || products.length === 0) return [];
+  if (products.length <= maxTotal) {
+    return products.slice(0, maxTotal);
+  }
+
+  const categoryMap = new Map<string, Product[]>();
+  for (const p of products) {
+    const cat = p.category?.trim() || 'General';
+    if (!categoryMap.has(cat)) {
+      categoryMap.set(cat, []);
+    }
+    categoryMap.get(cat)!.push(p);
+  }
+
+  const categories = Array.from(categoryMap.keys());
+  if (categories.length === 0) return [];
+  if (categories.length === 1) {
+    return (categoryMap.get(categories[0]) || []).slice(0, maxTotal);
+  }
+
+  const selected: Product[] = [];
+  const pointers = new Map<string, number>();
+  for (const cat of categories) pointers.set(cat, 0);
+
+  let addedInRound = true;
+  while (selected.length < maxTotal && addedInRound) {
+    addedInRound = false;
+    for (const cat of categories) {
+      if (selected.length >= maxTotal) break;
+      const catProducts = categoryMap.get(cat) || [];
+      const ptr = pointers.get(cat) || 0;
+      if (ptr < catProducts.length) {
+        selected.push(catProducts[ptr]);
+        pointers.set(cat, ptr + 1);
+        addedInRound = true;
+      }
+    }
+  }
+
+  return selected;
+}

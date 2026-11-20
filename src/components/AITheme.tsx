@@ -1051,20 +1051,23 @@ export default function AITheme({
                 <div className="flex items-center gap-2">
                   <Link
                     to="/catalog"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--theme-primary)] hover:underline py-2"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold shadow-xs hover:shadow-md transition-all active:scale-95"
                   >
-                    <span>Full Storefront Page</span>
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>View All Products</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
 
-              {/* Real Catalog Engine Mounted Visibly */}
+              {/* Real Catalog Engine Mounted Visibly with 8-Product Category-Divided Split */}
               <div className="pt-2">
                 <CatalogEngine
                   products={safeProducts.length > 0 ? safeProducts : undefined}
                   currencySymbol={currencySymbol}
                   onOpenLightbox={onOpenLightbox}
+                  layoutMode="home-preview"
+                  maxProducts={8}
                 />
               </div>
             </div>
