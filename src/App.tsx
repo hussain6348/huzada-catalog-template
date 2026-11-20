@@ -45,7 +45,7 @@ const EMPTY_BUSINESS_INFO: BusinessInfo = {
   imageSlots: {},
 };
 
-function PublicBookingPortal() {
+function PublicStorefrontPortal() {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [detailsService, setDetailsService] = useState<any>(null);
   const [lightboxItem, setLightboxItem] = useState<any | null>(null);
@@ -101,8 +101,8 @@ function PublicBookingPortal() {
 
     return {
       ...storedBiz,
-      name: storedBiz.name || clientConfig.businessName || 'Huzada Booking',
-      tagline: storedBiz.tagline || clientConfig.tagline || 'Professional Appointments Tailored to You',
+      name: storedBiz.name || clientConfig.businessName || 'Huzada Storefront',
+      tagline: storedBiz.tagline || clientConfig.tagline || 'Curated Products & Premium Selection',
       whatsapp: storedBiz.whatsapp || clientConfig.whatsappNumber,
       currency: effectiveCode,
       currencySymbol: effectiveSym,
@@ -779,7 +779,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<PublicBookingPortal />} />
+      <Route path="/" element={<PublicStorefrontPortal />} />
       <Route path="/services" element={<Services />} />
       <Route path="/catalog" element={<Catalog />} />
       <Route path="/admin" element={<ProtectedAdminRoute />} />

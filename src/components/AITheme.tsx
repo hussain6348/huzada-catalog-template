@@ -245,7 +245,7 @@ export default function AITheme({
   const promoText =
     businessInfo?.promoText !== undefined && businessInfo?.promoText !== ''
       ? businessInfo.promoText
-      : '⚡ CURATED PRODUCT CATALOG • FAST DOORSTEP DELIVERY & ONLINE APPOINTMENTS ⚡';
+      : '⚡ CURATED STOREFRONT CATALOG • FAST DOORSTEP DELIVERY & SECURE DIRECT CHECKOUT ⚡';
 
   const safeServices = Array.isArray(services) ? services : [];
   const safeProducts = Array.isArray(products) ? products : [];
@@ -709,10 +709,12 @@ export default function AITheme({
                 <ShoppingBag className="w-4 h-4 text-[var(--theme-primary)]" />
                 <span>Store Catalog</span>
               </a>
-              <a href="#services" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 opacity-70" />
-                <span>Appointments</span>
-              </a>
+              {safeServices.length > 0 && (
+                <a href="#services" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 opacity-70" />
+                  <span>Custom Services</span>
+                </a>
+              )}
               <a href="#about" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">About</a>
               <a href="#contact" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Contact</a>
               <Link to="/admin" className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[var(--theme-border)] text-[var(--theme-text)] opacity-70 hover:opacity-100 transition-all">
@@ -724,21 +726,11 @@ export default function AITheme({
             <div className="shrink-0 lg:flex-1 flex items-center justify-end gap-2 sm:gap-2.5">
               <a
                 href="#catalog"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-[var(--theme-border-strong)] text-xs font-semibold text-[var(--theme-text)] hover:border-[var(--theme-text)] transition-colors cursor-pointer"
+                className="shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] text-xs sm:text-sm font-semibold rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300 isolate outline-none focus:outline-none whitespace-nowrap cursor-pointer"
               >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>Shop Catalog</span>
+                <ShoppingBag className="w-4 h-4 shrink-0" />
+                <span>Browse Store</span>
               </a>
-
-              <button
-                onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
-                className="shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] text-xs sm:text-sm font-semibold rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300 isolate outline-none focus:outline-none whitespace-nowrap cursor-pointer"
-                data-waas-book="Consultation"
-              >
-                <Calendar className="w-4 h-4 shrink-0"/>
-                <span className="hidden sm:inline">Book Visit</span>
-                <span className="sm:hidden">Book</span>
-              </button>
 
               {/* Mobile Hamburger Toggle Button */}
               <button
@@ -810,18 +802,20 @@ export default function AITheme({
                 </span>
                 <ArrowUpRight className="w-5 h-5 opacity-60" />
               </a>
-              <a
-                href="#services"
-                onClick={() => setIsMenuOpen(false)}
-                className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
-                style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[var(--theme-primary)]" />
-                  <span>Appointments</span>
-                </span>
-                <ArrowUpRight className="w-5 h-5 opacity-60" />
-              </a>
+              {safeServices.length > 0 && (
+                <a
+                  href="#services"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
+                  style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+                >
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-[var(--theme-primary)]" />
+                    <span>Custom Services</span>
+                  </span>
+                  <ArrowUpRight className="w-5 h-5 opacity-60" />
+                </a>
+              )}
               <a
                 href="#about"
                 onClick={() => setIsMenuOpen(false)}
@@ -837,7 +831,7 @@ export default function AITheme({
                 className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
                 style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
               >
-                <span>Contact</span>
+                <span>Contact & Inquiries</span>
                 <ArrowUpRight className="w-5 h-5 opacity-60" />
               </a>
               <Link
@@ -851,17 +845,14 @@ export default function AITheme({
             </nav>
 
             <div className="pt-4 space-y-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  dispatchBooking(safeServices[0]?.name || 'General Consultation');
-                }}
-                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-[var(--theme-primary)] text-[var(--theme-bg)] font-semibold text-base shadow-lg hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+              <a
+                href="#catalog"
+                onClick={() => setIsMenuOpen(false)}
+                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-[var(--theme-primary)] text-[var(--theme-on-primary)] font-semibold text-base shadow-lg hover:brightness-110 active:scale-95 transition-all cursor-pointer"
               >
-                <Calendar className="w-5 h-5" />
-                <span>Book Appointment</span>
-              </button>
+                <ShoppingBag className="w-5 h-5" />
+                <span>Browse Store Catalog</span>
+              </a>
 
               {biz.phone && (
                 <a
@@ -926,7 +917,7 @@ export default function AITheme({
 
                 <p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--theme-text-muted)] whitespace-normal break-words [overflow-wrap:anywhere]">
                   {businessInfo?.heroSubheadline ||
-                    'Explore our curated product collection with doorstep delivery, or reserve a tailored appointment online with instant confirmation.'}
+                    'Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery.'}
                 </p>
               </div>
 
@@ -940,14 +931,12 @@ export default function AITheme({
                     <span>Explore Catalog</span>
                   </a>
 
-                  <button
-                    type="button"
-                    onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
+                  <a
+                    href="#contact"
                     className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-6 py-3 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] cursor-pointer"
                   >
-                    <Calendar className="h-4 w-4 shrink-0 opacity-70" />
-                    <span>Book Appointment</span>
-                  </button>
+                    <span>Contact &amp; Inquiries</span>
+                  </a>
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--theme-text-subtle)] tabular-nums">
@@ -1055,7 +1044,7 @@ export default function AITheme({
                 {
                   value: biz.currency,
                   label: 'Transparent Rates',
-                  detail: 'Direct booking & web orders',
+                  detail: 'Instant web orders & doorstep delivery',
                 },
                 {
                   value: biz.hours.split(',')[0] || 'Mon–Sat',
@@ -1121,20 +1110,21 @@ export default function AITheme({
         </section>
 
         {/* ── Services Section ──────────────────────────────────────────────── */}
-        <section
-          id="services"
-          className="scroll-mt-28 sm:scroll-mt-32 border-t border-[var(--theme-border)] py-16 lg:py-24"
-        >
-          <FadeInSection>
-            <div className="mx-auto max-w-7xl px-6 lg:px-8">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-medium text-[var(--theme-text-muted)]">
-                    Curated Service Menu · Transparent Rates in {biz.currency}
-                  </p>
-                  <h2 className="font-editorial headline-balance mt-2 text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl">
-                    Available Services &amp; Sessions
-                  </h2>
+        {safeServices.length > 0 && (
+          <section
+            id="services"
+            className="scroll-mt-28 sm:scroll-mt-32 border-t border-[var(--theme-border)] py-16 lg:py-24"
+          >
+            <FadeInSection>
+              <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="max-w-2xl">
+                    <p className="text-xs font-medium text-[var(--theme-text-muted)]">
+                      Curated Service Menu · Transparent Rates in {biz.currency}
+                    </p>
+                    <h2 className="font-editorial headline-balance mt-2 text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl">
+                      Available Services &amp; Sessions
+                    </h2>
                   <p className="mt-3 text-base leading-relaxed text-[var(--theme-text-muted)]">
                     Select a service below to book your appointment or inspect full details.
                   </p>
@@ -1308,6 +1298,7 @@ export default function AITheme({
             </div>
           </FadeInSection>
         </section>
+        )}
 
         {/* ── Marquee Ticker ───────────────────────────────────────────────── */}
         {safeServices.length > 0 && (
@@ -1403,32 +1394,29 @@ export default function AITheme({
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
               <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
                 <div className="lg:col-span-7">
-                  <p className="text-xs font-medium text-[var(--theme-on-primary)] opacity-80">Reserve Your Visit</p>
+                  <p className="text-xs font-medium text-[var(--theme-on-primary)] opacity-80">Direct Storefront Assistance</p>
                   <h2 className="font-editorial headline-balance mt-2 text-3xl font-semibold text-[var(--theme-on-primary)] sm:text-4xl">
-                    {businessInfo?.ctaHeadline || 'Ready to Schedule Your Appointment?'}
+                    {businessInfo?.ctaHeadline || 'Ready to Explore Our Catalog?'}
                   </h2>
                   <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--theme-on-primary-muted)]">
-                    Book online in moments or reach out directly for tailored consultations, event bookings, and specialist inquiries.
+                    Browse our full collection online with fast doorstep delivery, or reach out directly for custom orders, wholesale inquiries, and dedicated customer support.
                   </p>
 
                   <div className="mt-8 flex flex-wrap items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
+                    <a
+                      href="#catalog"
                       className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-on-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-primary)] whitespace-nowrap shrink-0 hover:brightness-110 active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-on-primary)]"
                     >
-                      <Calendar className="h-4 w-4 shrink-0 text-[var(--theme-primary)]" stroke="currentColor" aria-hidden="true" />
-                      <span>Book Appointment Now</span>
-                    </button>
+                      <ShoppingBag className="h-4 w-4 shrink-0 text-[var(--theme-primary)]" stroke="currentColor" aria-hidden="true" />
+                      <span>Browse Store Catalog</span>
+                    </a>
 
                     <a
-                      href={biz.mapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={`tel:${biz.phone.replace(/\s+/g, '')}`}
                       className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-on-primary-border)] px-6 py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-on-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
                     >
-                      <MapPin className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
-                      <span>Get Directions</span>
+                      <Phone className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                      <span>Call {biz.phone}</span>
                     </a>
                   </div>
                 </div>

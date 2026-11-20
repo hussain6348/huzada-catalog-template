@@ -25,23 +25,23 @@ export function ProductModal({
   const effectiveCurrency = currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto font-sans">
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-zinc-900/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
       />
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-lg bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden p-6 space-y-4">
+        <div className="relative w-full max-w-lg bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] shadow-2xl overflow-hidden p-6 space-y-4 text-[var(--theme-text)]">
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer"
+            className="absolute top-4 right-4 p-1.5 rounded-full text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
 
-          <div className="aspect-[4/3] rounded-xl overflow-hidden bg-zinc-100 border border-neutral-200">
+          <div className="aspect-[4/3] rounded-[var(--theme-radius-inner)] overflow-hidden bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)]">
             <img
               src={imgSrc}
               alt={product.name}
@@ -53,21 +53,21 @@ export function ProductModal({
           </div>
 
           <div>
-            <span className="text-[11px] font-mono uppercase text-zinc-400 tracking-wider">
+            <span className="text-[11px] font-mono uppercase text-[var(--theme-text-subtle)] tracking-wider">
               {product.category || 'General'}
             </span>
-            <h3 className="text-lg font-bold text-zinc-900 mt-1">
+            <h3 className="text-xl font-bold text-[var(--theme-text)] mt-1 font-editorial">
               {product.name}
             </h3>
-            <p className="text-sm text-zinc-600 mt-2 leading-relaxed">
+            <p className="text-sm text-[var(--theme-text-muted)] mt-2 leading-relaxed">
               {product.description || 'Quality product tailored to your standards.'}
             </p>
           </div>
 
-          <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
+          <div className="pt-4 border-t border-[var(--theme-border)] flex items-center justify-between">
             <div>
-              <span className="text-xs text-zinc-400 block uppercase font-mono">Price</span>
-              <span className="text-lg font-bold text-zinc-900 tabular-nums font-mono">
+              <span className="text-xs text-[var(--theme-text-subtle)] block uppercase font-mono tracking-wider">Price</span>
+              <span className="text-xl font-bold text-[var(--theme-text)] tabular-nums font-mono">
                 {effectiveCurrency} {product.price.toLocaleString()}
               </span>
             </div>
@@ -79,7 +79,7 @@ export function ProductModal({
                   onAddToCart(product);
                   onClose();
                 }}
-                className="bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-2"
+                className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold px-4 py-2.5 rounded-[var(--theme-radius-inner)] transition-colors cursor-pointer flex items-center gap-2 shadow-sm active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add to Bag</span>

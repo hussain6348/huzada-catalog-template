@@ -64,22 +64,22 @@ export function Catalog() {
   const effectiveCurrency = businessInfo?.currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
   return (
-    <div className="min-h-screen bg-zinc-50/70 font-sans text-zinc-900 flex flex-col">
+    <div className="min-h-screen bg-[var(--theme-bg)] font-sans text-[var(--theme-text)] flex flex-col">
       {/* Top Storefront Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-2xs">
+      <header className="sticky top-0 z-40 bg-[var(--theme-surface-translucent)] backdrop-blur-md border-b border-[var(--theme-border)] shadow-2xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="p-2 rounded-xl border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+              className="p-2 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors"
               title="Return to Home"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
-              <Link to="/" className="font-bold text-base sm:text-lg tracking-tight text-zinc-900 flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Link to="/" className="font-bold text-base sm:text-lg tracking-tight text-[var(--theme-text)] flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <span>{businessInfo?.name || clientConfig.businessName}</span>
-                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
+                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] border border-[var(--theme-border)]">
                   Store
                 </span>
               </Link>
@@ -90,21 +90,13 @@ export function Catalog() {
           <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold">
             <Link
               to="/"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors"
             >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Book Appointment</span>
-            </Link>
-            <Link
-              to="/services"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Services</span>
+              <span>Storefront Home</span>
             </Link>
             <Link
               to="/admin"
-              className="border border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-50 px-3 py-1.5 rounded-lg text-zinc-700 transition-colors"
+              className="border border-[var(--theme-border)] hover:border-[var(--theme-border-strong)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text)] transition-colors shadow-2xs"
             >
               Operations
             </Link>
@@ -115,20 +107,20 @@ export function Catalog() {
       {/* Main Catalog View */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-zinc-900 text-white p-6 sm:p-10 shadow-lg">
+        <div className="relative overflow-hidden rounded-[var(--theme-radius)] bg-[var(--theme-surface)] border border-[var(--theme-border)] text-[var(--theme-text)] p-6 sm:p-10 shadow-md">
           <div className="relative z-10 max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-emerald-400 backdrop-blur-xs border border-white/10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--theme-surface-subtle)] text-[var(--theme-primary)] border border-[var(--theme-border)] shadow-xs">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Official Storefront & Product Catalog</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-[var(--theme-text)] font-editorial">
               {businessInfo?.name || clientConfig.businessName} Collection
             </h1>
-            <p className="text-sm text-zinc-300 leading-relaxed max-w-lg">
+            <p className="text-sm text-[var(--theme-text-muted)] leading-relaxed max-w-lg">
               {businessInfo?.tagline || clientConfig.tagline || 'Explore curated products and place your order directly with fast doorstep delivery.'}
             </p>
           </div>
-          <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-[var(--theme-primary)] opacity-5 rounded-full blur-3xl pointer-events-none" />
         </div>
 
         {/* Catalog Engine */}
@@ -263,7 +255,7 @@ export function Catalog() {
       )}
 
       {/* Footer */}
-      <footer className="bg-white border-t border-zinc-200 py-6 mt-12 text-center text-xs text-zinc-500">
+      <footer className="bg-[var(--theme-surface)] border-t border-[var(--theme-border)] py-6 mt-12 text-center text-xs text-[var(--theme-text-muted)]">
         <p>© {new Date().getFullYear()} {businessInfo?.name || clientConfig.businessName}. All rights reserved.</p>
       </footer>
     </div>

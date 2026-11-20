@@ -61,12 +61,12 @@ export function ProductCard({
   return (
     <div
       onClick={onSelect}
-      className="group bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col hover:border-zinc-300 transition-all shadow-xs hover:shadow-md cursor-pointer"
+      className="group bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col hover:border-[var(--theme-border-strong)] transition-all shadow-xs hover:shadow-md cursor-pointer text-[var(--theme-text)]"
     >
       {/* Product Image with Hover Zoom & Carousel - Click to open Lightbox */}
       <div
         onClick={handleThumbnailClick}
-        className="relative aspect-[4/3] overflow-hidden bg-zinc-100 cursor-pointer"
+        className="relative aspect-[4/3] overflow-hidden bg-[var(--theme-surface-subtle)] cursor-pointer"
         title="Click to view full-screen photo gallery"
       >
         <img
@@ -79,18 +79,18 @@ export function ProductCard({
         />
 
         {product.badge && (
-          <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs text-zinc-900 text-[11px] font-semibold px-2 py-0.5 rounded shadow-xs z-10">
+          <span className="absolute top-3 left-3 bg-[var(--theme-surface-translucent)] backdrop-blur-md text-[var(--theme-text)] text-[11px] font-semibold px-2.5 py-0.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] shadow-xs z-10">
             {product.badge}
           </span>
         )}
 
-        <span className="absolute bottom-3 right-3 bg-zinc-900/80 backdrop-blur-xs text-white text-[11px] font-mono px-2 py-0.5 rounded z-10">
+        <span className="absolute bottom-3 right-3 bg-[var(--theme-surface-translucent)] backdrop-blur-md text-[var(--theme-text-muted)] text-[11px] font-mono px-2 py-0.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] z-10">
           {product.category || 'General'}
         </span>
 
         {/* View gallery hover affordance */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-950/80 text-white text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1.5 shadow-xs">
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--theme-primary)] text-[var(--theme-on-primary)] text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1.5 shadow-sm">
             <Maximize2 className="w-3 h-3" />
             <span>View Gallery</span>
           </span>
@@ -99,7 +99,7 @@ export function ProductCard({
         {/* Multi-Image Controls & Indicators */}
         {images.length > 1 && (
           <>
-            <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono px-1.5 py-0.5 rounded z-10">
+            <span className="absolute top-3 right-3 bg-[var(--theme-surface-translucent)] backdrop-blur-md text-[var(--theme-text)] border border-[var(--theme-border)] text-[10px] font-mono px-1.5 py-0.5 rounded-[var(--theme-radius-inner)] z-10">
               {activeImgIdx + 1}/{images.length}
             </span>
 
@@ -107,7 +107,7 @@ export function ProductCard({
               type="button"
               onClick={prevImage}
               aria-label="Previous image"
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/90 hover:bg-white text-zinc-900 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--theme-surface-translucent)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] border border-[var(--theme-border)] shadow-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -116,12 +116,12 @@ export function ProductCard({
               type="button"
               onClick={nextImage}
               aria-label="Next image"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/90 hover:bg-white text-zinc-900 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--theme-surface-translucent)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] border border-[var(--theme-border)] shadow-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
 
-            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10 bg-black/40 backdrop-blur-xs px-2 py-1 rounded-full">
+            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10 bg-[var(--theme-surface-translucent)] backdrop-blur-md border border-[var(--theme-border)] px-2 py-1 rounded-full">
               {images.map((_, i) => (
                 <button
                   type="button"
@@ -131,7 +131,7 @@ export function ProductCard({
                     setActiveImgIdx(i);
                   }}
                   className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                    activeImgIdx === i ? 'w-3.5 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'
+                    activeImgIdx === i ? 'w-3.5 bg-[var(--theme-primary)]' : 'w-1.5 bg-[var(--theme-border-strong)] hover:bg-[var(--theme-text-muted)]'
                   }`}
                   aria-label={`View photo ${i + 1}`}
                 />
@@ -142,41 +142,41 @@ export function ProductCard({
       </div>
 
       {/* Card Content */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3 bg-[var(--theme-surface)]">
         <div>
-          <h3 className="font-semibold text-sm text-zinc-900 group-hover:text-zinc-700 transition-colors">
+          <h3 className="font-semibold text-sm sm:text-base text-[var(--theme-text)] group-hover:text-[var(--theme-primary)] transition-colors">
             {product.name}
           </h3>
-          <p className="text-xs text-zinc-500 line-clamp-2 mt-1 leading-relaxed">
+          <p className="text-xs text-[var(--theme-text-muted)] line-clamp-2 mt-1 leading-relaxed">
             {product.description || 'Quality product tailored to your standards.'}
           </p>
         </div>
 
-        <div className="pt-2 border-t border-zinc-100 flex items-center justify-between">
+        <div className="pt-2 border-t border-[var(--theme-border)] flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-zinc-400 block uppercase font-mono">Price</span>
-            <span className="text-sm font-bold text-zinc-900 tabular-nums font-mono">
+            <span className="text-[11px] text-[var(--theme-text-subtle)] block uppercase font-mono tracking-wider">Price</span>
+            <span className="text-sm sm:text-base font-bold text-[var(--theme-text)] tabular-nums font-mono">
               {effectiveCurrency} {product.price.toLocaleString()}
             </span>
           </div>
 
           {inCart ? (
-            <div className="flex items-center gap-1.5 bg-zinc-100 p-1 rounded-lg border border-zinc-200">
+            <div className="flex items-center gap-1.5 bg-[var(--theme-surface-subtle)] p-1 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)]">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onUpdateQuantity(-1); }}
-                className="w-6 h-6 rounded bg-white hover:bg-zinc-200 text-zinc-700 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] text-[var(--theme-text)] border border-[var(--theme-border)] flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Decrease quantity"
               >
                 <Minus className="w-3 h-3" />
               </button>
-              <span className="text-xs font-semibold font-mono tabular-nums px-1.5">
+              <span className="text-xs font-semibold font-mono tabular-nums px-1.5 text-[var(--theme-text)]">
                 {inCart.quantity}
               </span>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onUpdateQuantity(1); }}
-                className="w-6 h-6 rounded bg-zinc-900 hover:bg-zinc-800 text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Increase quantity"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -186,7 +186,7 @@ export function ProductCard({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-              className="bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold px-3.5 py-2 rounded-[var(--theme-radius-inner)] transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add to Bag</span>
