@@ -9,8 +9,13 @@ import {
   ShoppingBag,
   Menu,
   X,
+  Sparkles,
+  Package,
 } from 'lucide-react';
 import { EditableImage } from './EditableImage';
+import { CatalogEngine } from './CatalogEngine';
+import type { Product } from '../lib/types';
+import { clientConfig } from '../config/client';
 
 // ─── Fallback image used when a service has no image ─────────────────────────
 const SERVICE_IMAGE_FALLBACK =
@@ -55,9 +60,11 @@ export interface BusinessInfo {
   logo?: string;
 }
 
-interface AIThemeProps {
+export interface AIThemeProps {
   services?: ServiceItem[];
+  products?: Product[];
   businessInfo?: Partial<BusinessInfo>;
+  onOpenLightbox?: (product: Product, index?: number) => void;
 }
 
 function resolveServiceImage(service: ServiceItem): string {
@@ -198,7 +205,12 @@ const GlassImage = ({
   );
 };
 
-export default function AITheme({ services = [], businessInfo = {} }: AIThemeProps) {
+export default function AITheme({
+  services = [],
+  products = [],
+  businessInfo = {},
+  onOpenLightbox,
+}: AIThemeProps) {
   const CURRENCY_SYMBOLS: Record<string, string> = {
     USD: '$',
     EUR: '€',
@@ -216,9 +228,9 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
     (currencyCode === 'PKR' ? 'Rs.' : '$');
 
   const biz = {
-    name: businessInfo.name || 'Huzada Booking',
-    tagline: businessInfo.tagline || 'Professional Appointments Tailored to You',
-    whatsapp: businessInfo.whatsapp || '',
+    name: businessInfo.name || clientConfig.businessName || 'Huzada Storefront',
+    tagline: businessInfo.tagline || clientConfig.tagline || 'Curated Products & Signature Services',
+    whatsapp: businessInfo.whatsapp || clientConfig.whatsappNumber || '',
     phone: businessInfo.phone || '+1 (409) 256-3597',
     currency: currencyCode,
     currencySymbol: currencySymbol,
@@ -233,9 +245,10 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
   const promoText =
     businessInfo?.promoText !== undefined && businessInfo?.promoText !== ''
       ? businessInfo.promoText
-      : '⚡ FAST & RELIABLE APPOINTMENTS • BOOK YOUR SESSION TODAY ⚡';
+      : '⚡ CURATED PRODUCT CATALOG • FAST DOORSTEP DELIVERY & ONLINE APPOINTMENTS ⚡';
 
   const safeServices = Array.isArray(services) ? services : [];
+  const safeProducts = Array.isArray(products) ? products : [];
 
   const categories = useMemo(() => {
     const unique = Array.from(new Set(safeServices.map((s) => s.category).filter(Boolean)));
@@ -685,31 +698,45 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
               )}
               <div className="min-w-0 flex-1">
                 <span className="block whitespace-normal break-words [overflow-wrap:anywhere] leading-snug py-0.5 line-clamp-2 text-sm sm:text-base md:text-lg font-bold text-[var(--theme-text)]">
-                  {businessInfo?.name || 'Huzada Booking'}
+                  {biz.name}
                 </span>
               </div>
             </div>
 
             {/* Center: Desktop Navigation (Hidden on mobile) */}
-            <nav className="hidden lg:flex items-center justify-center gap-8 flex-none">
-              <a href="#services" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Services</a>
-              <Link to="/catalog" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
-                <ShoppingBag className="w-3.5 h-3.5" />
+            <nav className="hidden lg:flex items-center justify-center gap-7 flex-none">
+              <a href="#catalog" className="text-sm font-semibold text-[var(--theme-text)] opacity-90 hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                <ShoppingBag className="w-4 h-4 text-[var(--theme-primary)]" />
                 <span>Store Catalog</span>
-              </Link>
+              </a>
+              <a href="#services" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 opacity-70" />
+                <span>Appointments</span>
+              </a>
               <a href="#about" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">About</a>
               <a href="#contact" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Contact</a>
+              <Link to="/admin" className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[var(--theme-border)] text-[var(--theme-text)] opacity-70 hover:opacity-100 transition-all">
+                Console
+              </Link>
             </nav>
 
             {/* Right: CTA Button & Mobile Hamburger Toggle */}
             <div className="shrink-0 lg:flex-1 flex items-center justify-end gap-2 sm:gap-2.5">
+              <a
+                href="#catalog"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-[var(--theme-border-strong)] text-xs font-semibold text-[var(--theme-text)] hover:border-[var(--theme-text)] transition-colors cursor-pointer"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Shop Catalog</span>
+              </a>
+
               <button
                 onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
-                className="shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-2.5 bg-[var(--theme-primary)] text-[var(--theme-bg)] text-xs sm:text-sm md:text-base font-semibold rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300 isolate outline-none focus:outline-none whitespace-nowrap cursor-pointer"
+                className="shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] text-xs sm:text-sm font-semibold rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300 isolate outline-none focus:outline-none whitespace-nowrap cursor-pointer"
                 data-waas-book="Consultation"
               >
-                <Calendar className="w-4 h-4 md:w-5 md:h-5 shrink-0"/>
-                <span className="hidden sm:inline">Book Now</span>
+                <Calendar className="w-4 h-4 shrink-0"/>
+                <span className="hidden sm:inline">Book Visit</span>
                 <span className="sm:hidden">Book</span>
               </button>
 
@@ -752,7 +779,7 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
               )}
               <div className="min-w-0 flex-1">
                 <span className="block whitespace-normal break-words [overflow-wrap:anywhere] leading-snug py-0.5 line-clamp-2 text-sm sm:text-base font-bold text-[var(--theme-text)]">
-                  {businessInfo?.name || 'Huzada Booking'}
+                  {biz.name}
                 </span>
               </div>
             </div>
@@ -768,11 +795,11 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
 
           <div className="flex-1 py-6 flex flex-col justify-center space-y-6">
             <div className="text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-muted)]">
-              Navigation
+              Storefront Navigation
             </div>
             <nav className="flex flex-col space-y-4">
-              <Link
-                to="/catalog"
+              <a
+                href="#catalog"
                 onClick={() => setIsMenuOpen(false)}
                 className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
                 style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
@@ -782,23 +809,45 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
                   <span>Store Catalog</span>
                 </span>
                 <ArrowUpRight className="w-5 h-5 opacity-60" />
+              </a>
+              <a
+                href="#services"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
+                style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+              >
+                <span className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[var(--theme-primary)]" />
+                  <span>Appointments</span>
+                </span>
+                <ArrowUpRight className="w-5 h-5 opacity-60" />
+              </a>
+              <a
+                href="#about"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
+                style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+              >
+                <span>About Us</span>
+                <ArrowUpRight className="w-5 h-5 opacity-60" />
+              </a>
+              <a
+                href="#contact"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
+                style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+              >
+                <span>Contact</span>
+                <ArrowUpRight className="w-5 h-5 opacity-60" />
+              </a>
+              <Link
+                to="/admin"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-base font-semibold text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] transition-colors py-1 flex items-center justify-between"
+              >
+                <span>Operations Console</span>
+                <ArrowUpRight className="w-4 h-4 opacity-60" />
               </Link>
-              {[
-                { href: '#services', label: 'Services' },
-                { href: '#about', label: 'About Us' },
-                { href: '#contact', label: 'Contact' },
-              ].map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
-                  style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
-                >
-                  <span>{item.label}</span>
-                  <ArrowUpRight className="w-5 h-5 opacity-60" />
-                </a>
-              ))}
             </nav>
 
             <div className="pt-4 space-y-3">
@@ -876,29 +925,29 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
                 </h1>
 
                 <p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--theme-text-muted)] whitespace-normal break-words [overflow-wrap:anywhere]">
-                  {businessInfo?.heroSubheadline || (safeServices.length > 0
-                    ? `Explore our signature collection of ${safeServices.length} tailored offerings. Select your service, choose your preferred time, and book your appointment online.`
-                    : `${biz.name} delivers world-class care and personalized attention. Choose your service and reserve your visit online.`)}
+                  {businessInfo?.heroSubheadline ||
+                    'Explore our curated product collection with doorstep delivery, or reserve a tailored appointment online with instant confirmation.'}
                 </p>
               </div>
 
               <div className="mt-9 pt-6 border-t border-[var(--theme-border)]">
                 <div className="flex flex-wrap items-center gap-4">
+                  <a
+                    href="#catalog"
+                    className="btn-radar inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                  >
+                    <ShoppingBag className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                    <span>Explore Catalog</span>
+                  </a>
+
                   <button
                     type="button"
                     onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
-                    className="btn-radar inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                    className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-6 py-3 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] cursor-pointer"
                   >
-                    <span>Book Your Visit</span>
-                    <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                    <Calendar className="h-4 w-4 shrink-0 opacity-70" />
+                    <span>Book Appointment</span>
                   </button>
-
-                  <a
-                    href="#services"
-                    className="inline-flex min-h-[48px] items-center justify-center rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-6 py-3 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
-                  >
-                    View Services
-                  </a>
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--theme-text-subtle)] tabular-nums">
@@ -997,16 +1046,16 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
                 {
                   value: (
                     <>
-                      <AnimatedCounter end={safeServices.length} decimals={0} />+
+                      <AnimatedCounter end={safeProducts.length > 0 ? safeProducts.length : (safeServices.length > 0 ? safeServices.length : 12)} decimals={0} />+
                     </>
                   ),
-                  label: 'Services Offered',
-                  detail: categories.length > 0 ? categories.slice(0, 3).join(' · ') : 'Curated Services',
+                  label: safeProducts.length > 0 ? 'Catalog Products' : 'Curated Items',
+                  detail: 'Instant Web Checkout & Fast Delivery',
                 },
                 {
                   value: biz.currency,
-                  label: 'Transparent Pricing',
-                  detail: 'Direct booking & confirmation',
+                  label: 'Transparent Rates',
+                  detail: 'Direct booking & web orders',
                 },
                 {
                   value: biz.hours.split(',')[0] || 'Mon–Sat',
@@ -1025,6 +1074,50 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
             </div>
           </FadeInSection>
           </div>
+        </section>
+
+        {/* ── Storefront Catalog & Product Section ───────────────────────────── */}
+        <section
+          id="catalog"
+          className="scroll-mt-28 sm:scroll-mt-32 border-t border-[var(--theme-border)] py-16 lg:py-24 bg-[var(--theme-surface)]"
+        >
+          <FadeInSection>
+            <div className="mx-auto max-w-7xl px-6 lg:px-8 space-y-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="max-w-2xl">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--theme-primary)] text-[var(--theme-on-primary)] mb-2.5 shadow-xs">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Storefront Product Catalog</span>
+                  </div>
+                  <h2 className="font-editorial headline-balance text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl">
+                    Featured Products &amp; Collections
+                  </h2>
+                  <p className="mt-2 text-base leading-relaxed text-[var(--theme-text-muted)]">
+                    Explore our curated collection with real-time search, multi-image carousel &amp; lightbox previews, and direct web checkout.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/catalog"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--theme-primary)] hover:underline py-2"
+                  >
+                    <span>Full Storefront Page</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Real Catalog Engine Mounted Visibly */}
+              <div className="pt-2">
+                <CatalogEngine
+                  products={safeProducts.length > 0 ? safeProducts : undefined}
+                  currencySymbol={currencySymbol}
+                  onOpenLightbox={onOpenLightbox}
+                />
+              </div>
+            </div>
+          </FadeInSection>
         </section>
 
         {/* ── Services Section ──────────────────────────────────────────────── */}

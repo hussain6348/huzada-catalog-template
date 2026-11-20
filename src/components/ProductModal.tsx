@@ -41,7 +41,7 @@ export function ProductModal({
             <X className="w-5 h-5" />
           </button>
 
-          <div className="aspect-4/3 rounded-xl overflow-hidden bg-zinc-100 border border-neutral-200">
+          <div className="aspect-[4/3] rounded-xl overflow-hidden bg-zinc-100 border border-neutral-200">
             <img
               src={imgSrc}
               alt={product.name}

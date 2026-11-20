@@ -169,6 +169,10 @@ export async function fetchCatalogProducts(): Promise<Product[]> {
         const normalized = data.products.map(normalizeProduct);
         saveStoredProducts(normalized);
         return normalized;
+      } else if (Array.isArray(data)) {
+        const normalized = data.map(normalizeProduct);
+        saveStoredProducts(normalized);
+        return normalized;
       }
     }
   } catch (err) {

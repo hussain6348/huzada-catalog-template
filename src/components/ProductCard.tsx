@@ -66,7 +66,7 @@ export function ProductCard({
       {/* Product Image with Hover Zoom & Carousel - Click to open Lightbox */}
       <div
         onClick={handleThumbnailClick}
-        className="relative aspect-4/3 overflow-hidden bg-zinc-100 cursor-pointer"
+        className="relative aspect-[4/3] overflow-hidden bg-zinc-100 cursor-pointer"
         title="Click to view full-screen photo gallery"
       >
         <img

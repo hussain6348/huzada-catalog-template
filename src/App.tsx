@@ -27,7 +27,7 @@ import AITheme from './components/AITheme';
 
 import { isAuthenticated, AUTH_CHANGE_EVENT } from './lib/auth';
 import { getStoredBusinessInfo, fetchBusinessInfo, BUSINESS_INFO_UPDATED_EVENT } from './lib/businessInfo';
-import type { BusinessInfo, Service } from './lib/types';
+import type { BusinessInfo, Service, Product } from './lib/types';
 
 export const FALLBACK_SERVICES: Service[] = [];
 
@@ -50,6 +50,7 @@ function PublicBookingPortal() {
   const [detailsService, setDetailsService] = useState<any>(null);
   const [lightboxItem, setLightboxItem] = useState<any | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [products, setProducts] = useState<Product[]>([]);
 
   const [currencyCode, setCurrencyCode] = useState(() => {
     try {
@@ -289,6 +290,24 @@ function PublicBookingPortal() {
       });
   }, []);
 
+  // Background hydration of catalog products with cache: 'no-store'
+  useEffect(() => {
+    fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) throw new Error('Network error');
+        return res.json();
+      })
+      .then((data: any) => {
+        if (isMounted.current) {
+          const items = Array.isArray(data?.products)
+            ? data.products
+            : (Array.isArray(data) ? data : []);
+          setProducts(items);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Keyboard navigation for Lightbox
   useEffect(() => {
     if (!lightboxItem) return;
@@ -404,10 +423,30 @@ function PublicBookingPortal() {
   const handleOpenLightbox = (srv: any) => {
     const imgs = Array.isArray(srv.images) && srv.images.length > 0
       ? srv.images
-      : (srv.image ? [srv.image] : []);
+      : (srv.image ? [srv.image] : (srv.image_path ? [srv.image_path] : []));
     setLightboxItem({ ...srv, images: imgs });
     setCurrentImageIndex(0);
   };
+
+  const handleProductLightbox = (prod: any, idx = 0) => {
+    const imgs = Array.isArray(prod?.images) && prod.images.length > 0
+      ? prod.images
+      : (prod?.image ? [prod.image] : (prod?.image_path ? [prod.image_path] : []));
+    setLightboxItem({ ...prod, images: imgs });
+    setCurrentImageIndex(idx || 0);
+  };
+
+  useEffect(() => {
+    const handleCustomLightbox = (e: Event) => {
+      const ce = e as CustomEvent;
+      if (ce.detail) {
+        const target = ce.detail.product || ce.detail.item || ce.detail;
+        handleProductLightbox(target, ce.detail.index || 0);
+      }
+    };
+    window.addEventListener('huzada_open_lightbox', handleCustomLightbox);
+    return () => window.removeEventListener('huzada_open_lightbox', handleCustomLightbox);
+  }, []);
 
   const effectiveCurrencyCode = businessInfo.currency || currencyCode || 'USD';
   const effectiveCurrencySymbol = businessInfo.currencySymbol || symbols[effectiveCurrencyCode] || currencySymbol || '$';
@@ -416,7 +455,13 @@ function PublicBookingPortal() {
     <div className="min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] font-sans text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-bg)] relative overflow-x-clip">
       {/* WaaS Master Theme Storefront */}
       <ErrorBoundary fallback={null}>
-        <AITheme key={activeThemeId} services={services} businessInfo={businessInfo} />
+        <AITheme
+          key={activeThemeId}
+          services={services}
+          products={products}
+          onOpenLightbox={handleProductLightbox}
+          businessInfo={businessInfo}
+        />
       </ErrorBoundary>
 
 
@@ -439,7 +484,11 @@ function PublicBookingPortal() {
                   {lightboxItem.name}
                 </h3>
                 <p className="text-xs text-zinc-400 font-mono mt-0.5 min-w-0 break-words">
-                  {lightboxItem.category} · {businessInfo?.currencySymbol || effectiveCurrencySymbol}{lightboxItem.price} · {/^\d+$/.test(String(lightboxItem.duration ?? '').trim()) ? `${lightboxItem.duration} mins` : String(lightboxItem.duration || (lightboxItem.duration_minutes ? `${lightboxItem.duration_minutes} mins` : '30 mins'))}
+                  {lightboxItem.category ? `${lightboxItem.category} · ` : ''}
+                  {businessInfo?.currencySymbol || effectiveCurrencySymbol}{lightboxItem.price}
+                  {(lightboxItem.duration || lightboxItem.duration_minutes) && (
+                    <span> · {/^\d+$/.test(String(lightboxItem.duration ?? '').trim()) ? `${lightboxItem.duration} mins` : String(lightboxItem.duration || `${lightboxItem.duration_minutes} mins`)}</span>
+                  )}
                 </p>
               </div>
             </div>
