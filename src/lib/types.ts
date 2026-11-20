@@ -41,7 +41,7 @@ export interface Product {
   description: string;
   price: number;
   category: string;
-  images?: string[];
+  images: string[];
   image?: string;
   image_path?: string;
   stock?: number;

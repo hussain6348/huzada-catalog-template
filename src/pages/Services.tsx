@@ -244,10 +244,13 @@ export default function Services() {
               </span>
             </div>
 
-            <div className="text-right">
-              <span className="text-xs uppercase tracking-wider font-bold text-[var(--theme-primary)]">
-                Catalog
-              </span>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/catalog"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--theme-border)] text-xs font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] hover:border-[var(--theme-primary)] transition-colors"
+              >
+                <span>Store Catalog</span>
+              </Link>
             </div>
           </div>
         </header>

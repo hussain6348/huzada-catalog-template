@@ -1,47 +1,273 @@
-import { useState } from 'react';
-import { Package, ShoppingBag, Plus, Minus, ArrowRight } from 'lucide-react';
-import { CheckoutModal } from '../components/CheckoutModal';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Calendar,
+  Layers,
+  ShieldCheck,
+  Package,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react';
+import { CatalogEngine } from '../components/CatalogEngine';
 import { clientConfig } from '../config/client';
-import type { CartItem, Product } from '../lib/types';
-
-const products: Product[] = [
-  { id: '1', name: 'Everyday Bottle', description: 'A reusable bottle.', price: 1250, category: 'Lifestyle', image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&q=80' },
-  { id: '2', name: 'Desk Organizer', description: 'Keep essentials neat.', price: 1850, category: 'Workspace', image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=500&q=80' }
-];
+import { getStoredBusinessInfo, fetchBusinessInfo, BUSINESS_INFO_UPDATED_EVENT } from '../lib/businessInfo';
+import type { BusinessInfo, Product } from '../lib/types';
 
 export function Catalog() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => getStoredBusinessInfo());
+  const [lightboxProduct, setLightboxProduct] = useState<{
+    name: string;
+    category?: string;
+    price: number;
+    images: string[];
+    index: number;
+  } | null>(null);
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  useEffect(() => {
+    fetchBusinessInfo().then((info) => {
+      if (info) setBusinessInfo(info);
+    });
 
-  const addToCart = (p: Product) => setCart(c => c.find(i => i.id === p.id) ? c.map(i => i.id === p.id ? { ...i, quantity: i.quantity + 1 } : i) : [...c, { ...p, quantity: 1 }]);
-  const changeQty = (id: string, d: number) => setCart(c => c.map(i => i.id === id ? { ...i, quantity: i.quantity + d } : i).filter(i => i.quantity > 0));
+    const handleUpdate = (e: any) => {
+      if (e?.detail) setBusinessInfo(e.detail);
+    };
+    window.addEventListener(BUSINESS_INFO_UPDATED_EVENT, handleUpdate);
+    return () => window.removeEventListener(BUSINESS_INFO_UPDATED_EVENT, handleUpdate);
+  }, []);
+
+  // Listen for custom open lightbox events from cards
+  useEffect(() => {
+    const handleOpenLightbox = (e: any) => {
+      const { product, index } = e.detail || {};
+      if (product) {
+        const fallbackImgs = (product.image ? [product.image] : [product.image_path]).filter((img: any): img is string => typeof img === 'string' && Boolean(img));
+        const imgs = Array.isArray(product.images) && product.images.length > 0
+          ? product.images
+          : fallbackImgs;
+        setLightboxProduct({
+          name: product.name,
+          category: product.category,
+          price: product.price,
+          images: imgs.length > 0 ? imgs : [],
+          index: index || 0,
+        });
+      }
+    };
+
+    window.addEventListener('huzada_open_lightbox', handleOpenLightbox);
+    return () => window.removeEventListener('huzada_open_lightbox', handleOpenLightbox);
+  }, []);
+
+  const effectiveCurrency = businessInfo?.currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
   return (
-    <div className="min-h-screen">
-      <header className="bg-white p-4 shadow-sm flex justify-between items-center">
-        <h1 className="font-bold text-xl flex items-center gap-2"><Package className="text-[var(--theme-primary)]" stroke="currentColor" /> {clientConfig.businessName}</h1>
-        <button onClick={() => setIsCheckoutOpen(true)} className="flex items-center gap-2 bg-[var(--theme-primary)] text-[var(--theme-bg)] hover:brightness-110 active:scale-95 transition-all px-4 py-2 rounded-lg font-bold"><ShoppingBag size={18} className="text-[var(--theme-bg)]" stroke="currentColor" /> Bag: {itemCount}</button>
-      </header>
-      <main className="p-4 grid gap-4 sm:grid-cols-2 max-w-4xl mx-auto mt-8">
-        {products.map(p => {
-          const inCart = cart.find(i => i.id === p.id);
-          return (
-            <div key={p.id} className="border rounded-xl bg-white overflow-hidden shadow-sm">
-              <img src={p.image} className="w-full h-48 object-cover" />
-              <div className="p-4">
-                <div className="flex justify-between font-bold"><span>{p.name}</span><span className="text-[var(--theme-primary)]">Rs. {p.price}</span></div>
-                {inCart ? 
-                  <div className="mt-4 flex items-center justify-between p-2 rounded-lg border" style={{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)' }}><span className="font-bold text-sm text-[var(--theme-primary)]">In bag</span><div className="flex gap-3 items-center"><button onClick={() => changeQty(p.id, -1)} className="bg-white p-1 rounded shadow-sm hover:scale-110 transition-transform"><Minus size={16}/></button><span className="font-bold">{inCart.quantity}</span><button onClick={() => changeQty(p.id, 1)} className="bg-[var(--theme-primary)] text-[var(--theme-bg)] hover:brightness-110 active:scale-95 transition-all p-1 rounded"><Plus size={16} className="text-[var(--theme-bg)]" stroke="currentColor" /></button></div></div> 
-                  : <button onClick={() => addToCart(p)} className="mt-4 w-full bg-slate-100 hover:bg-slate-200 py-2 rounded-lg font-bold text-sm">Add to bag</button>}
-              </div>
+    <div className="min-h-screen bg-zinc-50/70 font-sans text-zinc-900 flex flex-col">
+      {/* Top Storefront Header */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-2xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="p-2 rounded-xl border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+              title="Return to Booking Portal"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div>
+              <Link to="/" className="font-bold text-base sm:text-lg tracking-tight text-zinc-900 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <span>{businessInfo?.name || clientConfig.businessName}</span>
+                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">
+                  Store
+                </span>
+              </Link>
             </div>
-          )
-        })}
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold">
+            <Link
+              to="/"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Book Appointment</span>
+            </Link>
+            <Link
+              to="/services"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Services</span>
+            </Link>
+            <Link
+              to="/admin"
+              className="border border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-50 px-3 py-1.5 rounded-lg text-zinc-700 transition-colors"
+            >
+              Operations
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* Main Catalog View */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+        {/* Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-zinc-900 text-white p-6 sm:p-10 shadow-lg">
+          <div className="relative z-10 max-w-2xl space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-emerald-400 backdrop-blur-xs border border-white/10">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Official Storefront & Product Catalog</span>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+              {businessInfo?.name || clientConfig.businessName} Collection
+            </h1>
+            <p className="text-sm text-zinc-300 leading-relaxed max-w-lg">
+              {businessInfo?.tagline || clientConfig.tagline || 'Explore curated products and place your order directly with fast doorstep delivery.'}
+            </p>
+          </div>
+          <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        </div>
+
+        {/* Catalog Engine */}
+        <CatalogEngine
+          currencySymbol={effectiveCurrency}
+          onOpenLightbox={(prod, idx) => {
+            const fallbackImgs = (prod.image ? [prod.image] : [prod.image_path]).filter((img: any): img is string => typeof img === 'string' && Boolean(img));
+            const imgs = Array.isArray(prod.images) && prod.images.length > 0
+              ? prod.images
+              : fallbackImgs;
+            setLightboxProduct({
+              name: prod.name,
+              category: prod.category,
+              price: prod.price,
+              images: imgs.length > 0 ? imgs : [],
+              index: idx || 0,
+            });
+          }}
+        />
       </main>
-      <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} items={cart} total={total} onComplete={() => setCart([])} />
+
+      {/* Fullscreen Lightbox Overlay */}
+      {lightboxProduct && lightboxProduct.images.length > 0 && (
+        <div
+          className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 select-none animate-in fade-in duration-200"
+          onClick={() => setLightboxProduct(null)}
+        >
+          <div
+            className="w-full max-w-6xl flex items-center justify-between text-white z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="font-bold text-sm sm:text-base text-white truncate">
+                {lightboxProduct.name}
+              </h3>
+              <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                {lightboxProduct.category} · {effectiveCurrency} {lightboxProduct.price.toLocaleString()}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLightboxProduct(null)}
+              className="w-10 h-10 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div
+            className="relative flex-1 w-full max-w-6xl flex items-center justify-center my-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {lightboxProduct.images.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxProduct((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          index: prev.index === 0 ? prev.images.length - 1 : prev.index - 1,
+                        }
+                      : null
+                  );
+                }}
+                className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl hover:scale-105"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            <div className="relative max-h-[72vh] max-w-full flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-800/80 bg-black/40 shadow-2xl">
+              <img
+                src={lightboxProduct.images[lightboxProduct.index] || lightboxProduct.images[0]}
+                alt={lightboxProduct.name}
+                className="max-h-[72vh] max-w-[85vw] sm:max-w-4xl object-contain rounded-xl select-none"
+              />
+            </div>
+
+            {lightboxProduct.images.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxProduct((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          index:
+                            prev.index === prev.images.length - 1 ? 0 : prev.index + 1,
+                        }
+                      : null
+                  );
+                }}
+                className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl hover:scale-105"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          <div
+            className="w-full max-w-6xl flex flex-col items-center gap-2.5 z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {lightboxProduct.images.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto max-w-md py-1 px-2 no-scrollbar">
+                {lightboxProduct.images.map((img, i) => (
+                  <button
+                    key={`${img}-${i}`}
+                    type="button"
+                    onClick={() =>
+                      setLightboxProduct((prev) => (prev ? { ...prev, index: i } : null))
+                    }
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                      i === lightboxProduct.index
+                        ? 'border-white scale-105 ring-2 ring-white/30'
+                        : 'border-zinc-800 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="bg-zinc-900/90 border border-white/10 px-3.5 py-1 rounded-full text-xs font-mono text-zinc-300">
+              {lightboxProduct.index + 1} / {lightboxProduct.images.length}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-zinc-200 py-6 mt-12 text-center text-xs text-zinc-500">
+        <p>© {new Date().getFullYear()} {businessInfo?.name || clientConfig.businessName}. All rights reserved.</p>
+      </footer>
     </div>
-  )
+  );
 }
+
+export default Catalog;

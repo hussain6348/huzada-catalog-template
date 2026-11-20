@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Admin } from './pages/Admin';
 import Services from './pages/Services';
+import { Catalog } from './pages/Catalog';
 import { AdminLogin } from './components/AdminLogin';
 import BookingForm from './components/BookingForm';
 import EditableImage from './components/EditableImage';
@@ -731,6 +732,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<PublicBookingPortal />} />
       <Route path="/services" element={<Services />} />
+      <Route path="/catalog" element={<Catalog />} />
       <Route path="/admin" element={<ProtectedAdminRoute />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -693,6 +693,10 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
             {/* Center: Desktop Navigation (Hidden on mobile) */}
             <nav className="hidden lg:flex items-center justify-center gap-8 flex-none">
               <a href="#services" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Services</a>
+              <Link to="/catalog" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Store Catalog</span>
+              </Link>
               <a href="#about" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">About</a>
               <a href="#contact" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Contact</a>
             </nav>
@@ -767,6 +771,18 @@ export default function AITheme({ services = [], businessInfo = {} }: AIThemePro
               Navigation
             </div>
             <nav className="flex flex-col space-y-4">
+              <Link
+                to="/catalog"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
+                style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+              >
+                <span className="flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-[var(--theme-primary)]" />
+                  <span>Store Catalog</span>
+                </span>
+                <ArrowUpRight className="w-5 h-5 opacity-60" />
+              </Link>
               {[
                 { href: '#services', label: 'Services' },
                 { href: '#about', label: 'About Us' },
