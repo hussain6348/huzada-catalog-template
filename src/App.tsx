@@ -1,24 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, Route, Routes, Link } from 'react-router-dom';
 import {
-  Calendar,
-  Clock,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  ExternalLink,
-  Phone,
-  CheckCircle2,
   X,
   ChevronLeft,
   ChevronRight,
-  Maximize2
+  ShoppingBag,
 } from 'lucide-react';
 import { Admin } from './pages/Admin';
-import Services from './pages/Services';
 import { Catalog } from './pages/Catalog';
 import { AdminLogin } from './components/AdminLogin';
-import BookingForm from './components/BookingForm';
 import EditableImage from './components/EditableImage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { clientConfig } from './config/client';
@@ -46,8 +36,6 @@ const EMPTY_BUSINESS_INFO: BusinessInfo = {
 };
 
 function PublicStorefrontPortal() {
-  const [selectedService, setSelectedService] = useState<any>(null);
-  const [detailsService, setDetailsService] = useState<any>(null);
   const [lightboxItem, setLightboxItem] = useState<any | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [products, setProducts] = useState<Product[]>([]);
@@ -232,17 +220,12 @@ function PublicStorefrontPortal() {
 
   useEffect(() => {
     // Check if AITheme module is a populated theme rather than an empty null placeholder
-    import('./components/AITheme')
-      .then((mod) => {
-        const comp = mod.default;
-        if (comp && typeof comp === 'function') {
-          const str = comp.toString();
-          if (str.length > 80 && !str.includes('return null') && !str.includes('returnnull')) {
-            setIsSkinActive(true);
-          }
-        }
-      })
-      .catch(() => {});
+    if (AITheme && typeof AITheme === 'function') {
+      const str = AITheme.toString();
+      if (str.length > 80 && !str.includes('return null') && !str.includes('returnnull')) {
+        setIsSkinActive(true);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -330,94 +313,27 @@ function PublicStorefrontPortal() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxItem]);
 
-  // Listen for AITheme booking trigger events
+  // Listen for image lightbox trigger events
   useEffect(() => {
-    const handleBookingEvent = (e: Event) => {
-      const ce = e as CustomEvent;
-      const detail = ce.detail;
-
-      let requestedName = '';
-      if (typeof detail === 'string') {
-        requestedName = detail;
-      } else if (detail && typeof detail === 'object') {
-        requestedName = detail.service || detail.serviceName || detail.name || detail.id || '';
-      }
-
-      const activeList = Array.isArray(services) && services.length > 0 ? services : [];
-
-      if (!requestedName) {
-        setSelectedService(activeList[0] || {
-          id: `custom-${Date.now()}`,
-          name: 'General Consultation',
-          price: 0,
-          duration: '30 mins',
-          duration_minutes: 30,
-        });
-        return;
-      }
-
-      const matched = activeList.find((s: any) =>
-        s.id?.toLowerCase() === requestedName.toLowerCase() ||
-        s.name?.toLowerCase().includes(requestedName.toLowerCase()) ||
-        requestedName.toLowerCase().includes(s.name?.toLowerCase())
-      );
-
-      setSelectedService(matched || {
-        id: `custom-${Date.now()}`,
-        name: requestedName,
-        price: (detail && typeof detail === 'object' && detail.price) ? Number(detail.price) : 0,
-        duration_minutes: 30,
-      });
-    };
-
-    // Declarative attribute fallback: <button data-waas-book="Service Name">
-    const handleDeclarativeClick = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement)?.closest('[data-waas-book]') as HTMLElement | null;
-      if (target) {
-        e.preventDefault();
-        const serviceName = target.getAttribute('data-waas-book') || target.innerText.trim();
-        window.dispatchEvent(
-          new CustomEvent('open-master-booking', { detail: { service: serviceName } })
-        );
-      }
-    };
-
-    const handleDetailsEvent = (e: Event) => {
-      const ce = e as CustomEvent;
-      if (ce.detail?.service) {
-        setDetailsService(ce.detail.service);
-      }
-    };
-
     const handleImageEvent = (e: Event) => {
       const ce = e as CustomEvent;
       if (ce.detail) {
         setLightboxItem({
-          name: ce.detail.alt || ce.detail.name || 'Service Photo',
+          name: ce.detail.alt || ce.detail.name || 'Storefront Photo',
           images: ce.detail.images || (ce.detail.src ? [ce.detail.src] : []),
         });
         setCurrentImageIndex(0);
       }
     };
 
-    window.addEventListener('open-master-booking', handleBookingEvent);
-    window.addEventListener('open-master-details', handleDetailsEvent);
     window.addEventListener('open-master-image', handleImageEvent);
-    document.addEventListener('open-master-booking', handleBookingEvent);
-    document.addEventListener('open-master-details', handleDetailsEvent);
     document.addEventListener('open-master-image', handleImageEvent);
-    document.addEventListener('click', handleDeclarativeClick);
 
     return () => {
-      window.removeEventListener('open-master-booking', handleBookingEvent);
-      window.removeEventListener('open-master-details', handleDetailsEvent);
       window.removeEventListener('open-master-image', handleImageEvent);
-      document.removeEventListener('open-master-booking', handleBookingEvent);
-      document.removeEventListener('open-master-details', handleDetailsEvent);
       document.removeEventListener('open-master-image', handleImageEvent);
-      document.removeEventListener('click', handleDeclarativeClick);
     };
-  }, [services]);
+  }, []);
 
 
   const handleOpenLightbox = (srv: any) => {
@@ -580,121 +496,6 @@ function PublicStorefrontPortal() {
           </div>
         </div>
       )}
-
-
-
-      {/* Booking Form Modal Overlay */}
-      {detailsService && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 pt-[100px] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setDetailsService(null)}>
-          <div
-            className="rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] relative border bg-[var(--theme-bg)] text-[var(--theme-text)]"
-            style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Clean Header Bar */}
-            <div
-              className="px-6 py-5 border-b flex items-center justify-between bg-[var(--theme-bg)] shrink-0"
-              style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-full border text-[var(--theme-primary)]"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)'
-                  }}
-                >
-                  {detailsService.category || "Service Details"}
-                </span>
-              </div>
-              <button
-                onClick={() => setDetailsService(null)}
-                className="p-2 rounded-full hover:brightness-110 active:scale-95 transition-all cursor-pointer text-[var(--theme-text)]"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)' }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-[var(--theme-primary)]"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            {/* Scrollable Reading Body */}
-            <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6 bg-[var(--theme-bg)]">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-[var(--theme-text)] mb-3">{detailsService.name}</h2>
-                <div
-                  className="flex items-center gap-4 text-sm pb-4 border-b"
-                  style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
-                >
-                    <div
-                      className="flex items-center gap-1.5 font-mono font-medium px-3 py-1 rounded-lg text-[var(--theme-primary)] min-w-0 break-words"
-                      style={{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' }}
-                    >
-                      <Clock size={16} className="text-[var(--theme-primary)] shrink-0" stroke="currentColor" /> {/^\d+$/.test(String(detailsService.duration ?? '').trim()) ? `${detailsService.duration} mins` : String(detailsService.duration || (detailsService.duration_minutes ? `${detailsService.duration_minutes} mins` : '30 mins'))}
-                    </div>
-                  <div className="font-mono font-bold text-xl text-[var(--theme-text)]">
-                    {businessInfo?.currencySymbol || effectiveCurrencySymbol}{detailsService?.price}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider mb-3 text-[var(--theme-text)] opacity-70">Complete Description & Details</h3>
-                <div
-                  className="prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed text-sm sm:text-base p-5 rounded-2xl border shadow-inner text-[var(--theme-text)]"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--theme-text) 5%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)'
-                  }}
-                >
-                  {detailsService.description || "Professional appointment session tailored to your schedule."}
-                </div>
-              </div>
-            </div>
-            {/* Footer Action */}
-            <div
-              className="p-5 sm:p-6 bg-[var(--theme-bg)] border-t shrink-0 flex gap-3"
-              style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
-            >
-              <button
-                onClick={() => setDetailsService(null)}
-                className="flex-1 font-bold py-3.5 rounded-xl hover:brightness-110 active:scale-95 transition-all cursor-pointer text-[var(--theme-text)]"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)' }}
-              >
-                Close
-              </button>
-              <button
-                onClick={() => { setSelectedService(detailsService); setDetailsService(null); }}
-                className="flex-[2] bg-[var(--theme-primary)] text-[var(--theme-bg)] font-bold py-3.5 rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg hover:shadow-xl cursor-pointer flex justify-center items-center gap-2"
-              >
-                Book This Service ({businessInfo?.currencySymbol || effectiveCurrencySymbol}{detailsService?.price})
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedService && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 pt-[100px] overflow-y-auto">
-          <div className="relative w-full max-w-xl my-8">
-            <BookingForm
-              service={selectedService}
-              businessInfo={businessInfo}
-              onClose={() => setSelectedService(null)}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -777,8 +578,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<PublicStorefrontPortal />} />
-      <Route path="/services" element={<Services />} />
       <Route path="/catalog" element={<Catalog />} />
+      <Route path="/services" element={<Navigate to="/catalog" replace />} />
       <Route path="/admin" element={<ProtectedAdminRoute />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

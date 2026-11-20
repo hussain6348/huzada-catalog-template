@@ -88,14 +88,14 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
   return (
     <div className="min-h-screen bg-zinc-100/70 flex flex-col justify-center items-center p-4 sm:p-6 font-sans text-zinc-900 selection:bg-zinc-900 selection:text-white w-full max-w-full overflow-x-hidden">
       <div className="w-full max-w-sm">
-        {/* Return to storefront / public booking view */}
+        {/* Return to storefront / public catalog view */}
         <div className="mb-6">
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Public Booking View</span>
+            <span>Public Storefront</span>
           </Link>
         </div>
 
@@ -108,10 +108,10 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
             </div>
             <div>
               <h1 className="font-bold text-lg text-zinc-900 tracking-tight">
-                Booking Operations Console
+                Storefront Operations Console
               </h1>
               <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                Protected administrative access. Enter security passkey to manage bookings and services.
+                Protected administrative access. Enter security passkey to manage orders and catalog.
               </p>
             </div>
           </div>

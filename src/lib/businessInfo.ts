@@ -7,8 +7,8 @@ export const IMAGE_SLOT_UPDATED_EVENT = 'waas-update-slot-image';
 
 // ─── Default business info (WaaS platform defaults) ──────────────────────────
 export const DEFAULT_BUSINESS_INFO: BusinessInfo = {
-  name: 'Huzada Booking',
-  tagline: 'Professional Appointments Tailored to You',
+  name: 'Huzada Storefront',
+  tagline: 'Curated Products & Premium Essentials',
   whatsapp: '923322264855',
   phone: '+1 (409) 256-3597',
   currency: 'USD',

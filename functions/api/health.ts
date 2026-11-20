@@ -126,7 +126,6 @@ export const onRequestGet = async (context: any) => {
 
     let ordersCount = 0;
     let productsCount = 0;
-    let bookingsCount = 0;
 
     try {
       const ordersRes = await db.execute("SELECT count(*) as total FROM orders");
@@ -136,11 +135,6 @@ export const onRequestGet = async (context: any) => {
     try {
       const productsRes = await db.execute("SELECT count(*) as total FROM products");
       productsCount = Number(productsRes.rows?.[0]?.total ?? 0);
-    } catch {}
-
-    try {
-      const bookingsRes = await db.execute("SELECT count(*) as total FROM bookings");
-      bookingsCount = Number(bookingsRes.rows?.[0]?.total ?? 0);
     } catch {}
 
     // Mask URL for safe display
@@ -153,7 +147,6 @@ export const onRequestGet = async (context: any) => {
       tables,
       ordersCount,
       productsCount,
-      bookingsCount,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

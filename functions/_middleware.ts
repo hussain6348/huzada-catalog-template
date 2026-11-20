@@ -46,8 +46,8 @@ export const onRequest = async (context: any) => {
   }
 
   // 4. Fail-Open Turso Database Fetch
-  let businessName = 'Huzada Booking';
-  let businessDesc = 'Professional Appointments Tailored to You';
+  let businessName = 'Huzada Storefront';
+  let businessDesc = 'Curated Storefront Catalog & Direct Ordering';
   let businessLogo = '';
 
   try {

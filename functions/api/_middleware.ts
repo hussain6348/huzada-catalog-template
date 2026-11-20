@@ -7,12 +7,11 @@ export const onRequest = async (context: any) => {
     return await context.next();
   }
 
-  // Public Action Bypass: Allow unauthenticated login and customer bookings
+  // Public Action Bypass: Allow unauthenticated login and customer orders
   const url = new URL(context.request.url);
   const path = url.pathname.toLowerCase();
   if (
     path.endsWith('/auth') ||
-    path.endsWith('/book') ||
     path.endsWith('/order')
   ) {
     return await context.next();

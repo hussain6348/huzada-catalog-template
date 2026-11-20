@@ -168,6 +168,3 @@ export async function sendOrderPushAlerts(
     })
   );
 }
-
-// Backward-compatibility alias for hybrid setups
-export const sendBookingPushAlerts = sendOrderPushAlerts;

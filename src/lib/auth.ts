@@ -1,8 +1,8 @@
 export const AUTH_CHANGE_EVENT = 'store_auth_changed';
-export const LEGACY_AUTH_CHANGE_EVENT = 'booking_auth_changed';
+export const LEGACY_AUTH_CHANGE_EVENT = 'store_auth_legacy_changed';
 
 const TOKEN_KEY = 'huzada_admin_token';
-const LEGACY_TOKEN_KEY = 'huzada_booking_admin_token';
+const LEGACY_TOKEN_KEY = 'huzada_store_admin_token';
 
 export function getAuthToken(): string | null {
   try {

@@ -402,24 +402,6 @@ export default function AITheme({
     setFailedImages((prev) => ({ ...prev, [key]: true }));
 
   // ─── Event Bridge: Double-Dispatch on window and document ─────────────────
-  const dispatchBooking = (serviceName: string) => {
-    const payload = {
-      service: serviceName,
-      serviceName,
-      name: serviceName,
-      whatsapp: biz.whatsapp,
-      businessName: biz.name,
-    };
-    window.dispatchEvent(new CustomEvent('open-master-booking', { detail: payload }));
-    document.dispatchEvent(new CustomEvent('open-master-booking', { detail: payload }));
-  };
-
-  const dispatchDetails = (service: ServiceItem) => {
-    const payload = { service, businessName: biz.name };
-    window.dispatchEvent(new CustomEvent('open-master-details', { detail: payload }));
-    document.dispatchEvent(new CustomEvent('open-master-details', { detail: payload }));
-  };
-
   const dispatchImageOpen = (src: string, alt: string) => {
     const payload = { src, alt, images: [src], name: alt };
     window.dispatchEvent(new CustomEvent('open-master-image', { detail: payload }));
@@ -709,12 +691,6 @@ export default function AITheme({
                 <ShoppingBag className="w-4 h-4 text-[var(--theme-primary)]" />
                 <span>Store Catalog</span>
               </a>
-              {safeServices.length > 0 && (
-                <a href="#services" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 opacity-70" />
-                  <span>Custom Services</span>
-                </a>
-              )}
               <a href="#about" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">About</a>
               <a href="#contact" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Contact</a>
               <Link to="/admin" className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[var(--theme-border)] text-[var(--theme-text)] opacity-70 hover:opacity-100 transition-all">
@@ -802,20 +778,6 @@ export default function AITheme({
                 </span>
                 <ArrowUpRight className="w-5 h-5 opacity-60" />
               </a>
-              {safeServices.length > 0 && (
-                <a
-                  href="#services"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
-                  style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
-                >
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-[var(--theme-primary)]" />
-                    <span>Custom Services</span>
-                  </span>
-                  <ArrowUpRight className="w-5 h-5 opacity-60" />
-                </a>
-              )}
               <a
                 href="#about"
                 onClick={() => setIsMenuOpen(false)}
@@ -1035,7 +997,7 @@ export default function AITheme({
                 {
                   value: (
                     <>
-                      <AnimatedCounter end={safeProducts.length > 0 ? safeProducts.length : (safeServices.length > 0 ? safeServices.length : 12)} decimals={0} />+
+                      <AnimatedCounter end={safeProducts.length > 0 ? safeProducts.length : 12} decimals={0} />+
                     </>
                   ),
                   label: safeProducts.length > 0 ? 'Catalog Products' : 'Curated Items',
@@ -1205,7 +1167,7 @@ export default function AITheme({
           </FadeInSection>
         </section>
 
-        {/* ── Contact / Direct Booking Banner ─────────────────────────────── */}
+        {/* ── Contact / Direct Support Banner ─────────────────────────────── */}
         <section
           id="contact"
           className="scroll-mt-28 sm:scroll-mt-32 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] py-16 lg:py-20 tracking-[0.01em]"
@@ -1299,7 +1261,7 @@ export default function AITheme({
 
           <nav aria-label="Footer Navigation" className="flex flex-wrap items-center gap-6 text-xs font-medium text-[var(--theme-text-muted)]">
             {[
-              { label: 'Services', href: '#services' },
+              { label: 'Catalog', href: '#catalog' },
               { label: 'About', href: '#about' },
               { label: 'Contact', href: '#contact' },
             ].map((link) => (

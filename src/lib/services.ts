@@ -7,7 +7,7 @@ export const DEFAULT_SERVICE_IMAGE =
 export const INITIAL_SERVICES: Service[] = [];
 
 const STORAGE_KEY = 'waas_services';
-const FALLBACK_STORAGE_KEY = 'huzada_booking_services';
+const FALLBACK_STORAGE_KEY = 'huzada_storefront_services';
 export const SERVICES_UPDATED_EVENT = 'services_updated';
 export const CATALOG_UPDATED_EVENT = 'services_updated';
 

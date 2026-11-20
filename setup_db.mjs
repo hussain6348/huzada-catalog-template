@@ -9,7 +9,7 @@ try {
   // Format the URL for a secure internet request
   url = url.replace('libsql://', 'https://') + '/v2/pipeline';
 
-  const sql = "CREATE TABLE IF NOT EXISTS appointments (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, service TEXT, date TEXT, time TEXT, status TEXT DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP);";
+  const sql = "CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, customer_name TEXT, customer_phone TEXT, customer_address TEXT, notes TEXT, items TEXT, total REAL, status TEXT DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP);";
 
   console.log("Sending command to Turso database...");
   
@@ -20,7 +20,7 @@ try {
   });
 
   if (res.ok) {
-    console.log("✅ SUCCESS: Appointments table is ready!");
+    console.log("✅ SUCCESS: Orders table is ready!");
   } else {
     console.log("❌ Database error:", await res.text());
   }

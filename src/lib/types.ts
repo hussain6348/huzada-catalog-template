@@ -85,26 +85,8 @@ export interface BusinessInfo {
 }
 
 // ==========================================
-// HYBRID APPOINTMENT & SERVICE TYPES
+// STOREFRONT CUSTOM SERVICES & SPECIAL OFFERS
 // ==========================================
-
-export type AppointmentStatus = 'pending' | 'confirmed' | 'processing' | 'cancelled' | 'completed';
-
-export interface Appointment {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  customerName: string;
-  customerPhone: string;
-  customerEmail?: string;
-  date: string;
-  time: string;
-  bookingDate?: string;
-  bookingTime?: string;
-  status: AppointmentStatus;
-  notes?: string;
-  createdAt: string;
-}
 
 export interface Service {
   id: string;

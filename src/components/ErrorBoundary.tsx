@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
           <h2 className="text-base font-bold text-zinc-900">Application Error Intercepted</h2>
           <p className="text-xs text-zinc-500 max-w-md mt-1 mb-4">
-            A localized error occurred while rendering this section. Core booking engine and database routes remain operational.
+            A localized error occurred while rendering this section. Core storefront catalog and order systems remain operational.
           </p>
           <button
             onClick={() => window.location.reload()}
