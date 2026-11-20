@@ -229,7 +229,7 @@ export default function AITheme({
 
   const biz = {
     name: businessInfo.name || clientConfig.businessName || 'Huzada Storefront',
-    tagline: businessInfo.tagline || clientConfig.tagline || 'Curated Products & Signature Services',
+    tagline: businessInfo.tagline || clientConfig.tagline || 'Curated Products & Premium Selection',
     whatsapp: businessInfo.whatsapp || clientConfig.whatsappNumber || '',
     phone: businessInfo.phone || '+1 (409) 256-3597',
     currency: currencyCode,
@@ -1109,211 +1109,32 @@ export default function AITheme({
           </FadeInSection>
         </section>
 
-        {/* ── Services Section ──────────────────────────────────────────────── */}
-        {safeServices.length > 0 && (
-          <section
-            id="services"
-            className="scroll-mt-28 sm:scroll-mt-32 border-t border-[var(--theme-border)] py-16 lg:py-24"
-          >
-            <FadeInSection>
-              <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                  <div className="max-w-2xl">
-                    <p className="text-xs font-medium text-[var(--theme-text-muted)]">
-                      Curated Service Menu · Transparent Rates in {biz.currency}
-                    </p>
-                    <h2 className="font-editorial headline-balance mt-2 text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl">
-                      Available Services &amp; Sessions
-                    </h2>
-                  <p className="mt-3 text-base leading-relaxed text-[var(--theme-text-muted)]">
-                    Select a service below to book your appointment or inspect full details.
-                  </p>
-                </div>
-
-                {categories.length > 0 && safeServices.length > 0 && (
-                  <div
-                    role="tablist"
-                    aria-label="Filter services by category"
-                    className="flex flex-wrap items-center gap-1.5 rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] p-1.5"
-                  >
-                    <button
-                      key="all"
-                      type="button"
-                      role="tab"
-                      aria-selected={selectedCategory === 'all'}
-                      onClick={() => setSelectedCategory('all')}
-                      className={`min-h-[36px] rounded-[var(--theme-radius-inner)] px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] ${
-                        selectedCategory === 'all'
-                          ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)]'
-                          : 'text-[var(--theme-text-muted)] hover:text-[var(--theme-text)]'
-                      }`}
-                    >
-                      All Services
-                    </button>
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        role="tab"
-                        aria-selected={selectedCategory === cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`min-h-[36px] rounded-[var(--theme-radius-inner)] px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] ${
-                          selectedCategory === cat
-                            ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)]'
-                            : 'text-[var(--theme-text-muted)] hover:text-[var(--theme-text)]'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
+        {/* ── Storefront Marquee Ticker ──────────────────────────────────────── */}
+        <div className="border-y border-[var(--theme-border)] bg-[var(--theme-surface)] py-3.5 overflow-hidden">
+          <div className="flex animate-marquee whitespace-nowrap" aria-hidden="true">
+            {(safeProducts.length > 0
+              ? [...safeProducts, ...safeProducts]
+              : [
+                  { name: 'Curated Premium Collections' },
+                  { name: 'Fast Doorstep Delivery' },
+                  { name: 'Instant Web Checkout' },
+                  { name: '100% Quality Guaranteed' },
+                  { name: 'Cash on Delivery & Secure Pay' },
+                  { name: 'Verified Merchant Storefront' },
+                ]
+            ).map((item: any, i: number) => (
+              <span key={i} className="mx-6 text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-muted)] flex items-center">
+                <span>{item.name}</span>
+                {item.price !== undefined && (
+                  <span className="ml-2 font-mono font-bold text-[var(--theme-primary)]">
+                    · {formatPrice(item.price, biz.currencySymbol)}
+                  </span>
                 )}
-              </div>
-
-              {filteredServices.length === 0 ? (
-                <div className="mt-10 flex flex-col items-center justify-center rounded-[var(--theme-radius)] border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] py-20 text-center">
-                  <ShoppingBag className="h-10 w-10 text-[var(--theme-primary)] opacity-40" stroke="currentColor" aria-hidden="true" />
-                  <p className="mt-4 text-base font-semibold text-[var(--theme-text)]">Services coming soon.</p>
-                  <p className="mt-1 text-sm text-[var(--theme-text-muted)]">
-                    Services coming soon.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-6">
-                  {filteredServices.slice(0, 8).map((service, idx) => {
-                    const imgSrc = resolveServiceImage(service);
-                    const imgKey = `service-${service.id || idx}`;
-                    const priceStr = formatPrice(service.price, biz.currencySymbol);
-                    const rawDuration = service.duration ?? service.duration_minutes;
-                    const durationStr = rawDuration
-                      ? (/^\d+$/.test(String(rawDuration).trim()) ? `${rawDuration} mins` : String(rawDuration))
-                      : null;
-
-                    return (
-                      <article
-                        key={service.id || idx}
-                        onMouseMove={handleCardMouseMove}
-                        onMouseLeave={handleCardMouseLeave}
-                        onTouchStart={handleCardTouchMove}
-                        onTouchMove={handleCardTouchMove}
-                        onTouchEnd={handleCardTouchEnd}
-                        onTouchCancel={handleCardTouchEnd}
-                        className="group flex flex-col h-full overflow-hidden isolation-isolate rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-lg hover:shadow-xl hover:border-[var(--theme-primary)] spotlight-card transition-transform duration-200 ease-out hover:z-10 relative active:scale-[0.98]"
-                      >
-                        <div className="relative aspect-[4/5] w-full overflow-hidden bg-[var(--theme-surface-subtle)] border-b border-[var(--theme-border)]">
-                          {imgSrc && !failedImages[imgKey] ? (
-                            <GlassImage
-                              src={imgSrc}
-                              alt={service.name || 'Service photo'}
-                              onClick={() => dispatchImageOpen(imgSrc, service.name || 'Service photo')}
-                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
-                            />
-                          ) : (
-                            <div
-                              className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-3 text-center"
-                              style={{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' }}
-                            >
-                              <ShoppingBag className="h-6 w-6 md:h-8 md:w-8 text-[var(--theme-primary)]" stroke="currentColor" aria-hidden="true" />
-                              <span className="mt-1.5 text-xs font-medium text-[var(--theme-text)] line-clamp-1">
-                                {service.name}
-                              </span>
-                            </div>
-                          )}
-                          {service.badge && (
-                            <div className="absolute top-2 right-2 z-10 bg-[var(--theme-surface-translucent)] backdrop-blur-md border border-[var(--theme-border)] px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold text-[var(--theme-primary)] shadow-xs">
-                              {service.badge}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="relative z-10 flex flex-col flex-grow justify-between p-3 md:p-4">
-                          <div>
-                            <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-[var(--theme-text-subtle)] tabular-nums">
-                              <span className="font-semibold text-[var(--theme-primary)]">
-                                {String(idx + 1).padStart(2, '0')}.
-                              </span>
-                              <span className="truncate">{service.category || 'Service'}</span>
-                              {durationStr && (
-                                <>
-                                  <span aria-hidden="true">·</span>
-                                  <span className="shrink-0 min-w-0 break-words">{durationStr}</span>
-                                </>
-                              )}
-                            </div>
-
-                            <div className="mt-1.5 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-2">
-                              <h3 className="font-editorial font-semibold text-[var(--theme-text)] line-clamp-2 break-words text-sm md:text-base">
-                                {service.name}
-                              </h3>
-                              {priceStr && (
-                                <span className="text-sm md:text-base font-semibold text-[var(--theme-text)] tabular-nums shrink-0">
-                                  {priceStr}
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="mt-2 text-xs md:text-sm leading-relaxed text-[var(--theme-text-muted)] hidden md:block md:line-clamp-2">
-                              {service.description}
-                            </p>
-                          </div>
-
-                          <div className="mt-4 pt-3 border-t border-[var(--theme-border)] flex flex-col gap-1.5 w-full mt-auto">
-                            <button
-                              type="button"
-                              onClick={() => dispatchBooking(service.name || '')}
-                              className="w-full mt-auto inline-flex min-h-[36px] md:min-h-[40px] items-center justify-center gap-1.5 md:gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-3 py-2 text-xs font-semibold text-[var(--theme-on-primary)] whitespace-nowrap transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
-                            >
-                              <span>Book Service</span>
-                              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => dispatchDetails(service)}
-                              className="text-[11px] md:text-xs text-center font-medium text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] transition-colors cursor-pointer underline underline-offset-4 decoration-[var(--theme-border-strong)]"
-                            >
-                              View Details
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-
-                  <div className="w-full flex justify-center mt-8 pb-4">
-                    <Link
-                      to="/services"
-                      className="px-8 py-3 rounded-2xl border text-[var(--theme-text)] font-bold tracking-wide hover:brightness-110 active:scale-95 transition-all backdrop-blur-md cursor-pointer"
-                      style={{
-                        backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)',
-                        borderColor: 'color-mix(in srgb, var(--theme-primary) 50%, transparent)'
-                      }}
-                    >
-                      VIEW ALL SERVICES
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </FadeInSection>
-        </section>
-        )}
-
-        {/* ── Marquee Ticker ───────────────────────────────────────────────── */}
-        {safeServices.length > 0 && (
-          <div className="border-y border-[var(--theme-border)] bg-[var(--theme-surface)] py-3 overflow-hidden">
-            <div className="flex animate-marquee whitespace-nowrap" aria-hidden="true">
-              {[...safeServices, ...safeServices].map((s, i) => (
-                <span key={i} className="mx-6 text-xs font-medium text-[var(--theme-text-muted)]">
-                  {s.name}
-                  <span className="mx-3 text-[var(--theme-primary)] opacity-50">·</span>
-                  {formatPrice(s.price, biz.currencySymbol)}
-                </span>
-              ))}
-            </div>
+                <span className="mx-4 text-[var(--theme-primary)] opacity-40">✦</span>
+              </span>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* ── About Section ─────────────────────────────────────────────────── */}
         <section
@@ -1335,7 +1156,7 @@ export default function AITheme({
                 </div>
 
                 <div className="lg:col-span-7">
-                  <p className="text-xs font-medium text-[var(--theme-text-muted)]">About the Practice</p>
+                  <p className="text-xs font-medium text-[var(--theme-text-muted)]">About Our Storefront</p>
                   <h2 className="font-editorial headline-balance mt-3 text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl whitespace-normal break-words [overflow-wrap:anywhere]">
                     {biz.name}
                   </h2>
@@ -1346,11 +1167,11 @@ export default function AITheme({
                     {[
                       (
                         <>
-                          <AnimatedCounter end={biz.reviewCount} decimals={0} />+ verified client sessions
+                          <AnimatedCounter end={biz.reviewCount} decimals={0} />+ Satisfied Customers &amp; Orders
                         </>
                       ),
-                      `Transparent rates in ${biz.currency}`,
-                      `${safeServices.length > 0 ? safeServices.length + ' services' : 'Multiple services'} available for direct online reservation`,
+                      `Transparent pricing in ${biz.currency} with zero hidden fees`,
+                      `${safeProducts.length > 0 ? safeProducts.length + ' catalog items' : 'Curated products'} available for direct web checkout`,
                     ].map((point, idx) => (
                       <div key={idx} className="flex items-baseline gap-4 py-3.5 text-sm text-[var(--theme-text)]">
                         <span className="text-xs font-semibold text-[var(--theme-primary)] tabular-nums shrink-0">
@@ -1362,14 +1183,13 @@ export default function AITheme({
                   </div>
 
                   <div className="mt-8 flex flex-wrap items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => dispatchBooking(safeServices[0]?.name || 'General Consultation')}
+                    <a
+                      href="#catalog"
                       className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-6 py-2.5 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
                     >
-                      <Calendar className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
-                      <span>Book an Appointment</span>
-                    </button>
+                      <ShoppingBag className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
+                      <span>Explore Catalog</span>
+                    </a>
 
                     <a
                       href={`tel:${biz.phone.replace(/\s+/g, '')}`}

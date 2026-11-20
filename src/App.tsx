@@ -486,9 +486,6 @@ function PublicStorefrontPortal() {
                 <p className="text-xs text-zinc-400 font-mono mt-0.5 min-w-0 break-words">
                   {lightboxItem.category ? `${lightboxItem.category} · ` : ''}
                   {businessInfo?.currencySymbol || effectiveCurrencySymbol}{lightboxItem.price}
-                  {(lightboxItem.duration || lightboxItem.duration_minutes) && (
-                    <span> · {/^\d+$/.test(String(lightboxItem.duration ?? '').trim()) ? `${lightboxItem.duration} mins` : String(lightboxItem.duration || `${lightboxItem.duration_minutes} mins`)}</span>
-                  )}
                 </p>
               </div>
             </div>
