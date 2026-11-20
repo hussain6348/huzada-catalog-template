@@ -1,6 +1,6 @@
 export const clientConfig = {
-  businessName: 'Huzada Market',
-  tagline: 'Professional Appointments Tailored to You',
+  businessName: 'Huzada Storefront',
+  tagline: 'Curated Products & Premium Essentials',
   whatsappNumber: '923001234567',
   currencySymbol: 'Rs.',
 } as const;

@@ -38,7 +38,7 @@ export function resolveImageUrl(
 }
 
 export function getProductPrimaryImage(
-  product?: Partial<Product> | null,
+  product?: Partial<Product> | any,
   fallback = DEFAULT_FALLBACK_IMAGE
 ): string {
   if (!product) return fallback;

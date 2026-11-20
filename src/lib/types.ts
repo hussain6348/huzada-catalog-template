@@ -1,79 +1,40 @@
-export interface Service {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: string;
-  duration_minutes?: number;
-  category?: string;
-  images: string[];
-  imageUrls?: string[];
-  image?: string;
-  image_path?: string;
-  badge?: string;
-  featured?: boolean;
-}
-
-export interface ServiceFormData {
-  name: string;
-  category: string;
-  customCategory?: string;
-  price: number;
-  duration: string;
-  description: string;
-  images: string[];
-  badge: string;
-}
-
-export interface ServiceInput {
-  name: string;
-  category: string;
-  price: number;
-  duration: string;
-  description?: string;
-  images?: string[];
-  badge?: string;
-}
+// ==========================================
+// E-COMMERCE & STOREFRONT DATA TYPES
+// ==========================================
 
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
+  compareAtPrice?: number;
   category: string;
-  images: string[];
   image?: string;
   image_path?: string;
-  stock?: number;
+  images: string[];
+  stock: number;
   badge?: string;
-  duration?: string;
-  featured?: boolean;
+  isFeatured?: boolean;
+  createdAt?: string;
 }
 
-export interface CartItem extends Product {
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
   quantity: number;
+  category?: string;
+  description?: string;
+  image?: string;
+  image_path?: string;
+  images?: string[];
+  stock?: number;
+  badge?: string;
+  compareAtPrice?: number;
+  product?: Product;
 }
 
 export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
-export type AppointmentStatus = 'pending' | 'confirmed' | 'processing' | 'completed' | 'cancelled';
-
-export interface Appointment {
-  id: string;
-  customerName: string;
-  customerPhone: string;
-  customerEmail?: string;
-  serviceName: string;
-  date: string;
-  bookingDate?: string;
-  time?: string;
-  bookingTime?: string;
-  duration?: string;
-  notes?: string;
-  price?: number;
-  total?: number;
-  status: AppointmentStatus;
-  createdAt: string;
-}
 
 export interface Order {
   id: string;
@@ -87,27 +48,32 @@ export interface Order {
   createdAt: string;
 }
 
-// ─── WaaS Master Theme Types ─────────────────────────────────────────────────
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
 
-export type ImageSlot = 'logo' | 'hero' | 'about' | 'promo' | 'hero2' | 'hero3';
-
-export type ImageSlotMap = Partial<Record<ImageSlot, string>>;
+// ==========================================
+// STOREFRONT PROFILE & THEME CONFIGURATION
+// ==========================================
 
 export interface BusinessInfo {
-  name: string;
-  tagline: string;
-  whatsapp: string;
+  name?: string;
+  tagline?: string;
+  whatsapp?: string;
   phone?: string;
-  currency: string;
-  currencySymbol: string;
+  currency?: string;
+  currencySymbol?: string;
   address?: string;
   hours?: string;
   rating?: string;
   reviewCount?: string;
   mapsUrl?: string;
-  imageSlots?: Record<string, string>;
-  logo?: string;
   promoText?: string;
+  imageSlots?: Record<string, string>;
   heroHeadline?: string;
   heroSubheadline?: string;
   aboutDescription?: string;
@@ -115,4 +81,43 @@ export interface BusinessInfo {
   heroImage?: string;
   heroImage2?: string;
   heroImage3?: string;
+  logo?: string;
+}
+
+// ==========================================
+// HYBRID APPOINTMENT & SERVICE TYPES
+// ==========================================
+
+export type AppointmentStatus = 'pending' | 'confirmed' | 'processing' | 'cancelled' | 'completed';
+
+export interface Appointment {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  date: string;
+  time: string;
+  bookingDate?: string;
+  bookingTime?: string;
+  status: AppointmentStatus;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  duration?: string | number;
+  duration_minutes?: number;
+  category: string;
+  badge?: string;
+  image?: string;
+  images?: string[];
+  imageUrls?: string[];
+  image_path?: string;
+  is_active?: boolean;
 }

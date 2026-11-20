@@ -1,6 +1,6 @@
 import { createClient } from "@libsql/client/web";
 import { json } from "../_lib/guard";
-import { sendBookingPushAlerts } from "../_lib/push";
+import { sendOrderPushAlerts } from "../_lib/push";
 
 export const onRequestOptions = async () => {
   return new Response(null, {
@@ -19,21 +19,27 @@ export const onRequestPost = async (context: any) => {
   try {
     body = await request.json();
   } catch {
-    return json({ error: "Bad JSON" }, 400);
+    return json({ error: "Invalid JSON format" }, 400);
   }
 
-  // Security: Cap input lengths to prevent database exhaustion
-  const orderId = String(body.orderId || `ORD-${Date.now()}`).substring(0, 50);
-  const customerName = String(body.customerName || "").substring(0, 100);
-  const customerPhone = String(body.customerPhone || "").substring(0, 50);
-  const customerAddress = String(body.customerAddress || "").substring(0, 300);
-  const notes = String(body.notes || "").substring(0, 500);
-  const total = Math.min(Number(body.total) || 0, 9999999);
+  // Security & Validation: Strict input length and numeric clamping
+  const rawId = String(body.orderId || `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`);
+  const orderId = rawId.replace(/[^a-zA-Z0-9_-]/g, "").substring(0, 50);
+  const customerName = String(body.customerName || "Customer").trim().substring(0, 100);
+  const customerPhone = String(body.customerPhone || "").trim().substring(0, 50);
+  const customerAddress = String(body.customerAddress || "").trim().substring(0, 300);
+  const notes = String(body.notes || "").trim().substring(0, 500);
+  const total = Math.max(0, Math.min(Number(body.total) || 0, 9999999));
   const status = "pending";
 
   let items: any[] = [];
   if (Array.isArray(body.items)) {
-    items = body.items.slice(0, 50); // Cap at 50 items
+    items = body.items.slice(0, 50).map((it: any) => ({
+      id: String(it?.id || it?.product?.id || ""),
+      name: String(it?.name || it?.product?.name || "Product").substring(0, 100),
+      price: Math.max(0, Number(it?.price ?? it?.product?.price ?? 0)),
+      quantity: Math.max(1, Math.min(Number(it?.quantity || 1), 999)),
+    }));
   }
 
   const tursoUrl = env?.TURSO_DATABASE_URL;
@@ -57,7 +63,16 @@ export const onRequestPost = async (context: any) => {
       `);
 
       await db.execute({
-        sql: `INSERT INTO orders (id, customer_name, customer_phone, customer_address, notes, items, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO orders (id, customer_name, customer_phone, customer_address, notes, items, total, status, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(id) DO UPDATE SET
+                customer_name = excluded.customer_name,
+                customer_phone = excluded.customer_phone,
+                customer_address = excluded.customer_address,
+                notes = excluded.notes,
+                items = excluded.items,
+                total = excluded.total,
+                status = excluded.status`,
         args: [
           orderId,
           customerName,
@@ -71,18 +86,20 @@ export const onRequestPost = async (context: any) => {
         ],
       });
 
-      const customerLabel = customerName.trim() || "New Customer";
+      // Format clean, professional e-commerce push alert copy
+      const customerLabel = customerName.trim() || "Customer";
+      const totalItemCount = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
       const firstItemName = (items[0]?.name || "").trim();
       const itemLabel = firstItemName
         ? (items.length > 1 ? `${firstItemName} +${items.length - 1} more` : firstItemName)
-        : (items.length > 0 ? `${items.length} items` : "Order");
-      const detailLabel = total > 0 ? `Rs. ${total}` : "";
+        : (totalItemCount > 0 ? `${totalItemCount} item${totalItemCount === 1 ? '' : 's'}` : "Storefront Order");
+      const priceLabel = total > 0 ? ` (Total: Rs. ${total})` : "";
 
-      const pushPromise = sendBookingPushAlerts(db, {
+      const pushPromise = sendOrderPushAlerts(db, {
         title: "New Order Received",
-        body: `${customerLabel} placed an order for ${itemLabel}${detailLabel ? ` (${detailLabel})` : ""}`,
+        body: `${customerLabel} placed an order for ${itemLabel}${priceLabel}`,
         url: "/admin",
-      }).catch((err) => console.error("Push notification failed:", err));
+      }).catch((err) => console.error("Edge push dispatch failed:", err));
 
       if (typeof context?.waitUntil === "function") {
         context.waitUntil(pushPromise);
@@ -92,5 +109,5 @@ export const onRequestPost = async (context: any) => {
     }
   }
 
-  return json({ success: true, orderId });
+  return json({ success: true, orderId, status: "pending" });
 };

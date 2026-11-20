@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { verifyAuth } from './utils/auth';
+import { requireAdmin, json } from '../_lib/guard';
 import { createDbClient, ensurePushTables } from '../_lib/push';
 
 const jsonHeaders = {
@@ -14,23 +13,18 @@ export const onRequestOptions = async () => {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-token',
     },
   });
 };
 
 export const onRequestPost = async (context: any) => {
-  const authRes = await verifyAuth(context.request, context.env);
-  if (authRes) {
-    return authRes;
-  }
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
 
   const db = createDbClient(context.env);
   if (!db) {
-    return new Response(
-      JSON.stringify({ error: 'Turso database credentials missing in environment' }),
-      { status: 503, headers: jsonHeaders }
-    );
+    return json({ error: 'Turso database credentials missing in environment' }, 503, jsonHeaders);
   }
 
   await ensurePushTables(db);
@@ -39,16 +33,14 @@ export const onRequestPost = async (context: any) => {
   try {
     body = await context.request.json();
   } catch {
-    return new Response(
-      JSON.stringify({ error: 'Invalid JSON request body' }),
-      { status: 400, headers: jsonHeaders }
-    );
+    return json({ error: 'Invalid JSON request body' }, 400, jsonHeaders);
   }
 
   const endpoint = body?.endpoint;
   const p256dh = body?.keys?.p256dh;
   const auth = body?.keys?.auth;
 
+  // Strict input validation for push subscription
   if (
     typeof endpoint !== 'string' ||
     !endpoint.startsWith('https://') ||
@@ -57,10 +49,7 @@ export const onRequestPost = async (context: any) => {
     typeof auth !== 'string' ||
     !auth
   ) {
-    return new Response(
-      JSON.stringify({ error: 'Invalid push subscription payload' }),
-      { status: 400, headers: jsonHeaders }
-    );
+    return json({ error: 'Invalid push subscription payload' }, 400, jsonHeaders);
   }
 
   const userAgent = context.request.headers.get('user-agent') || 'unknown';
@@ -79,50 +68,32 @@ export const onRequestPost = async (context: any) => {
       args: [endpoint, p256dh, auth, userAgent, createdAt],
     });
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Subscribed' }),
-      { status: 200, headers: jsonHeaders }
-    );
+    return json({ success: true, message: 'Subscribed to push alerts' }, 200, jsonHeaders);
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: err?.message || 'Failed to save subscription' }),
-      { status: 500, headers: jsonHeaders }
-    );
+    console.error("Save subscription error:", err);
+    return json({ error: err?.message || 'Failed to save subscription' }, 500, jsonHeaders);
   }
 };
 
 export const onRequestDelete = async (context: any) => {
-  const authRes = await verifyAuth(context.request, context.env);
-  if (authRes) {
-    return authRes;
-  }
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
 
   const db = createDbClient(context.env);
   if (!db) {
-    return new Response(
-      JSON.stringify({ error: 'Turso database credentials missing in environment' }),
-      { status: 503, headers: jsonHeaders }
-    );
+    return json({ error: 'Turso database credentials missing in environment' }, 503, jsonHeaders);
   }
-
-  await ensurePushTables(db);
 
   let body: any;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(
-      JSON.stringify({ error: 'Invalid JSON request body' }),
-      { status: 400, headers: jsonHeaders }
-    );
+    return json({ error: 'Invalid JSON request body' }, 400, jsonHeaders);
   }
 
   const endpoint = body?.endpoint;
-  if (typeof endpoint !== 'string' || endpoint.length === 0) {
-    return new Response(
-      JSON.stringify({ error: 'Missing or invalid endpoint' }),
-      { status: 400, headers: jsonHeaders }
-    );
+  if (!endpoint || typeof endpoint !== 'string') {
+    return json({ error: 'Missing subscription endpoint to delete' }, 400, jsonHeaders);
   }
 
   try {
@@ -131,14 +102,9 @@ export const onRequestDelete = async (context: any) => {
       args: [endpoint],
     });
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Unsubscribed' }),
-      { status: 200, headers: jsonHeaders }
-    );
+    return json({ success: true, message: 'Unsubscribed from push alerts' }, 200, jsonHeaders);
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: err?.message || 'Failed to delete subscription' }),
-      { status: 500, headers: jsonHeaders }
-    );
+    console.error("Delete subscription error:", err);
+    return json({ error: err?.message || 'Failed to delete subscription' }, 500, jsonHeaders);
   }
 };

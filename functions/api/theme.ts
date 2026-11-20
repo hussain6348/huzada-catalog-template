@@ -3,6 +3,7 @@ import { createClient } from '@libsql/client/web';
 import { drizzle } from 'drizzle-orm/libsql';
 import { eq } from 'drizzle-orm';
 import { storefrontSettings } from '../../src/db/schema';
+import { requireAdmin, json } from '../_lib/guard';
 
 const jsonHeaders = {
   'Content-Type': 'application/json',
@@ -115,6 +116,9 @@ export async function onRequestGet(context: any) {
 }
 
 export async function onRequestPost(context: any) {
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
+
   try {
     const env = context.env || {};
     if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {

@@ -12,6 +12,7 @@ async function processCompression(file: File, maxSizeMB: number, maxWidthOrHeigh
   return new File([compressedBlob], safeName, { type: 'image/webp' });
 }
 
+export const compressProduct = (file: File) => processCompression(file, 0.25, 1200, 'product');
 export const compressHero = (file: File) => processCompression(file, 0.5, 1920, 'hero');
 export const compressService = (file: File) => processCompression(file, 0.2, 1080, 'service');
 export const compressLogo = (file: File) => processCompression(file, 0.1, 512, 'logo');

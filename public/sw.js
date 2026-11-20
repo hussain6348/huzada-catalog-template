@@ -16,9 +16,9 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = data.title || 'New Order / Booking Received';
+  const title = data.title || 'New Order Received';
   const options = {
-    body: data.body || 'A new order or appointment has been received.',
+    body: data.body || 'A new customer order has been received.',
     data: {
       url: data.url || '/admin',
     },

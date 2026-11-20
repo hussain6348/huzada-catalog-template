@@ -100,7 +100,7 @@ export async function getOrCreateVapidConfig(db: any): Promise<{
   };
 }
 
-export async function sendBookingPushAlerts(
+export async function sendOrderPushAlerts(
   db: any,
   payload: { title: string; body: string; url?: string }
 ): Promise<void> {
@@ -123,7 +123,11 @@ export async function sendBookingPushAlerts(
   };
 
   const message: PushMessage = {
-    data: JSON.stringify(payload),
+    data: JSON.stringify({
+      title: payload.title || 'New Order Received',
+      body: payload.body || 'A new customer order has been placed.',
+      url: payload.url || '/admin',
+    }),
     options: { ttl: 86400 },
   };
 
@@ -132,7 +136,7 @@ export async function sendBookingPushAlerts(
       const endpoint = String(row.endpoint || '');
       const p256dh = String(row.p256dh || '');
       const auth = String(row.auth || '');
-      if (!endpoint || !p256dh || !auth) return;
+      if (!endpoint || !p256dh || !auth || !endpoint.startsWith('https://')) return;
 
       const subscription: PushSubscription = {
         endpoint,
@@ -164,3 +168,6 @@ export async function sendBookingPushAlerts(
     })
   );
 }
+
+// Backward-compatibility alias for hybrid setups
+export const sendBookingPushAlerts = sendOrderPushAlerts;

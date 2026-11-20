@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createClient } from '@libsql/client/web';
+import { requireAdmin, json } from '../_lib/guard';
 
 interface Env {
   TURSO_DATABASE_URL: string;
@@ -16,10 +17,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     const env = context.env || {};
     if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
-      return new Response(JSON.stringify({ error: 'Turso database credentials missing in environment' }), {
-        headers: jsonHeaders,
-        status: 503,
-      });
+      return json([], 200, jsonHeaders);
     }
 
     const client = createClient({
@@ -36,13 +34,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const result = await client.execute('SELECT * FROM services');
     const services = (result.rows || []).map((row: any) => ({
-      id: row.id, 
-      name: row.name, 
-      category: row.category, 
-      price: row.price,
+      id: String(row.id || ''), 
+      name: String(row.name || ''), 
+      category: String(row.category || 'General'), 
+      price: Number(row.price || 0),
       duration: row.duration != null ? String(row.duration) : '30 mins', 
-      description: row.description, 
-      badge: row.badge,
+      description: String(row.description || ''), 
+      badge: row.badge ? String(row.badge) : undefined,
       images: (() => {
         try {
           return typeof row.images === 'string' ? JSON.parse(row.images || '[]') : (row.images || []);
@@ -52,27 +50,21 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       })()
     }));
 
-    return new Response(JSON.stringify(services), {
-      headers: jsonHeaders,
-      status: 200,
-    });
+    return json(services, 200, jsonHeaders);
   } catch (err: any) {
     console.error("GET Services Error:", err);
-    return new Response(JSON.stringify({ error: err.message || 'Failed to get services' }), {
-      headers: jsonHeaders,
-      status: 500,
-    });
+    return json({ error: err.message || 'Failed to get services' }, 500, jsonHeaders);
   }
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
+
   try {
     const env = context.env || {};
     if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
-      return new Response(JSON.stringify({ error: 'Turso database credentials missing in environment' }), {
-        headers: jsonHeaders,
-        status: 503,
-      });
+      return json({ error: 'Turso database credentials missing in environment' }, 503, jsonHeaders);
     }
 
     const client = createClient({
@@ -84,10 +76,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     try {
       body = await context.request.json();
     } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON request body' }), {
-        headers: jsonHeaders,
-        status: 400,
-      });
+      return json({ error: 'Invalid JSON request body' }, 400, jsonHeaders);
     }
     
     const id = body.id || `SRV-${Math.floor(Math.random() * 10000)}`;
@@ -114,27 +103,21 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       args: [id, name, category, price, duration, description, imagesJson, badge]
     });
 
-    return new Response(JSON.stringify({ success: true, id }), {
-      headers: jsonHeaders,
-      status: 200,
-    });
+    return json({ success: true, id }, 200, jsonHeaders);
   } catch (err: any) {
     console.error("POST Services Error:", err);
-    return new Response(JSON.stringify({ error: err.message || 'Failed to save service' }), {
-      headers: jsonHeaders,
-      status: 500,
-    });
+    return json({ error: err.message || 'Failed to save service' }, 500, jsonHeaders);
   }
 };
 
 export const onRequestDelete: PagesFunction<Env> = async (context) => {
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
+
   try {
     const env = context.env || {};
     if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
-      return new Response(JSON.stringify({ error: 'Turso database credentials missing in environment' }), {
-        headers: jsonHeaders,
-        status: 503,
-      });
+      return json({ error: 'Turso database credentials missing in environment' }, 503, jsonHeaders);
     }
 
     const url = new URL(context.request.url);
@@ -148,10 +131,7 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
     }
 
     if (!id) {
-      return new Response(JSON.stringify({ error: 'Missing service ID to delete' }), {
-        headers: jsonHeaders,
-        status: 400,
-      });
+      return json({ error: 'Missing service ID to delete' }, 400, jsonHeaders);
     }
 
     const client = createClient({
@@ -164,15 +144,9 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       args: [id],
     });
 
-    return new Response(JSON.stringify({ success: true, id }), {
-      headers: jsonHeaders,
-      status: 200,
-    });
+    return json({ success: true, id }, 200, jsonHeaders);
   } catch (err: any) {
     console.error("DELETE Services Error:", err);
-    return new Response(JSON.stringify({ error: err.message || 'Failed to delete service' }), {
-      headers: jsonHeaders,
-      status: 500,
-    });
+    return json({ error: err.message || 'Failed to delete service' }, 500, jsonHeaders);
   }
 };

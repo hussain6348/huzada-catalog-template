@@ -72,7 +72,7 @@ export function Catalog() {
             <Link
               to="/"
               className="p-2 rounded-xl border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
-              title="Return to Booking Portal"
+              title="Return to Home"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>

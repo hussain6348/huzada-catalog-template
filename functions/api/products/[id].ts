@@ -1,16 +1,6 @@
 ﻿import { createClient } from '@libsql/client/web';
 import { requireAdmin, json } from '../../_lib/guard';
-
-const extractFileKey = (urlOrPath: string) => {
-  if (!urlOrPath) return null;
-  try {
-    const urlObj = new URL(urlOrPath);
-    return decodeURIComponent(urlObj.pathname.substring(1));
-  } catch {
-    const path = urlOrPath.startsWith('/') ? urlOrPath.substring(1) : urlOrPath;
-    return decodeURIComponent(path);
-  }
-};
+import { getR2Bucket, extractFileKey } from '../../_lib/r2';
 
 export async function onRequestPut(context: any) {
   const { request, env } = context;
@@ -22,43 +12,78 @@ export async function onRequestPut(context: any) {
     const tursoToken = env?.TURSO_AUTH_TOKEN;
 
     if (!tursoUrl || !tursoToken || typeof tursoUrl !== 'string' || typeof tursoToken !== 'string' || !tursoUrl.trim() || !tursoToken.trim()) {
-      return json({ success: false, error: 'Database pending' }, 400);
+      return json({ success: false, error: 'Database pending configuration' }, 400);
     }
 
     const id = context.params?.id;
+    if (!id || typeof id !== 'string') {
+      return json({ success: false, error: 'Missing product id' }, 400);
+    }
+
     let body: any = {};
     try {
       body = await request.json();
     } catch {
-      body = {};
+      return json({ success: false, error: 'Malformed JSON payload' }, 400);
     }
 
-    const { name, price, description, image_path, category, stock, badge } = body;
+    const name = String(body.name || '').trim();
+    const price = Math.max(0, Number(parseFloat(body.price)) || 0);
+    const description = String(body.description || '').trim();
+    const category = String(body.category || 'General').trim();
+    const stock = Math.max(0, Number(parseInt(body.stock, 10)) || 0);
+    const badge = body.badge ? String(body.badge).trim() : null;
+    const imagesArray = Array.isArray(body.images) ? body.images.map(String).filter(Boolean).slice(0, 5) : [];
+    const imagePath = String(imagesArray[0] || body.image_path || body.image || '').trim();
+
     const client = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
 
-    // Clean up old R2 image if changed
+    // Safe R2 image cleanup if primary image changed
     try {
       const result = await client.execute({ sql: 'SELECT image_path FROM products WHERE id = ?', args: [id] });
       const oldImagePath = result.rows.length > 0 ? (result.rows[0].image_path as string) : null;
-      const r2Bucket = env.BUCKET || env.R2_BUCKET || env.MEDIA || env.CATALOG_BUCKET;
+      const r2Bucket = getR2Bucket(env);
 
-      if (oldImagePath && oldImagePath !== image_path && r2Bucket) {
+      if (oldImagePath && oldImagePath !== imagePath && r2Bucket) {
         const fileKey = extractFileKey(oldImagePath);
         if (fileKey) {
-          await r2Bucket.delete(fileKey);
+          await r2Bucket.delete(fileKey).catch(() => {});
         }
       }
     } catch (cleanupError) {
-      console.error("Non-fatal R2 cleanup notice:", cleanupError);
+      console.warn("Non-fatal R2 cleanup notice:", cleanupError);
     }
 
     await client.execute({
-      sql: 'UPDATE products SET name = ?, price = ?, description = ?, image_path = ?, category = ?, stock = ?, badge = ? WHERE id = ?',
-      args: [name || '', price || 0, description || '', image_path || '', category || 'General', stock ?? 10, badge || null, id]
+      sql: `UPDATE products SET 
+              name = ?, 
+              price = ?, 
+              description = ?, 
+              image = ?, 
+              image_path = ?, 
+              images = ?, 
+              category = ?, 
+              stock = ?, 
+              badge = ? 
+            WHERE id = ?`,
+      args: [
+        name,
+        price,
+        description,
+        imagePath,
+        imagePath,
+        JSON.stringify(imagesArray.length > 0 ? imagesArray : (imagePath ? [imagePath] : [])),
+        category,
+        stock,
+        badge,
+        id,
+      ],
     });
+
     return json({ success: true, id });
   } catch (error: any) {
-    return json({ error: error?.message || 'Server error' }, 500);
+    console.error("Product update error:", error);
+    return json({ error: error?.message || 'Server error updating product' }, 500);
   }
 }
 
@@ -72,33 +97,39 @@ export async function onRequestDelete(context: any) {
     const tursoToken = env?.TURSO_AUTH_TOKEN;
 
     if (!tursoUrl || !tursoToken || typeof tursoUrl !== 'string' || typeof tursoToken !== 'string' || !tursoUrl.trim() || !tursoToken.trim()) {
-      return json({ success: false, error: 'Database pending' }, 400);
+      return json({ success: false, error: 'Database pending configuration' }, 400);
     }
 
     const id = context.params?.id;
+    if (!id || typeof id !== 'string') {
+      return json({ success: false, error: 'Missing product id' }, 400);
+    }
+
     const client = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
 
     try {
       const result = await client.execute({ sql: 'SELECT image_path FROM products WHERE id = ?', args: [id] });
       const oldImagePath = result.rows.length > 0 ? (result.rows[0].image_path as string) : null;
-      const r2Bucket = env.BUCKET || env.R2_BUCKET || env.MEDIA || env.CATALOG_BUCKET;
+      const r2Bucket = getR2Bucket(env);
 
       if (oldImagePath && r2Bucket) {
         const fileKey = extractFileKey(oldImagePath);
         if (fileKey) {
-          await r2Bucket.delete(fileKey);
+          await r2Bucket.delete(fileKey).catch(() => {});
         }
       }
     } catch (cleanupError) {
-      console.error("Non-fatal R2 cleanup notice:", cleanupError);
+      console.warn("Non-fatal R2 cleanup notice:", cleanupError);
     }
 
     await client.execute({
       sql: 'DELETE FROM products WHERE id = ?',
-      args: [id]
+      args: [id],
     });
+
     return json({ success: true, id });
   } catch (error: any) {
-    return json({ error: error?.message || 'Server error' }, 500);
+    console.error("Product delete error:", error);
+    return json({ error: error?.message || 'Server error deleting product' }, 500);
   }
 }

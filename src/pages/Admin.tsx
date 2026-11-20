@@ -119,7 +119,7 @@ interface AdminProps {
 }
 
 export function Admin({ onLogout }: AdminProps = {}) {
-  const [activeTab, setActiveTab] = useState<'appointments' | 'orders' | 'services' | 'inventory' | 'settings'>('appointments');
+  const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'settings' | 'appointments' | 'services'>('orders');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [inventory, setInventory] = useState<Product[]>(() => getStoredProducts());
@@ -2006,27 +2006,6 @@ export function Admin({ onLogout }: AdminProps = {}) {
         {/* Multi-Tab Navigation Controls */}
         <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 overflow-x-auto max-w-full no-scrollbar">
           <button
-            onClick={() => setActiveTab('appointments')}
-            className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
-              activeTab === 'appointments'
-                ? 'bg-zinc-900 text-white shadow-2xs'
-                : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Client Appointments</span>
-            <span
-              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
-                activeTab === 'appointments'
-                  ? 'bg-zinc-700 text-zinc-200'
-                  : 'bg-zinc-100 text-zinc-600'
-              }`}
-            >
-              {appointments.length}
-            </span>
-          </button>
-
-          <button
             onClick={() => setActiveTab('orders')}
             className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
               activeTab === 'orders'
@@ -2044,27 +2023,6 @@ export function Admin({ onLogout }: AdminProps = {}) {
               }`}
             >
               {orders.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('services')}
-            className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
-              activeTab === 'services'
-                ? 'bg-zinc-900 text-white shadow-2xs'
-                : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Services Registry</span>
-            <span
-              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
-                activeTab === 'services'
-                  ? 'bg-zinc-700 text-zinc-200'
-                  : 'bg-zinc-100 text-zinc-600'
-              }`}
-            >
-              {services.length}
             </span>
           </button>
 
@@ -2098,7 +2056,49 @@ export function Admin({ onLogout }: AdminProps = {}) {
             }`}
           >
             <Settings className="w-3.5 h-3.5" />
-            <span>Studio Settings</span>
+            <span>Storefront Settings</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('appointments')}
+            className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
+              activeTab === 'appointments'
+                ? 'bg-zinc-900 text-white shadow-2xs'
+                : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Client Appointments</span>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                activeTab === 'appointments'
+                  ? 'bg-zinc-700 text-zinc-200'
+                  : 'bg-zinc-100 text-zinc-600'
+              }`}
+            >
+              {appointments.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('services')}
+            className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
+              activeTab === 'services'
+                ? 'bg-zinc-900 text-white shadow-2xs'
+                : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Services Registry</span>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                activeTab === 'services'
+                  ? 'bg-zinc-700 text-zinc-200'
+                  : 'bg-zinc-100 text-zinc-600'
+              }`}
+            >
+              {services.length}
+            </span>
           </button>
         </div>
 

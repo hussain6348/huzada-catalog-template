@@ -41,7 +41,7 @@ export const onRequestGet = async (context: any) => {
       error: `Missing required environment variable(s): ${missingKeys.join(", ")}.`,
       detail:
         envKeysPresent.length === 0
-          ? "No custom environment variables detected in this Cloudflare deployment. In Cloudflare Pages, environment variables only apply to subsequent builds. You must trigger a new deployment ('Manage deployment' -> 'Retry deployment') for added variables to activate."
+          ? "No custom environment variables detected in this Cloudflare deployment. In Cloudflare Pages, environment variables apply to subsequent builds."
           : `Active variables detected: [${envKeysPresent.join(", ")}], but ${missingKeys.join(", ")} is missing.`,
       code: "DB_PENDING",
       missingKeys,
@@ -59,7 +59,6 @@ export const onRequestGet = async (context: any) => {
     return jsonResponse({
       connected: false,
       error: `TURSO_DATABASE_URL is incomplete ('${tursoUrl}'). The database hostname was not appended.`,
-      detail: "Expected format: libsql://[db-name]-[org].turso.io. Check your n8n workflow expression for Hostname extraction.",
       code: "DB_INVALID_URL",
       timestamp: new Date().toISOString(),
     });
@@ -85,34 +84,63 @@ export const onRequestGet = async (context: any) => {
       authToken: tursoToken,
     });
 
-    // 3. Ping database with basic query
+    // 3. Ping database
     await db.execute("SELECT 1 as ping");
 
-    // 4. Ensure bookings table exists (self-healing migration)
+    // 4. Ensure tables exist
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS bookings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_id TEXT,
+      CREATE TABLE IF NOT EXISTS orders (
+        id TEXT PRIMARY KEY,
         customer_name TEXT,
         customer_phone TEXT,
-        service_name TEXT,
-        booking_date TEXT,
-        booking_time TEXT,
-        status TEXT DEFAULT 'Pending',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        customer_address TEXT,
+        notes TEXT,
+        items TEXT,
+        total REAL,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT
       )
     `);
 
-    // 5. Inspect existing tables and count rows
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        description TEXT,
+        category TEXT,
+        price REAL,
+        stock INTEGER DEFAULT 10,
+        image TEXT,
+        image_path TEXT,
+        images TEXT,
+        badge TEXT,
+        created_at TEXT
+      )
+    `);
+
+    // 5. Inspect tables and counts
     const tablesResult = await db.execute(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_litestream_%'"
     );
     const tables = (tablesResult.rows || []).map((r: any) => String(r.name || r[0]));
 
+    let ordersCount = 0;
+    let productsCount = 0;
     let bookingsCount = 0;
+
     try {
-      const countResult = await db.execute("SELECT count(*) as total FROM bookings");
-      bookingsCount = Number(countResult.rows?.[0]?.total ?? countResult.rows?.[0]?.[0] ?? 0);
+      const ordersRes = await db.execute("SELECT count(*) as total FROM orders");
+      ordersCount = Number(ordersRes.rows?.[0]?.total ?? 0);
+    } catch {}
+
+    try {
+      const productsRes = await db.execute("SELECT count(*) as total FROM products");
+      productsCount = Number(productsRes.rows?.[0]?.total ?? 0);
+    } catch {}
+
+    try {
+      const bookingsRes = await db.execute("SELECT count(*) as total FROM bookings");
+      bookingsCount = Number(bookingsRes.rows?.[0]?.total ?? 0);
     } catch {}
 
     // Mask URL for safe display
@@ -120,8 +148,11 @@ export const onRequestGet = async (context: any) => {
 
     return jsonResponse({
       connected: true,
+      service: "huzada-catalog-template",
       databaseUrl: maskedUrl,
       tables,
+      ordersCount,
+      productsCount,
       bookingsCount,
       timestamp: new Date().toISOString(),
     });

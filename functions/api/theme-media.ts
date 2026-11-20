@@ -1,4 +1,5 @@
 import { createClient } from '@libsql/client/web';
+import { requireAdmin, json } from '../_lib/guard';
 
 const jsonHeaders = {
   'Content-Type': 'application/json',
@@ -9,7 +10,7 @@ const jsonHeaders = {
 export async function onRequestGet(context: any) {
   try {
     const env = context.env;
-    if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) return new Response(JSON.stringify({}), { status: 200, headers: jsonHeaders });
+    if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) return json({}, 200, jsonHeaders);
 
     const db = createClient({ url: env.TURSO_DATABASE_URL.trim(), authToken: env.TURSO_AUTH_TOKEN.trim() });
     await db.execute('CREATE TABLE IF NOT EXISTS theme_settings (slot_id TEXT PRIMARY KEY, image_url TEXT)');
@@ -19,28 +20,33 @@ export async function onRequestGet(context: any) {
 
     if (slotId) {
       const res = await db.execute({ sql: 'SELECT image_url FROM theme_settings WHERE slot_id = ?', args: [slotId] });
-      return new Response(JSON.stringify({ image_url: res.rows.length > 0 ? res.rows[0].image_url : null }), { headers: jsonHeaders });
+      return json({ image_url: res.rows.length > 0 ? res.rows[0].image_url : null }, 200, jsonHeaders);
     } else {
       const res = await db.execute('SELECT * FROM theme_settings');
-      return new Response(JSON.stringify(res.rows), { headers: jsonHeaders });
+      return json(res.rows, 200, jsonHeaders);
     }
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: jsonHeaders });
+    return json({ error: e.message }, 500, jsonHeaders);
   }
 }
 
 export async function onRequestPost(context: any) {
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
+
   try {
     const env = context.env || {};
     if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
-      return new Response(JSON.stringify({ success: false, error: 'Turso credentials missing' }), {
-        status: 200,
-        headers: jsonHeaders,
-      });
+      return json({ success: false, error: 'Turso credentials missing' }, 200, jsonHeaders);
     }
 
     const db = createClient({ url: env.TURSO_DATABASE_URL.trim(), authToken: env.TURSO_AUTH_TOKEN.trim() });
-    const body = await context.request.json();
+    let body: any = {};
+    try {
+      body = await context.request.json();
+    } catch {
+      return json({ error: 'Invalid JSON request' }, 400, jsonHeaders);
+    }
 
     const slotId = body?.slot_id ?? body?.slot ?? body?.slotId ?? (body?.logo !== undefined ? 'logo' : null);
     const imageUrl = body?.image_url ?? body?.imageUrl ?? body?.url ?? (typeof body?.logo === 'string' ? body.logo : null);
@@ -60,24 +66,27 @@ export async function onRequestPost(context: any) {
     if (bizRes.rows && bizRes.rows.length > 0 && bizRes.rows[0]?.data) {
       try {
         bizData = JSON.parse(bizRes.rows[0].data as string) || {};
-      } catch {
+      } catch (err) {
         bizData = {};
       }
     }
-    bizData.imageSlots = bizData.imageSlots || {};
-    if (slotId && imageUrl) {
-      bizData.imageSlots[slotId] = imageUrl;
-      if (slotId === 'logo') {
-        bizData.logo = imageUrl;
-      }
+
+    if (!bizData.imageSlots) bizData.imageSlots = {};
+    if (slotId) {
+      bizData.imageSlots[slotId] = imageUrl ?? null;
+      if (slotId === 'logo') bizData.logo = imageUrl ?? null;
+      if (slotId === 'hero') bizData.heroImage = imageUrl ?? null;
+      if (slotId === 'hero2') bizData.heroImage2 = imageUrl ?? null;
+      if (slotId === 'hero3') bizData.heroImage3 = imageUrl ?? null;
     }
+
     await db.execute({
       sql: 'INSERT INTO business_info (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data',
-      args: ['default', JSON.stringify(bizData) || '{}'],
+      args: ['default', JSON.stringify(bizData)]
     });
 
-    return new Response(JSON.stringify({ success: true }), { headers: jsonHeaders });
+    return json({ success: true, slot_id: slotId, image_url: imageUrl }, 200, jsonHeaders);
   } catch (e: any) {
-     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: jsonHeaders });
+    return json({ error: e.message }, 500, jsonHeaders);
   }
 }

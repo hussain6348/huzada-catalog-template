@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { requireAdmin, json } from '../_lib/guard';
+
 const jsonHeaders = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
@@ -10,11 +12,12 @@ interface Env {
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
+
   const { env } = context;
   if (!env?.TURSO_DATABASE_URL || !env?.TURSO_AUTH_TOKEN) {
-    return new Response(JSON.stringify({ success: true, appointments: [] }), {
-      headers: jsonHeaders,
-    });
+    return json({ success: true, appointments: [] }, 200, jsonHeaders);
   }
   try {
     const res = await fetch(`${env.TURSO_DATABASE_URL.replace('libsql://', 'https://')}/v2/pipeline`, {
@@ -45,21 +48,24 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       status: String(r[7]?.value ?? 'pending'),
       createdAt: String(r[8]?.value ?? new Date().toISOString()),
     }));
-    return new Response(JSON.stringify({ success: true, appointments }), {
-      headers: jsonHeaders,
-    });
+    return json({ success: true, appointments }, 200, jsonHeaders);
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
-      status: 500,
-      headers: jsonHeaders,
-    });
+    return json({ success: false, error: err.message }, 500, jsonHeaders);
   }
 };
 
 export const onRequestPatch: PagesFunction<Env> = async (context) => {
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
+
   const { request, env } = context;
   try {
     const { id, status } = ((await request.json()) || {}) as { id: string; status: string };
+    const ALLOWED_STATUSES = ['pending', 'confirmed', 'cancelled'];
+    if (!id || typeof id !== 'string' || !ALLOWED_STATUSES.includes(status)) {
+      return json({ error: 'Invalid appointment update payload' }, 400, jsonHeaders);
+    }
+
     if (env?.TURSO_DATABASE_URL && env?.TURSO_AUTH_TOKEN) {
       await fetch(`${env.TURSO_DATABASE_URL.replace('libsql://', 'https://')}/v2/pipeline`, {
         method: 'POST',
@@ -83,13 +89,8 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
         }),
       });
     }
-    return new Response(JSON.stringify({ success: true, id, status }), {
-      headers: jsonHeaders,
-    });
+    return json({ success: true, id, status }, 200, jsonHeaders);
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
-      status: 500,
-      headers: jsonHeaders,
-    });
+    return json({ success: false, error: err.message }, 500, jsonHeaders);
   }
 };

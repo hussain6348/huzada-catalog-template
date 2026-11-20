@@ -1,9 +1,10 @@
-// @ts-nocheck
+import { requireAdmin, json } from '../../_lib/guard';
+import { getR2Bucket } from '../../_lib/r2';
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS, DELETE',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-token',
 };
 
 export async function onRequestOptions() {
@@ -16,7 +17,6 @@ export async function onRequestOptions() {
 export async function onRequestGet(context: any) {
   const { request, env, params } = context;
 
-  // 1. The Preflight Interceptor
   if (request?.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -26,7 +26,7 @@ export async function onRequestGet(context: any) {
 
   const rawKey = params?.key;
   const key = rawKey ? decodeURIComponent(rawKey) : '';
-  const bucket = env?.R2_STORAGE || env?.BUCKET || env?.STORAGE;
+  const bucket = getR2Bucket(env);
 
   if (!bucket) {
     return new Response('Storage binding not configured', {
@@ -41,9 +41,8 @@ export async function onRequestGet(context: any) {
       object = await bucket.get(rawKey);
     }
 
-    // 404 Shield with Universal CORS
     if (!object) {
-      return new Response('Not found', {
+      return new Response('Media asset not found', {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
       });
@@ -52,12 +51,10 @@ export async function onRequestGet(context: any) {
     const headers = new Headers();
     object.writeHttpMetadata(headers);
     headers.set('etag', object.httpEtag);
-    headers.set('Cache-Control', 'public, max-age=31536000');
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 
-    // 2 & 3. Universal Response Shield: Append CORS headers to every response
     Object.entries(corsHeaders).forEach(([k, v]) => headers.set(k, v));
 
-    // 4. MIME Type Fallback: Derive from R2 metadata, file extension, or fallback to application/octet-stream
     let contentType = headers.get('content-type') || object.httpMetadata?.contentType;
     if (!contentType) {
       const ext = key.split('.').pop()?.toLowerCase();
@@ -77,8 +74,7 @@ export async function onRequestGet(context: any) {
 
     return new Response(object.body, { headers });
   } catch (error: any) {
-    // 500 Shield with Universal CORS
-    return new Response(JSON.stringify({ error: error.message || 'Failed to retrieve media' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Failed to retrieve media asset' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -88,41 +84,24 @@ export async function onRequestGet(context: any) {
 export async function onRequestDelete(context: any) {
   const { request, env, params } = context;
 
-  // Preflight Interceptor
-  if (request?.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
+  // Protect deletion with Ghost Lock
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
+
+  const key = params?.key ? decodeURIComponent(params.key) : '';
+  if (!key) {
+    return json({ error: 'Missing file key to delete', success: false }, 400, corsHeaders);
+  }
+
+  const bucket = getR2Bucket(env);
+  if (!bucket) {
+    return json({ error: 'Storage binding not configured', success: false }, 503, corsHeaders);
   }
 
   try {
-    const key = params?.key;
-    if (!key) {
-      return new Response(
-        JSON.stringify({ error: 'Missing file key to delete', success: false }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const bucket = env?.R2_STORAGE || env?.BUCKET || env?.STORAGE;
-    if (!bucket) {
-      return new Response(
-        JSON.stringify({ error: 'Storage binding not configured', success: false }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     await bucket.delete(key);
-
-    return new Response(
-      JSON.stringify({ success: true, key, message: 'R2 asset deleted successfully' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ success: true, key, message: 'Media asset deleted successfully' }, 200, corsHeaders);
   } catch (error: any) {
-    return new Response(
-      JSON.stringify({ error: error.message || 'Failed to delete file from R2', success: false }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ error: error?.message || 'Failed to delete file from R2', success: false }, 500, corsHeaders);
   }
 }

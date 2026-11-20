@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createClient } from '@libsql/client/web';
+import { requireAdmin, json } from '../_lib/guard';
 
 const jsonHeaders = {
   'Content-Type': 'application/json',
@@ -11,10 +12,7 @@ export async function onRequestGet(context: any) {
   try {
     const env = context.env || {};
     if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
-      return new Response(JSON.stringify({ success: false, error: 'Turso credentials missing' }), {
-        status: 200,
-        headers: jsonHeaders,
-      });
+      return json({ success: true, businessInfo: null }, 200, jsonHeaders);
     }
 
     const db = createClient({
@@ -30,30 +28,23 @@ export async function onRequestGet(context: any) {
 
     if (res.rows && res.rows.length > 0 && res.rows[0].data) {
       const businessInfo = JSON.parse(res.rows[0].data as string);
-      return new Response(JSON.stringify({ success: true, businessInfo }), {
-        headers: jsonHeaders,
-      });
+      return json({ success: true, businessInfo }, 200, jsonHeaders);
     }
 
-    return new Response(JSON.stringify({ success: true, businessInfo: null }), {
-      headers: jsonHeaders,
-    });
+    return json({ success: true, businessInfo: null }, 200, jsonHeaders);
   } catch (e: any) {
-    return new Response(JSON.stringify({ success: false, error: e.message }), {
-      status: 500,
-      headers: jsonHeaders,
-    });
+    return json({ success: false, error: e.message }, 500, jsonHeaders);
   }
 }
 
 export async function onRequestPost(context: any) {
+  const denied = await requireAdmin(context.request, context.env);
+  if (denied) return denied;
+
   try {
     const env = context.env || {};
     if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
-      return new Response(JSON.stringify({ success: false, error: 'Turso credentials missing' }), {
-        status: 200,
-        headers: jsonHeaders,
-      });
+      return json({ success: false, error: 'Turso credentials missing' }, 200, jsonHeaders);
     }
 
     const db = createClient({
@@ -64,9 +55,13 @@ export async function onRequestPost(context: any) {
     await db.execute('CREATE TABLE IF NOT EXISTS business_info (id TEXT PRIMARY KEY, data TEXT)');
     await db.execute('CREATE TABLE IF NOT EXISTS theme_settings (slot_id TEXT PRIMARY KEY, image_url TEXT)');
 
-    const body = await context.request.json();
+    let body: any = {};
+    try {
+      body = await context.request.json();
+    } catch {
+      return json({ error: 'Invalid JSON request body' }, 400, jsonHeaders);
+    }
 
-    // Ensure body contains promoText preserved in JSON stringify payload alongside R2 image slots
     const serializedData = JSON.stringify(body);
 
     await db.execute({
@@ -74,7 +69,6 @@ export async function onRequestPost(context: any) {
       args: ['default', serializedData],
     });
 
-    // Also sync promoText to theme_settings table if provided
     if (body.promoText !== undefined) {
       await db.execute({
         sql: 'INSERT INTO theme_settings (slot_id, image_url) VALUES (?, ?) ON CONFLICT(slot_id) DO UPDATE SET image_url=excluded.image_url',
@@ -82,13 +76,8 @@ export async function onRequestPost(context: any) {
       });
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: jsonHeaders,
-    });
+    return json({ success: true }, 200, jsonHeaders);
   } catch (e: any) {
-    return new Response(JSON.stringify({ success: false, error: e.message }), {
-      status: 500,
-      headers: jsonHeaders,
-    });
+    return json({ success: false, error: e.message }, 500, jsonHeaders);
   }
 }
