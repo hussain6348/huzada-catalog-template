@@ -57,6 +57,40 @@ export function Catalog() {
     return () => window.removeEventListener('huzada_open_lightbox', handleOpenLightbox);
   }, []);
 
+  // Lightbox keyboard navigation (Escape, ArrowLeft, ArrowRight)
+  useEffect(() => {
+    if (!lightboxProduct) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxProduct(null);
+      } else if (e.key === 'ArrowLeft' && lightboxProduct.images.length > 1) {
+        setLightboxProduct((prev) =>
+          prev
+            ? {
+                ...prev,
+                index: prev.index === 0 ? prev.images.length - 1 : prev.index - 1,
+              }
+            : null
+        );
+      } else if (e.key === 'ArrowRight' && lightboxProduct.images.length > 1) {
+        setLightboxProduct((prev) =>
+          prev
+            ? {
+                ...prev,
+                index: prev.index === prev.images.length - 1 ? 0 : prev.index + 1,
+              }
+            : null
+        );
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [lightboxProduct]);
+
   const effectiveCurrency = businessInfo?.currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
   return (

@@ -57,8 +57,10 @@ export function CatalogEngine({
         setActiveProducts(e.detail);
       }
     };
-    window.addEventListener(CATALOG_UPDATED_EVENT, handler);
-    return () => window.removeEventListener(CATALOG_UPDATED_EVENT, handler);
+    if (typeof window !== 'undefined') {
+      window.addEventListener(CATALOG_UPDATED_EVENT, handler);
+      return () => window.removeEventListener(CATALOG_UPDATED_EVENT, handler);
+    }
   }, [initialProducts]);
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -100,23 +102,36 @@ export function CatalogEngine({
       });
   }, [activeProducts, selectedCategory, searchQuery, sortBy]);
 
-  // Cart calculations
-  const cartItemCount = (cart || []).reduce((sum, item) => sum + (item.quantity || 1), 0);
-  const cartTotal = (cart || []).reduce(
-    (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
-    0
-  );
+  // Cart math calculations
+  const cartItemCount = useMemo(() => {
+    if (!Array.isArray(cart)) return 0;
+    return cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+  }, [cart]);
+
+  const cartTotal = useMemo(() => {
+    if (!Array.isArray(cart)) return 0;
+    return cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+  }, [cart]);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((i) => i.id === product.id);
       if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: (item.quantity || 1) + 1 } : item
+        return prev.map((i) =>
+          i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
-      const primaryImg = getProductPrimaryImage(product);
-      return [...prev, { ...product, image: primaryImg, quantity: 1 }];
+      return [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          image: getProductPrimaryImage(product),
+          images: product.images,
+        },
+      ];
     });
   };
 
@@ -139,7 +154,7 @@ export function CatalogEngine({
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 font-sans text-[var(--theme-text)]">
-      {/* Top Filter & Bag Action Bar */}
+      {/* Top Filter & Bag Action Bar with Glass Depth */}
       <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {/* Search Field */}
@@ -150,7 +165,7 @@ export function CatalogEngine({
               placeholder="Search products by title or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-10 pr-4 py-2 text-sm text-[var(--theme-text)] placeholder:text-[var(--theme-text-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 focus:border-[var(--theme-primary)] transition-colors"
+              className="w-full bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-10 pr-4 py-2 text-sm text-[var(--theme-text)] placeholder:text-[var(--theme-text-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 focus:border-[var(--theme-primary)] transition-all"
             />
             {searchQuery && (
               <button
@@ -170,7 +185,7 @@ export function CatalogEngine({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="appearance-none bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] px-3.5 py-2 pr-8 text-xs font-medium text-[var(--theme-text)] hover:border-[var(--theme-border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 cursor-pointer"
+                className="appearance-none bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] px-3.5 py-2 pr-8 text-xs font-medium text-[var(--theme-text)] hover:border-[var(--theme-border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 cursor-pointer transition-colors"
               >
                 <option value="featured">Featured Sort</option>
                 <option value="price-asc">Price: Low to High</option>
@@ -183,7 +198,7 @@ export function CatalogEngine({
             <button
               type="button"
               onClick={() => setIsDrawerOpen(true)}
-              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] rounded-[var(--theme-radius-inner)] px-4 py-2 text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors shrink-0 cursor-pointer active:scale-95"
+              className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] rounded-[var(--theme-radius-inner)] px-4 py-2 text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all shrink-0 cursor-pointer active:scale-95"
             >
               <ShoppingBag className="w-4 h-4 text-[var(--theme-on-primary)]" />
               <span>Bag</span>
@@ -209,7 +224,7 @@ export function CatalogEngine({
                   type="button"
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] text-xs font-medium whitespace-nowrap transition-all duration-150 cursor-pointer active:scale-95 ${
                     active
                       ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-xs font-semibold'
                       : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-border)] border border-[var(--theme-border)]'
@@ -223,17 +238,17 @@ export function CatalogEngine({
         )}
       </div>
 
-      {/* Product Grid / Clean Empty States */}
+      {/* Products Grid with 3D Elevation */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-12 text-center space-y-3 shadow-xs text-[var(--theme-text)]">
-          <Package className="w-12 h-12 text-[var(--theme-text-subtle)] mx-auto opacity-70" />
-          <h3 className="text-lg font-semibold text-[var(--theme-text)] font-editorial">
-            {activeProducts.length === 0 ? 'Catalog is Empty' : 'No products found'}
+        <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-12 text-center space-y-3 shadow-xs">
+          <Package className="w-12 h-12 text-[var(--theme-text-subtle)] mx-auto opacity-50" />
+          <h3 className="text-base font-semibold text-[var(--theme-text)]">
+            {activeProducts.length === 0 ? 'No Products Available' : 'No matching products found'}
           </h3>
           <p className="text-xs text-[var(--theme-text-muted)] max-w-sm mx-auto leading-relaxed">
             {activeProducts.length === 0
-              ? 'No products have been published to the catalog yet. Check back soon!'
-              : 'Try adjusting your search query or selecting a different category filter.'}
+              ? 'Our storefront catalog is currently empty. Check back soon for new arrivals.'
+              : 'Try clearing your search query or switching categories.'}
           </p>
           {activeProducts.length > 0 && (
             <button
@@ -249,7 +264,7 @@ export function CatalogEngine({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
             const inCart = (cart || []).find((i) => i.id === product.id);
             return (
@@ -268,25 +283,47 @@ export function CatalogEngine({
         </div>
       )}
 
-      {/* Slide-over Cart Drawer */}
+      {/* ── 3D Elevated Floating Shopping Bag Button (Tactile Quick-Access) ──── */}
+      {cartItemCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setIsDrawerOpen(true)}
+          className="!fixed !bottom-8 !left-6 md:!bottom-10 md:!left-8 !z-40 flex items-center gap-2.5 px-4.5 py-3 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.3)] hover:brightness-110 active:scale-95 transition-all duration-300 btn-radar isolate touch-manipulation cursor-pointer border border-[var(--theme-on-primary-border)]"
+          aria-label={`Open shopping bag with ${cartItemCount} items`}
+        >
+          <ShoppingBag className="w-5 h-5 text-[var(--theme-on-primary)]" />
+          <span className="text-xs font-bold font-mono">
+            {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
+          </span>
+          <span className="border-l border-[var(--theme-on-primary-border)] pl-2 text-xs font-mono font-bold tabular-nums">
+            {effectiveCurrency} {cartTotal.toLocaleString()}
+          </span>
+        </button>
+      )}
+
+      {/* ── Slide-over Cart Drawer with 3D Slide & Backdrop Blur ─────────────── */}
       {isDrawerOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-50 overflow-hidden font-sans">
+          {/* Backdrop with Blur */}
           <div
             onClick={() => setIsDrawerOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
           />
 
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-[var(--theme-surface)] border-l border-[var(--theme-border)] shadow-2xl flex flex-col justify-between text-[var(--theme-text)]">
+            <div className="w-screen max-w-md bg-[var(--theme-surface)] border-l border-[var(--theme-border)] shadow-2xl flex flex-col justify-between text-[var(--theme-text)] animate-in slide-in-from-right duration-300 ease-out">
               {/* Drawer Header */}
               <div className="p-5 border-b border-[var(--theme-border)] flex items-center justify-between bg-[var(--theme-surface)]">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-[var(--theme-primary)]" />
-                  <h2 className="font-semibold text-base text-[var(--theme-text)]">Shopping Bag</h2>
-                  <span className="text-xs font-mono text-[var(--theme-text-muted)]">
-                    ({cartItemCount} {cartItemCount === 1 ? 'item' : 'items'})
-                  </span>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] flex items-center justify-center text-[var(--theme-primary)]">
+                    <ShoppingBag className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-base text-[var(--theme-text)]">Shopping Bag</h2>
+                    <span className="text-xs font-mono text-[var(--theme-text-muted)]">
+                      {cartItemCount} {cartItemCount === 1 ? 'product' : 'products'} selected
+                    </span>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -319,7 +356,7 @@ export function CatalogEngine({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between gap-3 p-3 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] bg-[var(--theme-surface-subtle)]"
+                          className="flex items-center justify-between gap-3 p-3 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] bg-[var(--theme-surface-subtle)] hover:border-[var(--theme-border-strong)] transition-colors"
                         >
                           <img
                             src={itemImg}
@@ -344,7 +381,7 @@ export function CatalogEngine({
                             <button
                               type="button"
                               onClick={() => updateQuantity(item.id, -1)}
-                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-colors cursor-pointer"
+                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-all cursor-pointer active:scale-90"
                               aria-label="Decrease quantity"
                             >
                               <Minus className="w-2.5 h-2.5" />
@@ -355,7 +392,7 @@ export function CatalogEngine({
                             <button
                               type="button"
                               onClick={() => updateQuantity(item.id, 1)}
-                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-colors cursor-pointer"
+                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-all cursor-pointer active:scale-90"
                               aria-label="Increase quantity"
                             >
                               <Plus className="w-2.5 h-2.5" />
@@ -393,7 +430,7 @@ export function CatalogEngine({
                   <button
                     type="button"
                     onClick={handleOpenCheckout}
-                    className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] font-medium py-3.5 px-4 rounded-[var(--theme-radius-inner)] flex items-center justify-between text-xs transition-all shadow-md active:scale-[0.99] cursor-pointer"
+                    className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] font-medium py-3.5 px-4 rounded-[var(--theme-radius-inner)] flex items-center justify-between text-xs transition-all shadow-md hover:shadow-lg active:scale-[0.99] cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="w-4 h-4 text-[var(--theme-on-primary)]" />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   LoaderCircle,
@@ -44,8 +44,6 @@ export function CheckoutModal({
   const [error, setError] = useState<string | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
 
-  if (!isOpen) return null;
-
   const effectiveCurrency = currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
   const handleClose = () => {
@@ -56,6 +54,19 @@ export function CheckoutModal({
     setError(null);
     onClose();
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, confirmedOrder]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,8 +129,8 @@ export function CheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 z-50 overflow-y-auto animate-fade-in font-sans text-[var(--theme-text)]">
-      <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] w-full max-w-lg shadow-2xl border border-[var(--theme-border)] overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 z-50 overflow-y-auto animate-in fade-in duration-200 font-sans text-[var(--theme-text)]">
+      <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] w-full max-w-lg shadow-2xl border border-[var(--theme-border)] overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200 ease-out">
         {/* Header */}
         <div className="px-6 py-5 border-b border-[var(--theme-border)] flex items-center justify-between bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shrink-0">
           <div>
@@ -147,7 +158,7 @@ export function CheckoutModal({
         {confirmedOrder ? (
           /* Order Confirmed Screen (Pure Web Checkout - No WhatsApp) */
           <div className="p-6 sm:p-8 text-center space-y-6 overflow-y-auto">
-            <div className="w-16 h-16 bg-[var(--theme-surface-subtle)] text-[var(--theme-primary)] border border-[var(--theme-border)] rounded-full flex items-center justify-center mx-auto shadow-sm">
+            <div className="w-16 h-16 bg-[var(--theme-surface-subtle)] text-[var(--theme-primary)] border border-[var(--theme-border)] rounded-full flex items-center justify-center mx-auto shadow-md btn-radar">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 

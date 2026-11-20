@@ -1583,7 +1583,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                         className={`bg-white rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer shadow-xs ${
                           isSelected
                             ? 'border-zinc-900 ring-2 ring-zinc-900/10'
-                            : 'border-zinc-200 hover:border-zinc-300 hover:shadow-sm'
+                            : 'border-zinc-200 hover:border-zinc-400 hover:shadow-md hover:-translate-y-0.5'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -1842,7 +1842,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
                         <img
                           src={itemImg}
                           alt={item.name}
-                          className="w-12 h-12 rounded-xl object-cover bg-zinc-100 shrink-0 border border-zinc-200"
+                          className="w-12 h-12 rounded-xl object-cover bg-zinc-100 shrink-0 border border-zinc-200 transition-transform hover:scale-105"
                           onError={handleImageError}
                         />
                         <div className="min-w-0">

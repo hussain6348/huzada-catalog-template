@@ -25,6 +25,7 @@
   --theme-border-strong: #cbd5e1;
   --theme-radius: 0.75rem;
   --theme-radius-inner: 0.5rem;
+  --perspective: 1000px;
 }
 
 body {
@@ -35,4 +36,182 @@ body {
   overflow-x: hidden;
   max-width: 100%;
   width: 100%;
+}
+
+/* ── Core E-Commerce Animations & 3D Depth Utilities ───────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes wavy-float {
+  0% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
+  50% { transform: translateY(-12px) rotate(2deg) scale(1.02); filter: drop-shadow(0 25px 35px rgba(0,0,0,0.22)); }
+  100% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes text-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes aurora-pulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.38; transform: scale(1.1); }
+}
+
+@keyframes radar-ping {
+  0% { transform: scale(1); opacity: 0.65; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+@keyframes modal-pop {
+  0% { opacity: 0; transform: scale(0.95) translateY(12px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes drawer-slide-in {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-wavy-float {
+  animation: wavy-float 6s ease-in-out infinite;
+  will-change: transform, filter;
+  transform-origin: center;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  background-size: 400px 100%;
+  animation: shimmer 2.5s infinite linear;
+}
+
+.animate-text-shimmer {
+  background: linear-gradient(to right, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 50%, var(--theme-text)) 50%, var(--theme-primary) 100%);
+  background-size: 200% auto;
+  color: transparent !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  animation: text-shimmer 4s linear infinite;
+  display: inline-block;
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.aurora-blob {
+  position: absolute;
+  filter: blur(100px);
+  border-radius: 50%;
+  animation: aurora-pulse 8s ease-in-out infinite;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* ── 3D Tactile Radar Button ───────────────────────────────────────────────── */
+.btn-radar {
+  position: relative;
+  isolation: isolate;
+}
+.btn-radar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--theme-primary);
+  border-radius: inherit;
+  animation: radar-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ── Apple TV 3D Spotlight & Kinetic Surface Depth ──────────────────────────── */
+.spotlight-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    520px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
+    color-mix(in srgb, var(--theme-primary) 14%, transparent),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .spotlight-card:hover::before {
+    opacity: 1;
+  }
+}
+
+/* ── Multi-Plane 3D Card Architecture ───────────────────────────────────────── */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.28s ease, border-color 0.2s ease;
+  will-change: transform;
+}
+
+.card-3d-leaf {
+  transform: translateZ(14px);
+  transform-style: preserve-3d;
+}
+
+/* ── Glassmorphic Glow Surface ──────────────────────────────────────────────── */
+.glass-glow {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--theme-surface) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-text) 12%, transparent);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--theme-primary) 8%, transparent);
+}
+
+/* ── Accessibility: Prefers Reduced Motion ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-float,
+  .animate-wavy-float,
+  .animate-shimmer,
+  .animate-text-shimmer,
+  .animate-marquee,
+  .aurora-blob,
+  .btn-radar::after {
+    animation: none !important;
+  }
+  .card-3d {
+    transform: none !important;
+  }
 }
