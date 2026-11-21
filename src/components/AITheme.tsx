@@ -299,7 +299,17 @@ export default function AITheme({
         if (themeData) {
           if (themeData.logo) setThemeLogo(themeData.logo);
           if (typeof document !== 'undefined') {
-            if (themeData.primaryColor) document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
+            if (themeData.primaryColor) {
+              document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
+              const hex = String(themeData.primaryColor).replace('#', '').trim();
+              if (hex.length === 6) {
+                const r = parseInt(hex.slice(0, 2), 16) || 0;
+                const g = parseInt(hex.slice(2, 4), 16) || 0;
+                const b = parseInt(hex.slice(4, 6), 16) || 0;
+                const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+                document.documentElement.style.setProperty('--theme-on-primary', luminance > 0.65 ? '#0f172a' : '#ffffff');
+              }
+            }
             if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
             if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
           }
@@ -452,22 +462,20 @@ export default function AITheme({
       {/* ── Zero-Dependency CSS Layer ───────────────────────────────────────── */}
       <style>{`
         :root {
-          --theme-primary: #0f172a;
-          --theme-primary-hover: #1e293b;
+          --theme-primary: #0ea5e9;
+          --theme-primary-hover: color-mix(in srgb, var(--theme-primary) 85%, #000000);
           --theme-accent: var(--theme-primary);
-          --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 12%, transparent);
-          --theme-surface: color-mix(in srgb, var(--theme-text) 4%, var(--theme-bg));
-          --theme-surface-subtle: color-mix(in srgb, var(--theme-text) 8%, var(--theme-bg));
-          --theme-surface-translucent: color-mix(in srgb, var(--theme-bg) 94%, transparent);
-          --theme-bg: #f8fafc;
-          --theme-text: #0f172a;
-          --theme-text-muted: color-mix(in srgb, var(--theme-text) 70%, transparent);
-          --theme-text-subtle: color-mix(in srgb, var(--theme-text) 50%, transparent);
-          --theme-on-primary: var(--theme-bg);
-          --theme-on-primary-muted: color-mix(in srgb, var(--theme-bg) 75%, transparent);
-          --theme-on-primary-border: color-mix(in srgb, var(--theme-bg) 20%, transparent);
-          --theme-border: color-mix(in srgb, var(--theme-text) 15%, transparent);
-          --theme-border-strong: color-mix(in srgb, var(--theme-text) 25%, transparent);
+          --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+          --theme-surface: color-mix(in srgb, var(--theme-text) 6%, var(--theme-bg));
+          --theme-surface-subtle: color-mix(in srgb, var(--theme-text) 10%, var(--theme-bg));
+          --theme-surface-translucent: color-mix(in srgb, var(--theme-bg) 88%, transparent);
+          --theme-text-muted: color-mix(in srgb, var(--theme-text) 74%, transparent);
+          --theme-text-subtle: color-mix(in srgb, var(--theme-text) 54%, transparent);
+          --theme-on-primary: #ffffff;
+          --theme-on-primary-muted: rgba(255, 255, 255, 0.75);
+          --theme-on-primary-border: rgba(255, 255, 255, 0.22);
+          --theme-border: color-mix(in srgb, var(--theme-text) 14%, transparent);
+          --theme-border-strong: color-mix(in srgb, var(--theme-text) 24%, transparent);
           --theme-radius: 0.75rem;
           --theme-radius-inner: 0.5rem;
           --font-display: 'Cormorant Garamond', Georgia, serif;

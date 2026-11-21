@@ -14,11 +14,13 @@ import {
   ChevronRight,
   Sparkles,
   Layers,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import type { Product, CartItem } from '../lib/types';
 import {
   getStoredProducts,
-  fetchCatalogProducts,
+  fetchCatalogProductsWithStatus,
   CATALOG_UPDATED_EVENT,
   getProductPrimaryImage,
   handleImageError,
@@ -51,24 +53,46 @@ export function CatalogEngine({
   const [activeProducts, setActiveProducts] = useState<Product[]>(
     () => (Array.isArray(initialProducts) ? initialProducts : getStoredProducts())
   );
+  const [isLoading, setIsLoading] = useState<boolean>(
+    () => !initialProducts && getStoredProducts().length === 0
+  );
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const productsTopRef = useRef<HTMLDivElement>(null);
+
+  const loadProducts = async () => {
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      const res = await fetchCatalogProductsWithStatus();
+      if (res.error && res.products.length === 0) {
+        setFetchError(res.error);
+      } else {
+        setActiveProducts(res.products);
+        setFetchError(null);
+      }
+    } catch {
+      setFetchError('Unable to connect to the store catalog.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (initialProducts) {
       setActiveProducts(initialProducts);
+      setIsLoading(false);
+      setFetchError(null);
       return;
     }
 
-    fetchCatalogProducts().then((items) => {
-      if (Array.isArray(items)) {
-        setActiveProducts(items);
-      }
-    });
+    loadProducts();
 
     const handler = (e: any) => {
       if (e?.detail && Array.isArray(e.detail)) {
         setActiveProducts(e.detail);
+        setIsLoading(false);
+        setFetchError(null);
       }
     };
     if (typeof window !== 'undefined') {
@@ -393,23 +417,73 @@ export function CatalogEngine({
               </div>
             </div>
 
-            {/* Paginated Products Grid */}
-            {filteredProducts.length === 0 ? (
+            {/* Paginated Products Grid with Loading, Error and Empty States */}
+            {isLoading && activeProducts.length === 0 ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={`skeleton-${i}`}
+                      className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col h-full animate-pulse shadow-xs"
+                    >
+                      <div className="aspect-[4/3] bg-[var(--theme-surface-subtle)]" />
+                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-[var(--theme-surface-subtle)] rounded w-3/4" />
+                          <div className="h-3 bg-[var(--theme-surface-subtle)] rounded w-full" />
+                          <div className="h-3 bg-[var(--theme-surface-subtle)] rounded w-1/2" />
+                        </div>
+                        <div className="pt-3 border-t border-[var(--theme-border)] flex items-center justify-between">
+                          <div className="h-4 bg-[var(--theme-surface-subtle)] rounded w-16" />
+                          <div className="h-8 bg-[var(--theme-surface-subtle)] rounded w-24" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : fetchError && activeProducts.length === 0 ? (
+              <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-10 sm:p-14 text-center space-y-4 shadow-xs">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-base sm:text-lg font-semibold text-[var(--theme-text)]">
+                    Unable to Load Catalog Products
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--theme-text-muted)] max-w-md mx-auto leading-relaxed">
+                    {fetchError.includes('Database error') || fetchError.includes('500')
+                      ? 'The storefront database is temporarily unreachable. Please retry or check back in a moment.'
+                      : 'We encountered an issue connecting to the product catalog server.'}
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={loadProducts}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Retry Connection</span>
+                  </button>
+                </div>
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-10 sm:p-14 text-center space-y-4 shadow-xs">
                 <Package className="w-12 h-12 text-[var(--theme-text-subtle)] mx-auto opacity-50" />
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <h3 className="text-base sm:text-lg font-semibold text-[var(--theme-text)]">
-                    {activeProducts.length === 0 ? 'No Products Available' : 'No matching products found'}
+                    {activeProducts.length === 0 ? 'Storefront Collection Coming Soon' : 'No matching products found'}
                   </h3>
                   <p className="text-xs sm:text-sm text-[var(--theme-text-muted)] max-w-sm mx-auto leading-relaxed">
                     {activeProducts.length === 0
-                      ? 'Our storefront catalog is currently empty. Check back soon for new arrivals.'
+                      ? 'Our catalog is currently being prepared with curated products. Check back shortly for new arrivals.'
                       : selectedCategory !== 'All' && searchQuery
                       ? `No items found in "${selectedCategory}" matching "${searchQuery}".`
                       : 'Try clearing your search query or selecting a different category from the sidebar.'}
                   </p>
                 </div>
-                {activeProducts.length > 0 && (
+                {activeProducts.length > 0 ? (
                   <div className="flex items-center justify-center gap-3 pt-1 flex-wrap">
                     {selectedCategory !== 'All' && (
                       <button
@@ -430,6 +504,15 @@ export function CatalogEngine({
                     >
                       Reset All Filters
                     </button>
+                  </div>
+                ) : (
+                  <div className="pt-2">
+                    <Link
+                      to="/admin"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] text-xs font-medium border border-[var(--theme-border)] transition-colors"
+                    >
+                      <span>Operations Console</span>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -588,15 +671,58 @@ export function CatalogEngine({
             )}
           </div>
 
-          {/* 8-Product Grid */}
-          {paginatedProducts.length === 0 ? (
+          {/* 8-Product Grid with Loading, Error and Empty States */}
+          {isLoading && activeProducts.length === 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={`home-skeleton-${i}`}
+                  className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col h-full animate-pulse shadow-xs"
+                >
+                  <div className="aspect-[4/3] bg-[var(--theme-surface-subtle)]" />
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      <div className="h-4 bg-[var(--theme-surface-subtle)] rounded w-3/4" />
+                      <div className="h-3 bg-[var(--theme-surface-subtle)] rounded w-full" />
+                    </div>
+                    <div className="pt-3 border-t border-[var(--theme-border)] flex items-center justify-between">
+                      <div className="h-4 bg-[var(--theme-surface-subtle)] rounded w-16" />
+                      <div className="h-7 bg-[var(--theme-surface-subtle)] rounded w-20" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : fetchError && activeProducts.length === 0 ? (
+            <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-8 sm:p-10 text-center space-y-3 shadow-xs">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-semibold text-[var(--theme-text)]">
+                Unable to Load Catalog Preview
+              </h3>
+              <p className="text-xs text-[var(--theme-text-muted)] max-w-sm mx-auto leading-relaxed">
+                Could not connect to the product database right now.
+              </p>
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={loadProducts}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Retry</span>
+                </button>
+              </div>
+            </div>
+          ) : paginatedProducts.length === 0 ? (
             <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-12 text-center space-y-3 shadow-xs">
               <Package className="w-12 h-12 text-[var(--theme-text-subtle)] mx-auto opacity-50" />
               <h3 className="text-base font-semibold text-[var(--theme-text)]">
-                No Products Available
+                Storefront Collection Coming Soon
               </h3>
               <p className="text-xs text-[var(--theme-text-muted)] max-w-sm mx-auto leading-relaxed">
-                Our storefront catalog currently has no items listed. Check back soon for new arrivals.
+                Our catalog is currently being prepared with curated products. Check back shortly for new arrivals.
               </p>
             </div>
           ) : (

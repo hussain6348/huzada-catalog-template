@@ -2,27 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Fallback CSS Variables ───────────────────────────────────────────────────
-   These ensure the UI is never rendered unstyled before database variables load.
-   AITheme.tsx overrides these in its own <style> block at runtime.
+/* ── Dynamic Self-Balancing E-Commerce Theme Variables ─────────────────────────
+   Surfaces, borders, and typography adapt with high contrast to active colors.
 ─────────────────────────────────────────────────────────────────────────────── */
 :root {
-  --theme-primary: #0f172a;
-  --theme-primary-hover: #1e293b;
-  --theme-accent: #0ea5e9;
-  --theme-accent-soft: rgba(14, 165, 233, 0.12);
-  --theme-surface: #ffffff;
-  --theme-surface-subtle: #f1f5f9;
-  --theme-surface-translucent: rgba(255, 255, 255, 0.94);
-  --theme-bg: #f8fafc;
-  --theme-text: #0f172a;
-  --theme-text-muted: #475569;
-  --theme-text-subtle: #64748b;
+  --theme-primary: #0ea5e9;
+  --theme-primary-hover: color-mix(in srgb, var(--theme-primary) 85%, #000000);
+  --theme-accent: var(--theme-primary);
+  --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+
+  /* Root canvas and typography */
+  --theme-bg: #0f172a;
+  --theme-text: #ffffff;
+
+  /* Dynamically calculated surfaces derived from active bg and text colors */
+  --theme-surface: color-mix(in srgb, var(--theme-text) 6%, var(--theme-bg));
+  --theme-surface-subtle: color-mix(in srgb, var(--theme-text) 10%, var(--theme-bg));
+  --theme-surface-translucent: color-mix(in srgb, var(--theme-bg) 88%, transparent);
+
+  /* High-contrast text hierarchy */
+  --theme-text-muted: color-mix(in srgb, var(--theme-text) 74%, transparent);
+  --theme-text-subtle: color-mix(in srgb, var(--theme-text) 54%, transparent);
+
+  /* Contrast-guaranteed on-primary text for primary buttons */
   --theme-on-primary: #ffffff;
-  --theme-on-primary-muted: #cbd5e1;
-  --theme-on-primary-border: rgba(255, 255, 255, 0.14);
-  --theme-border: #e2e8f0;
-  --theme-border-strong: #cbd5e1;
+  --theme-on-primary-muted: rgba(255, 255, 255, 0.75);
+  --theme-on-primary-border: rgba(255, 255, 255, 0.22);
+
+  /* Dynamic borders that blend seamlessly with theme */
+  --theme-border: color-mix(in srgb, var(--theme-text) 14%, transparent);
+  --theme-border-strong: color-mix(in srgb, var(--theme-text) 24%, transparent);
+
   --theme-radius: 0.75rem;
   --theme-radius-inner: 0.5rem;
   --perspective: 1000px;

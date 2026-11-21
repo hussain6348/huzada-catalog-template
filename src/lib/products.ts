@@ -160,25 +160,41 @@ export function saveStoredProducts(products: Product[]) {
   }
 }
 
-export async function fetchCatalogProducts(): Promise<Product[]> {
+export interface FetchProductsResult {
+  products: Product[];
+  error: string | null;
+  status: number;
+}
+
+export async function fetchCatalogProductsWithStatus(): Promise<FetchProductsResult> {
   try {
     const res = await fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const data: any = await res.json();
-      if (data && Array.isArray(data.products)) {
-        const normalized = data.products.map(normalizeProduct);
-        saveStoredProducts(normalized);
-        return normalized;
-      } else if (Array.isArray(data)) {
-        const normalized = data.map(normalizeProduct);
-        saveStoredProducts(normalized);
-        return normalized;
+      if (data && data.success === false && data.error) {
+        return { products: getStoredProducts(), error: String(data.error), status: res.status };
       }
+      const rawList = Array.isArray(data?.products) ? data.products : (Array.isArray(data) ? data : []);
+      const normalized = rawList.map(normalizeProduct);
+      saveStoredProducts(normalized);
+      return { products: normalized, error: null, status: res.status };
+    } else {
+      let errorMsg = `Server error (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson?.error) errorMsg = errJson.error;
+      } catch {}
+      return { products: getStoredProducts(), error: errorMsg, status: res.status };
     }
-  } catch (err) {
+  } catch (err: any) {
     console.warn('Live catalog fetch notice:', err);
+    return { products: getStoredProducts(), error: err?.message || 'Network connection issue', status: 0 };
   }
-  return getStoredProducts();
+}
+
+export async function fetchCatalogProducts(): Promise<Product[]> {
+  const result = await fetchCatalogProductsWithStatus();
+  return result.products;
 }
 
 export async function persistProduct(product: Product): Promise<Product[]> {

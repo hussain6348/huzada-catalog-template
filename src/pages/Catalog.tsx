@@ -106,7 +106,7 @@ export function Catalog() {
   return (
     <div className="min-h-screen bg-[var(--theme-bg)] font-sans text-[var(--theme-text)] flex flex-col">
       {/* Top Storefront Header */}
-      <header className="sticky top-0 z-40 bg-[var(--theme-surface-translucent)] backdrop-blur-md border-b border-[var(--theme-border)] shadow-2xs">
+      <header className="sticky top-0 z-40 bg-[var(--theme-surface-translucent)] backdrop-blur-md border-b border-[var(--theme-border)] shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -117,7 +117,7 @@ export function Catalog() {
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
-              <Link to="/" className="font-bold text-base sm:text-lg tracking-tight text-[var(--theme-text)] flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Link to="/" className="font-bold text-base sm:text-lg tracking-tight text-[var(--theme-text)] flex items-center gap-2 hover:opacity-85 transition-opacity">
                 <span>{businessInfo?.name || clientConfig.businessName}</span>
                 <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] border border-[var(--theme-border)]">
                   Store
@@ -130,15 +130,15 @@ export function Catalog() {
           <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer"
             >
               <span>Storefront Home</span>
             </Link>
             <Link
               to="/admin"
-              className="border border-[var(--theme-border)] hover:border-[var(--theme-border-strong)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text)] transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 border border-[var(--theme-border)] hover:border-[var(--theme-border-strong)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text)] transition-colors shadow-2xs cursor-pointer font-medium"
             >
-              Operations
+              <span>Operations</span>
             </Link>
           </nav>
         </div>
@@ -155,9 +155,9 @@ export function Catalog() {
                 <span>Complete Collection</span>
               </div>
               <div className="text-[11px] font-mono text-[var(--theme-text-subtle)]">
-                <Link to="/" className="hover:underline">Home</Link>
-                <span className="mx-1.5">/</span>
-                <span>All Products</span>
+                <Link to="/" className="hover:text-[var(--theme-text)] transition-colors">Home</Link>
+                <span className="mx-1.5 opacity-50">/</span>
+                <span className="text-[var(--theme-text)] font-medium">All Products</span>
               </div>
             </div>
 

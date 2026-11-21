@@ -35,6 +35,24 @@ const EMPTY_BUSINESS_INFO: BusinessInfo = {
   imageSlots: {},
 };
 
+function applyThemeCss(themeData: any) {
+  if (!themeData || typeof document === 'undefined') return;
+  if (themeData.primaryColor) {
+    document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
+    // Dynamic perceived luminance check to guarantee high-contrast button text
+    const hex = String(themeData.primaryColor).replace('#', '').trim();
+    if (hex.length === 6) {
+      const r = parseInt(hex.slice(0, 2), 16) || 0;
+      const g = parseInt(hex.slice(2, 4), 16) || 0;
+      const b = parseInt(hex.slice(4, 6), 16) || 0;
+      const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      document.documentElement.style.setProperty('--theme-on-primary', luminance > 0.65 ? '#0f172a' : '#ffffff');
+    }
+  }
+  if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
+  if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+}
+
 function PublicStorefrontPortal() {
   const [lightboxItem, setLightboxItem] = useState<any | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
@@ -157,10 +175,8 @@ function PublicStorefrontPortal() {
         if (res.ok) {
           const raw = await res.json();
           const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
-          if (themeData && typeof document !== 'undefined' && isMounted.current) {
-            if (themeData.primaryColor) document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
-            if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
-            if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+          if (themeData && isMounted.current) {
+            applyThemeCss(themeData);
           }
         }
       } catch (err) {
@@ -198,10 +214,8 @@ function PublicStorefrontPortal() {
         if (res.ok) {
           const raw = await res.json();
           const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
-          if (themeData && typeof document !== 'undefined') {
-            if (themeData.primaryColor) document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
-            if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
-            if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+          if (themeData) {
+            applyThemeCss(themeData);
           }
         }
       } catch (err) {
@@ -550,10 +564,8 @@ export default function App() {
         
         // 4. Update existing state safely
         const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
-        if (typeof document !== 'undefined' && themeData) {
-          if (themeData.primaryColor) document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
-          if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
-          if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+        if (themeData) {
+          applyThemeCss(themeData);
         }
       } catch (err) {
         console.error("Hydration failed", err);
