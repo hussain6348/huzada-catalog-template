@@ -57,6 +57,16 @@ export function Catalog() {
     return () => window.removeEventListener('huzada_open_lightbox', handleOpenLightbox);
   }, []);
 
+  // Lock background body scroll while lightbox is active
+  useEffect(() => {
+    if (!lightboxProduct || typeof document === 'undefined') return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [lightboxProduct]);
+
   // Lightbox keyboard navigation (Escape, ArrowLeft, ArrowRight)
   useEffect(() => {
     if (!lightboxProduct) return;

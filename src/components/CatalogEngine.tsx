@@ -192,12 +192,22 @@ export function CatalogEngine({
     return cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
   }, [cart]);
 
-  const addToCart = (product: Product) => {
+  // Lock background body scroll while cart drawer is open
+  useEffect(() => {
+    if (!isDrawerOpen || typeof document === 'undefined') return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isDrawerOpen]);
+
+  const addToCart = (product: Product, quantity = 1) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
       return [
@@ -206,7 +216,7 @@ export function CatalogEngine({
           id: product.id,
           name: product.name,
           price: product.price,
-          quantity: 1,
+          quantity: Math.max(1, quantity),
           image: getProductPrimaryImage(product),
           images: product.images,
         },
@@ -385,27 +395,42 @@ export function CatalogEngine({
 
             {/* Paginated Products Grid */}
             {filteredProducts.length === 0 ? (
-              <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-12 text-center space-y-3 shadow-xs">
+              <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-10 sm:p-14 text-center space-y-4 shadow-xs">
                 <Package className="w-12 h-12 text-[var(--theme-text-subtle)] mx-auto opacity-50" />
-                <h3 className="text-base font-semibold text-[var(--theme-text)]">
-                  {activeProducts.length === 0 ? 'No Products Available' : 'No matching products found'}
-                </h3>
-                <p className="text-xs text-[var(--theme-text-muted)] max-w-sm mx-auto leading-relaxed">
-                  {activeProducts.length === 0
-                    ? 'Our storefront catalog is currently empty. Check back soon for new arrivals.'
-                    : 'Try clearing your search query or selecting a different category from the sidebar.'}
-                </p>
+                <div className="space-y-1">
+                  <h3 className="text-base sm:text-lg font-semibold text-[var(--theme-text)]">
+                    {activeProducts.length === 0 ? 'No Products Available' : 'No matching products found'}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--theme-text-muted)] max-w-sm mx-auto leading-relaxed">
+                    {activeProducts.length === 0
+                      ? 'Our storefront catalog is currently empty. Check back soon for new arrivals.'
+                      : selectedCategory !== 'All' && searchQuery
+                      ? `No items found in "${selectedCategory}" matching "${searchQuery}".`
+                      : 'Try clearing your search query or selecting a different category from the sidebar.'}
+                  </p>
+                </div>
                 {activeProducts.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedCategory('All');
-                    }}
-                    className="text-xs font-semibold text-[var(--theme-primary)] hover:underline pt-2 cursor-pointer inline-flex items-center gap-1"
-                  >
-                    Reset All Filters
-                  </button>
+                  <div className="flex items-center justify-center gap-3 pt-1 flex-wrap">
+                    {selectedCategory !== 'All' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategory('All')}
+                        className="px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] text-[var(--theme-primary)] text-xs font-semibold border border-[var(--theme-border)] transition-colors cursor-pointer"
+                      >
+                        Search across All Categories ({categoryCounts['All'] || activeProducts.length})
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('All');
+                      }}
+                      className="px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                    >
+                      Reset All Filters
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
@@ -630,7 +655,7 @@ export function CatalogEngine({
         <button
           type="button"
           onClick={() => setIsDrawerOpen(true)}
-          className="!fixed !bottom-8 !left-6 md:!bottom-10 md:!left-8 !z-40 flex items-center gap-2.5 px-4.5 py-3 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.3)] hover:brightness-110 active:scale-95 transition-all duration-300 btn-radar isolate touch-manipulation cursor-pointer border border-[var(--theme-on-primary-border)]"
+          className="!fixed !bottom-6 !right-6 md:!bottom-8 md:!right-8 !z-40 flex items-center gap-2.5 px-4.5 py-3 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.3)] hover:brightness-110 active:scale-95 transition-all duration-300 btn-radar isolate touch-manipulation cursor-pointer border border-[var(--theme-on-primary-border)]"
           aria-label={`Open shopping bag with ${cartItemCount} items`}
         >
           <ShoppingBag className="w-5 h-5 text-[var(--theme-on-primary)]" />
@@ -667,14 +692,27 @@ export function CatalogEngine({
                     </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="p-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer"
-                  aria-label="Close cart drawer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+
+                <div className="flex items-center gap-2">
+                  {cart && cart.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setCart([])}
+                      className="text-[11px] font-mono text-[var(--theme-text-subtle)] hover:text-red-500 transition-colors px-2 py-1 rounded-[var(--theme-radius-inner)] hover:bg-[var(--theme-surface-subtle)] cursor-pointer"
+                      title="Clear all items from bag"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="p-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer"
+                    aria-label="Close cart drawer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Cart Items List */}
@@ -793,7 +831,8 @@ export function CatalogEngine({
         isOpen={!!selectedProduct}
         currencySymbol={effectiveCurrency}
         onClose={() => setSelectedProduct(null)}
-        onAddToCart={(prod) => addToCart(prod)}
+        onAddToCart={(prod, qty) => addToCart(prod, qty)}
+        onOpenLightbox={onOpenLightbox}
       />
 
       {/* Checkout Modal */}

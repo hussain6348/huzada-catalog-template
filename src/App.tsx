@@ -291,6 +291,16 @@ function PublicStorefrontPortal() {
       .catch(() => {});
   }, []);
 
+  // Lock background body scroll while lightbox is active
+  useEffect(() => {
+    if (!lightboxItem || typeof document === 'undefined') return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [lightboxItem]);
+
   // Keyboard navigation for Lightbox
   useEffect(() => {
     if (!lightboxItem) return;
