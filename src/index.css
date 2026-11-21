@@ -192,6 +192,15 @@ body {
   box-shadow: 0 8px 32px color-mix(in srgb, var(--theme-primary) 8%, transparent);
 }
 
+/* ── Scrollbar Utilities ─────────────────────────────────────────────────────── */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Accessibility: Prefers Reduced Motion ─────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,

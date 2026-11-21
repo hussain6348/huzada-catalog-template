@@ -97,11 +97,11 @@ export function Catalog() {
     <div className="min-h-screen bg-[var(--theme-bg)] font-sans text-[var(--theme-text)] flex flex-col">
       {/* Top Storefront Header */}
       <header className="sticky top-0 z-40 bg-[var(--theme-surface-translucent)] backdrop-blur-md border-b border-[var(--theme-border)] shadow-2xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="p-2 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors"
+              className="p-2 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer"
               title="Return to Home"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -135,22 +135,30 @@ export function Catalog() {
       </header>
 
       {/* Main Catalog View */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
-        {/* Banner */}
-        <div className="relative overflow-hidden rounded-[var(--theme-radius)] bg-[var(--theme-surface)] border border-[var(--theme-border)] text-[var(--theme-text)] p-6 sm:p-10 shadow-md">
-          <div className="relative z-10 max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--theme-surface-subtle)] text-[var(--theme-primary)] border border-[var(--theme-border)] shadow-xs">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Official Storefront & Product Catalog</span>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Collection Banner */}
+        <div className="relative overflow-hidden rounded-[var(--theme-radius)] bg-[var(--theme-surface)] border border-[var(--theme-border)] text-[var(--theme-text)] p-6 sm:p-8 shadow-xs">
+          <div className="relative z-10 max-w-3xl space-y-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--theme-surface-subtle)] text-[var(--theme-primary)] border border-[var(--theme-border)]">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Complete Collection</span>
+              </div>
+              <div className="text-[11px] font-mono text-[var(--theme-text-subtle)]">
+                <Link to="/" className="hover:underline">Home</Link>
+                <span className="mx-1.5">/</span>
+                <span>All Products</span>
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-[var(--theme-text)] font-editorial">
-              {businessInfo?.name || clientConfig.businessName} Collection
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[var(--theme-text)] font-editorial">
+              {businessInfo?.name || clientConfig.businessName} Catalog
             </h1>
-            <p className="text-sm text-[var(--theme-text-muted)] leading-relaxed max-w-lg">
+            <p className="text-xs sm:text-sm text-[var(--theme-text-muted)] leading-relaxed max-w-2xl">
               {businessInfo?.tagline || clientConfig.tagline || 'Explore curated products and place your order directly with fast doorstep delivery.'}
             </p>
           </div>
-          <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-[var(--theme-primary)] opacity-5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-[var(--theme-primary)] opacity-5 rounded-full blur-2xl pointer-events-none" />
         </div>
 
         {/* All Products Catalog Engine: Category Tab Sidebar + Paginated Right Pane */}

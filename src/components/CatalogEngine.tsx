@@ -157,12 +157,26 @@ export function CatalogEngine({
     return filteredProducts.slice(startIndex, startIndex + boundedPageSize);
   }, [layoutMode, homeCategoryDividedProducts, filteredProducts, safeCurrentPage, boundedPageSize]);
 
+  // Smart, responsive pagination numbers (never overflows screens on large catalogs)
+  const paginationPages = useMemo<(number | string)[]>(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (safeCurrentPage <= 4) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    if (safeCurrentPage >= totalPages - 3) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, '...', totalPages];
+  }, [totalPages, safeCurrentPage]);
+
   // Page change handler with smooth container scroll
   const handlePageChange = (newPage: number) => {
     const target = Math.min(Math.max(1, newPage), totalPages);
     setCurrentPage(target);
     if (productsTopRef.current && typeof window !== 'undefined') {
-      const topOffset = productsTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
+      const topOffset = productsTopRef.current.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: Math.max(0, topOffset), behavior: 'smooth' });
     }
   };
@@ -218,7 +232,7 @@ export function CatalogEngine({
   };
 
   return (
-    <div ref={productsTopRef} className="w-full max-w-7xl mx-auto space-y-8 font-sans text-[var(--theme-text)]">
+    <div ref={productsTopRef} className="w-full space-y-8 font-sans text-[var(--theme-text)]">
       {/* ──────────────────────────────────────────────────────────────────────────
           ALL PRODUCTS VIEW: Two-Pane Layout (Left Sidebar + Paginated Right Pane)
       ────────────────────────────────────────────────────────────────────────── */}
@@ -226,7 +240,7 @@ export function CatalogEngine({
         <div className="flex flex-col lg:flex-row items-start gap-8">
           {/* LEFT SIDEBAR: Category Navigation Tabs */}
           <aside className="w-full lg:w-64 lg:shrink-0 space-y-4">
-            <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-4 sm:p-5 shadow-xs sticky top-24">
+            <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-4 sm:p-5 shadow-xs lg:sticky lg:top-20">
               <div className="flex items-center gap-2 pb-3 mb-3 border-b border-[var(--theme-border)]">
                 <Layers className="w-4 h-4 text-[var(--theme-primary)]" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--theme-text)] font-mono">
@@ -237,7 +251,7 @@ export function CatalogEngine({
                 </span>
               </div>
 
-              {/* Category Tab Rail: Vertical on desktop, horizontal scroll on mobile */}
+              {/* Category Tab Rail: Vertical on desktop, smooth horizontal scroll on mobile */}
               <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 no-scrollbar">
                 {categories.map((cat) => {
                   const isActive = selectedCategory === cat;
@@ -246,7 +260,13 @@ export function CatalogEngine({
                     <button
                       key={cat}
                       type="button"
-                      onClick={() => setSelectedCategory(cat)}
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        if (typeof window !== 'undefined' && window.innerWidth < 1024 && productsTopRef.current) {
+                          const offset = productsTopRef.current.getBoundingClientRect().top + window.scrollY - 80;
+                          window.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+                        }
+                      }}
                       className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-[var(--theme-radius-inner)] text-xs font-medium transition-all duration-150 cursor-pointer text-left whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink ${
                         isActive
                           ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-sm font-semibold'
@@ -255,7 +275,7 @@ export function CatalogEngine({
                     >
                       <span className="truncate">{cat === 'All' ? 'All Products' : cat}</span>
                       <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full transition-colors ${
                           isActive
                             ? 'bg-[var(--theme-on-primary-border)] text-[var(--theme-on-primary)]'
                             : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-subtle)] border border-[var(--theme-border)]'
@@ -276,20 +296,20 @@ export function CatalogEngine({
             <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-4 sm:p-5 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 {/* Search Field */}
-                <div className="relative flex-1 max-w-md">
+                <div className="relative flex-1">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--theme-text-subtle)]" />
                   <input
                     type="text"
                     placeholder="Search by product title or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-10 pr-4 py-2 text-xs sm:text-sm text-[var(--theme-text)] placeholder:text-[var(--theme-text-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 focus:border-[var(--theme-primary)] transition-all"
+                    className="w-full h-10 bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-10 pr-9 text-xs sm:text-sm text-[var(--theme-text)] placeholder:text-[var(--theme-text-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 focus:border-[var(--theme-primary)] transition-all"
                   />
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--theme-text-subtle)] hover:text-[var(--theme-text)] cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--theme-text-subtle)] hover:text-[var(--theme-text)] cursor-pointer p-0.5"
                       aria-label="Clear search"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -303,7 +323,7 @@ export function CatalogEngine({
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
-                      className="appearance-none bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] px-3.5 py-2 pr-8 text-xs font-medium text-[var(--theme-text)] hover:border-[var(--theme-border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 cursor-pointer transition-colors"
+                      className="h-10 appearance-none bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-3.5 pr-8 text-xs font-medium text-[var(--theme-text)] hover:border-[var(--theme-border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 cursor-pointer transition-colors"
                     >
                       <option value="featured">Featured Sort</option>
                       <option value="price-asc">Price: Low to High</option>
@@ -316,7 +336,7 @@ export function CatalogEngine({
                   <button
                     type="button"
                     onClick={() => setIsDrawerOpen(true)}
-                    className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] rounded-[var(--theme-radius-inner)] px-4 py-2 text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all shrink-0 cursor-pointer active:scale-95"
+                    className="h-10 bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] rounded-[var(--theme-radius-inner)] px-4 text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all shrink-0 cursor-pointer active:scale-95"
                   >
                     <ShoppingBag className="w-4 h-4 text-[var(--theme-on-primary)]" />
                     <span>Bag</span>
@@ -333,23 +353,31 @@ export function CatalogEngine({
               </div>
 
               {/* Active Filter Summary Bar */}
-              <div className="flex items-center justify-between pt-1 border-t border-[var(--theme-border)] text-xs text-[var(--theme-text-muted)]">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--theme-border)] text-xs text-[var(--theme-text-muted)]">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-[var(--theme-text)]">
                     {selectedCategory === 'All' ? 'All Catalog Products' : selectedCategory}
                   </span>
                   <span>·</span>
                   <span>{filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found</span>
                   {searchQuery && (
-                    <span className="text-[11px] font-mono text-[var(--theme-text-subtle)]">
-                      matching "{searchQuery}"
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-[var(--theme-surface-subtle)] text-[var(--theme-text-subtle)] border border-[var(--theme-border)]">
+                      <span>"{searchQuery}"</span>
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="hover:text-[var(--theme-text)] cursor-pointer"
+                        title="Clear search"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </span>
                   )}
                 </div>
 
                 {filteredProducts.length > 0 && (
-                  <span className="text-[11px] font-mono text-[var(--theme-text-subtle)] hidden sm:inline">
-                    Page {safeCurrentPage} of {totalPages}
+                  <span className="text-[11px] font-mono text-[var(--theme-text-subtle)]">
+                    Showing {(safeCurrentPage - 1) * boundedPageSize + 1}–{Math.min(safeCurrentPage * boundedPageSize, filteredProducts.length)} of {filteredProducts.length}
                   </span>
                 )}
               </div>
@@ -422,22 +450,33 @@ export function CatalogEngine({
                       </button>
 
                       <div className="flex items-center gap-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
-                          const isCurrent = p === safeCurrentPage;
+                        {paginationPages.map((p, idx) => {
+                          if (p === '...') {
+                            return (
+                              <span
+                                key={`ellipsis-${idx}`}
+                                className="w-8 h-8 flex items-center justify-center text-xs font-mono text-[var(--theme-text-subtle)]"
+                              >
+                                …
+                              </span>
+                            );
+                          }
+                          const pageNum = p as number;
+                          const isCurrent = pageNum === safeCurrentPage;
                           return (
                             <button
-                              key={p}
+                              key={pageNum}
                               type="button"
-                              onClick={() => handlePageChange(p)}
+                              onClick={() => handlePageChange(pageNum)}
                               className={`w-8 h-8 rounded-[var(--theme-radius-inner)] text-xs font-mono font-semibold transition-all cursor-pointer ${
                                 isCurrent
                                   ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-sm'
                                   : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-border)] border border-[var(--theme-border)]'
                               }`}
-                              aria-label={`Go to page ${p}`}
+                              aria-label={`Go to page ${pageNum}`}
                               aria-current={isCurrent ? 'page' : undefined}
                             >
-                              {p}
+                              {pageNum}
                             </button>
                           );
                         })}
