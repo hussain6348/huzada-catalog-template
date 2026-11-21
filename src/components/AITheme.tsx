@@ -701,9 +701,6 @@ export default function AITheme({
               </a>
               <a href="#about" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">About</a>
               <a href="#contact" className="text-sm font-medium text-[var(--theme-text)] opacity-80 hover:opacity-100 transition-opacity">Contact</a>
-              <Link to="/admin" className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[var(--theme-border)] text-[var(--theme-text)] opacity-70 hover:opacity-100 transition-all">
-                Console
-              </Link>
             </nav>
 
             {/* Right: CTA Button & Mobile Hamburger Toggle */}
@@ -798,20 +795,11 @@ export default function AITheme({
               <a
                 href="#contact"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 border-b flex items-center justify-between"
-                style={{ borderColor: 'color-mix(in srgb, var(--theme-text) 15%, transparent)' }}
+                className="text-xl font-semibold text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors py-2 flex items-center justify-between"
               >
                 <span>Contact & Inquiries</span>
                 <ArrowUpRight className="w-5 h-5 opacity-60" />
               </a>
-              <Link
-                to="/admin"
-                onClick={() => setIsMenuOpen(false)}
-                className="text-base font-semibold text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] transition-colors py-1 flex items-center justify-between"
-              >
-                <span>Operations Console</span>
-                <ArrowUpRight className="w-4 h-4 opacity-60" />
-              </Link>
             </nav>
 
             <div className="pt-4 space-y-3">

@@ -508,10 +508,10 @@ export function CatalogEngine({
                 ) : (
                   <div className="pt-2">
                     <Link
-                      to="/admin"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] text-xs font-medium border border-[var(--theme-border)] transition-colors"
+                      to="/"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] text-xs font-medium border border-[var(--theme-border)] transition-colors cursor-pointer"
                     >
-                      <span>Operations Console</span>
+                      <span>Return to Storefront</span>
                     </Link>
                   </div>
                 )}

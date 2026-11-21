@@ -130,15 +130,9 @@ export function Catalog() {
           <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer"
-            >
-              <span>Storefront Home</span>
-            </Link>
-            <Link
-              to="/admin"
               className="inline-flex items-center gap-1.5 border border-[var(--theme-border)] hover:border-[var(--theme-border-strong)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text)] transition-colors shadow-2xs cursor-pointer font-medium"
             >
-              <span>Operations</span>
+              <span>Storefront Home</span>
             </Link>
           </nav>
         </div>
