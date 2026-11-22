@@ -85,21 +85,6 @@ export function ProductCard({
     e.currentTarget.style.setProperty('--mouse-y', `-500px`);
   };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!e.touches || e.touches.length === 0) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
-    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    e.currentTarget.style.setProperty('--mouse-x', `-500px`);
-    e.currentTarget.style.setProperty('--mouse-y', `-500px`);
-  };
-
   const currentImg = images[activeImgIdx] || primaryImg;
   const effectiveCurrency = currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
@@ -117,8 +102,6 @@ export function ProductCard({
       aria-label={`View details for ${product.name}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       className="group bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col h-full hover:border-[var(--theme-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 transition-all duration-200 ease-out shadow-xs hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--theme-primary)_12%,transparent)] cursor-pointer text-[var(--theme-text)] spotlight-card card-3d relative select-none"
     >
       {/* Product Image with Hover Zoom & Carousel - Click to open Lightbox */}
@@ -142,10 +125,6 @@ export function ProductCard({
             {product.badge}
           </span>
         )}
-
-        <span className="card-3d-leaf absolute bottom-3 right-3 bg-[var(--theme-surface-translucent)] backdrop-blur-md text-[var(--theme-text-muted)] text-[11px] font-mono px-2 py-0.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] z-10 shadow-xs">
-          {product.category || 'General'}
-        </span>
 
         {/* View gallery hover affordance */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center pointer-events-none">
@@ -203,10 +182,13 @@ export function ProductCard({
       {/* Card Content with 3D Leaf Depth */}
       <div className="card-3d-leaf p-4 sm:p-5 flex-1 flex flex-col justify-between bg-[var(--theme-surface)]">
         <div>
+          <span className="text-[10px] font-mono text-[var(--theme-primary)] font-semibold uppercase tracking-wider block mb-1 truncate">
+            {product.category || 'General'}
+          </span>
           <h3 className="font-semibold text-sm sm:text-base text-[var(--theme-text)] group-hover:text-[var(--theme-primary)] transition-colors duration-200 line-clamp-1">
             {product.name}
           </h3>
-          <p className="text-xs text-[var(--theme-text-muted)] line-clamp-2 mt-1.5 leading-relaxed min-h-[2.25rem]">
+          <p className="text-xs text-[var(--theme-text-muted)] line-clamp-2 mt-1 leading-relaxed min-h-[2.25rem]">
             {product.description || 'Quality product tailored to your standards.'}
           </p>
         </div>

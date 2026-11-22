@@ -109,19 +109,19 @@ export function Catalog() {
     <div className="min-h-screen bg-[var(--theme-bg)] font-sans text-[var(--theme-text)] flex flex-col">
       {/* Top Storefront Header */}
       <header className="sticky top-0 z-40 bg-[var(--theme-surface-translucent)] backdrop-blur-md border-b border-[var(--theme-border)] shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <Link
               to="/"
-              className="p-2 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer"
+              className="p-2 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)] transition-colors cursor-pointer shrink-0"
               title="Return to Home"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div>
-              <Link to="/" className="font-bold text-base sm:text-lg tracking-tight text-[var(--theme-text)] flex items-center gap-2 hover:opacity-85 transition-opacity">
-                <span>{businessInfo?.name || clientConfig.businessName}</span>
-                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] border border-[var(--theme-border)]">
+            <div className="min-w-0 truncate">
+              <Link to="/" className="font-bold text-sm sm:text-base md:text-lg tracking-tight text-[var(--theme-text)] flex items-center gap-1.5 sm:gap-2 hover:opacity-85 transition-opacity truncate">
+                <span className="truncate">{businessInfo?.name || clientConfig.businessName}</span>
+                <span className="text-[10px] sm:text-[11px] font-mono font-medium px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] border border-[var(--theme-border)] shrink-0 hidden xs:inline-block">
                   Store
                 </span>
               </Link>
@@ -129,12 +129,12 @@ export function Catalog() {
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold">
+          <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold shrink-0">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 border border-[var(--theme-border)] hover:border-[var(--theme-border-strong)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text)] transition-colors shadow-2xs cursor-pointer font-medium"
+              className="inline-flex items-center gap-1.5 border border-[var(--theme-border)] hover:border-[var(--theme-border-strong)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] px-2.5 sm:px-3 py-1.5 rounded-[var(--theme-radius-inner)] text-[var(--theme-text)] transition-colors shadow-2xs cursor-pointer font-medium"
             >
-              <span>Storefront Home</span>
+              <span className="hidden sm:inline">Storefront </span>Home
             </Link>
             <HeaderBagButton />
           </nav>

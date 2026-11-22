@@ -262,14 +262,27 @@ export default function AITheme({
   const setIsMobileMenuOpen = setIsMenuOpen;
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
+  }, [isMenuOpen]);
+
+  // Close mobile navigation drawer on Escape key
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMenuOpen(false);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
   }, [isMenuOpen]);
 
   const [isThemeReady, setIsThemeReady] = useState(false);
@@ -328,18 +341,22 @@ export default function AITheme({
 
     // BFCache Defeat: Listen for foreground return
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         fetchHydratedData();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
 
     // Strict Cleanup: Prevent memory leaks
     return () => {
       isMounted = false;
       clearTimeout(timer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
     };
   }, []);
 
@@ -416,12 +433,21 @@ export default function AITheme({
   // ─── Event Bridge: Double-Dispatch on window and document ─────────────────
   const dispatchImageOpen = (src: string, alt: string) => {
     const payload = { src, alt, images: [src], name: alt };
-    window.dispatchEvent(new CustomEvent('open-master-image', { detail: payload }));
-    document.dispatchEvent(new CustomEvent('open-master-image', { detail: payload }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-master-image', { detail: payload }));
+    }
+    if (typeof document !== 'undefined') {
+      document.dispatchEvent(new CustomEvent('open-master-image', { detail: payload }));
+    }
   };
 
   // ─── Apple TV 3D Kinetic Tilt Physics ───────────────────────────────────────
   const handleCardMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (typeof window === 'undefined') return;
+    const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!canHover || prefersReducedMotion) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -434,9 +460,7 @@ export default function AITheme({
     const rotateX = ((y - centerY) / centerY) * -8;
     const rotateY = ((x - centerX) / centerX) * 8;
     
-    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      e.currentTarget.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-    }
+    e.currentTarget.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`;
   };
 
   const handleCardMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
