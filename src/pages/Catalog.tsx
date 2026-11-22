@@ -151,7 +151,7 @@ export function Catalog() {
               <div className="text-[11px] font-mono text-[var(--theme-text-subtle)]">
                 <Link to="/" className="hover:text-[var(--theme-text)] transition-colors">Home</Link>
                 <span className="mx-1.5 opacity-50">/</span>
-                <span className="text-[var(--theme-text)] font-medium">All Products</span>
+                <span className="text-[var(--theme-text)] font-medium">Category Catalog</span>
               </div>
             </div>
 
@@ -165,11 +165,11 @@ export function Catalog() {
           <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-[var(--theme-primary)] opacity-5 rounded-full blur-2xl pointer-events-none" />
         </div>
 
-        {/* All Products Catalog Engine: Category Tab Sidebar + Paginated Right Pane */}
+        {/* All Products Catalog Engine: Category Tab Sidebar + Paginated Right Pane (16 items/page) */}
         <CatalogEngine
           currencySymbol={effectiveCurrency}
           layoutMode="all-products"
-          pageSize={6}
+          pageSize={16}
           onOpenLightbox={(prod, idx) => {
             const fallbackImgs = (prod.image ? [prod.image] : [prod.image_path]).filter((img: any): img is string => typeof img === 'string' && Boolean(img));
             const imgs = Array.isArray(prod.images) && prod.images.length > 0

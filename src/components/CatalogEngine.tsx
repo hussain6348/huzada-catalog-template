@@ -48,7 +48,7 @@ export function CatalogEngine({
   onOpenLightbox,
   layoutMode = 'all-products',
   maxProducts = 8,
-  pageSize = 6,
+  pageSize = 16,
 }: CatalogEngineProps) {
   const [activeProducts, setActiveProducts] = useState<Product[]>(
     () => (Array.isArray(initialProducts) ? initialProducts : getStoredProducts())
@@ -106,18 +106,21 @@ export function CatalogEngine({
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const effectiveCurrency = currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
   // Derived category list with accurate product counts
+  // In all-products mode: strictly category-divided (no "All" tab)
   const { categories, categoryCounts } = useMemo(() => {
-    if (!Array.isArray(activeProducts)) {
-      return { categories: ['All'], categoryCounts: { All: 0 } as Record<string, number> };
+    if (!Array.isArray(activeProducts) || activeProducts.length === 0) {
+      return {
+        categories: layoutMode === 'all-products' ? [] : ['All'],
+        categoryCounts: {} as Record<string, number>,
+      };
     }
-    const counts: Record<string, number> = { All: activeProducts.length };
+    const counts: Record<string, number> = {};
     const validCats = new Set<string>();
 
     for (const p of activeProducts) {
@@ -127,25 +130,97 @@ export function CatalogEngine({
       counts[cat] = (counts[cat] || 0) + 1;
     }
 
-    return {
-      categories: ['All', ...Array.from(validCats)],
-      categoryCounts: counts,
-    };
-  }, [activeProducts]);
+    const catArray = Array.from(validCats);
 
-  // Reset pagination to page 1 whenever category or search filter changes
+    if (layoutMode === 'all-products') {
+      return {
+        categories: catArray,
+        categoryCounts: counts,
+      };
+    }
+
+    return {
+      categories: ['All', ...catArray],
+      categoryCounts: { All: activeProducts.length, ...counts },
+    };
+  }, [activeProducts, layoutMode]);
+
+  // Resolve default active category: prefer populated category with highest count, fallback to first
+  const defaultCategory = useMemo(() => {
+    if (layoutMode !== 'all-products') return 'All';
+    if (!Array.isArray(categories) || categories.length === 0) return '';
+    let bestCat = categories[0];
+    let maxCount = -1;
+    for (const cat of categories) {
+      const count = categoryCounts[cat] || 0;
+      if (count > maxCount) {
+        maxCount = count;
+        bestCat = cat;
+      }
+    }
+    return bestCat;
+  }, [categories, categoryCounts, layoutMode]);
+
+  // Initial category state: in all-products mode, resolve directly to populated category
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    if (layoutMode === 'all-products') {
+      const stored = Array.isArray(initialProducts) ? initialProducts : getStoredProducts();
+      if (Array.isArray(stored) && stored.length > 0) {
+        const counts: Record<string, number> = {};
+        const validCats: string[] = [];
+        for (const p of stored) {
+          if (!p) continue;
+          const cat = p.category?.trim() || 'General';
+          if (!validCats.includes(cat)) validCats.push(cat);
+          counts[cat] = (counts[cat] || 0) + 1;
+        }
+        if (validCats.length > 0) {
+          let bestCat = validCats[0];
+          let maxCount = -1;
+          for (const cat of validCats) {
+            const count = counts[cat] || 0;
+            if (count > maxCount) {
+              maxCount = count;
+              bestCat = cat;
+            }
+          }
+          return bestCat;
+        }
+      }
+      return '';
+    }
+    return 'All';
+  });
+
+  // Ensure active category always resolves to a valid category in all-products mode
+  useEffect(() => {
+    if (layoutMode === 'all-products') {
+      if (categories.length > 0) {
+        if (!selectedCategory || !categories.includes(selectedCategory)) {
+          setSelectedCategory(defaultCategory);
+        }
+      } else if (selectedCategory !== '') {
+        setSelectedCategory('');
+      }
+    }
+  }, [layoutMode, categories, defaultCategory, selectedCategory]);
+
+  // Reset pagination to page 1 whenever category, search query, or sort order changes
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, searchQuery, sortBy]);
 
   // Full filtered & sorted products set
   const filteredProducts = useMemo(() => {
-    if (!Array.isArray(activeProducts)) return [];
+    if (!Array.isArray(activeProducts) || activeProducts.length === 0) return [];
     return activeProducts
       .filter((p) => {
         if (!p) return false;
+        const itemCat = p.category?.trim() || 'General';
         const matchesCategory =
-          selectedCategory === 'All' || (p.category?.trim() || 'General') === selectedCategory;
+          layoutMode === 'all-products'
+            ? itemCat === selectedCategory
+            : selectedCategory === 'All' || itemCat === selectedCategory;
         const nameMatch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase());
         const descMatch = (p.description || '').toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && (nameMatch || descMatch);
@@ -155,7 +230,7 @@ export function CatalogEngine({
         if (sortBy === 'price-desc') return (b.price || 0) - (a.price || 0);
         return 0;
       });
-  }, [activeProducts, selectedCategory, searchQuery, sortBy]);
+  }, [activeProducts, selectedCategory, searchQuery, sortBy, layoutMode]);
 
   // Main Page (home-preview) Selection: at most 8 latest products divided across categories
   const homeCategoryDividedProducts = useMemo(() => {
@@ -168,10 +243,17 @@ export function CatalogEngine({
     return selectCategoryDividedProducts(activeProducts, maxProducts);
   }, [layoutMode, activeProducts, filteredProducts, searchQuery, selectedCategory, maxProducts]);
 
-  // Bounded Pagination for All Products View
-  const boundedPageSize = Math.max(1, Math.min(24, pageSize || 6));
+  // Bounded Pagination for All Products View (Strict 16 items per page default)
+  const boundedPageSize = Math.max(1, Math.min(48, pageSize || 16));
   const totalPages = Math.ceil(filteredProducts.length / boundedPageSize) || 1;
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  // Keep currentPage clamped within [1, totalPages] if totalPages shrinks
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const paginatedProducts = useMemo(() => {
     if (layoutMode === 'home-preview') {
@@ -281,45 +363,51 @@ export function CatalogEngine({
                   Categories
                 </h3>
                 <span className="text-[11px] font-mono text-[var(--theme-text-muted)] ml-auto">
-                  {categories.length - 1} total
+                  {categories.length} {categories.length === 1 ? 'category' : 'categories'}
                 </span>
               </div>
 
               {/* Category Tab Rail: Vertical on desktop, smooth horizontal scroll on mobile */}
               <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 no-scrollbar">
-                {categories.map((cat) => {
-                  const isActive = selectedCategory === cat;
-                  const count = categoryCounts[cat] || 0;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory(cat);
-                        if (typeof window !== 'undefined' && window.innerWidth < 1024 && productsTopRef.current) {
-                          const offset = productsTopRef.current.getBoundingClientRect().top + window.scrollY - 80;
-                          window.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
-                        }
-                      }}
-                      className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-[var(--theme-radius-inner)] text-xs font-medium transition-all duration-150 cursor-pointer text-left whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink ${
-                        isActive
-                          ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-sm font-semibold'
-                          : 'bg-transparent text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)]'
-                      }`}
-                    >
-                      <span className="truncate">{cat === 'All' ? 'All Products' : cat}</span>
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full transition-colors ${
+                {categories.length === 0 ? (
+                  <p className="text-xs text-[var(--theme-text-subtle)] py-2 italic">
+                    No categories available
+                  </p>
+                ) : (
+                  categories.map((cat) => {
+                    const isActive = selectedCategory === cat;
+                    const count = categoryCounts[cat] || 0;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(cat);
+                          if (typeof window !== 'undefined' && window.innerWidth < 1024 && productsTopRef.current) {
+                            const offset = productsTopRef.current.getBoundingClientRect().top + window.scrollY - 80;
+                            window.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+                          }
+                        }}
+                        className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-[var(--theme-radius-inner)] text-xs font-medium transition-all duration-150 cursor-pointer text-left whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink ${
                           isActive
-                            ? 'bg-[var(--theme-on-primary-border)] text-[var(--theme-on-primary)]'
-                            : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-subtle)] border border-[var(--theme-border)]'
+                            ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-sm font-semibold'
+                            : 'bg-transparent text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)]'
                         }`}
                       >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className="truncate">{cat}</span>
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full transition-colors ${
+                            isActive
+                              ? 'bg-[var(--theme-on-primary-border)] text-[var(--theme-on-primary)]'
+                              : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-subtle)] border border-[var(--theme-border)]'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
               </nav>
             </div>
           </aside>
@@ -390,7 +478,11 @@ export function CatalogEngine({
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--theme-border)] text-xs text-[var(--theme-text-muted)]">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-[var(--theme-text)]">
-                    {selectedCategory === 'All' ? 'All Catalog Products' : selectedCategory}
+                    {layoutMode === 'all-products'
+                      ? selectedCategory || 'Store Catalog'
+                      : selectedCategory === 'All'
+                      ? 'All Catalog Products'
+                      : selectedCategory}
                   </span>
                   <span>·</span>
                   <span>{filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found</span>
@@ -478,27 +570,34 @@ export function CatalogEngine({
                   <p className="text-xs sm:text-sm text-[var(--theme-text-muted)] max-w-sm mx-auto leading-relaxed">
                     {activeProducts.length === 0
                       ? 'Our catalog is currently being prepared with curated products. Check back shortly for new arrivals.'
-                      : selectedCategory !== 'All' && searchQuery
+                      : searchQuery
                       ? `No items found in "${selectedCategory}" matching "${searchQuery}".`
-                      : 'Try clearing your search query or selecting a different category from the sidebar.'}
+                      : selectedCategory
+                      ? `No items currently found in "${selectedCategory}".`
+                      : 'Try selecting a category from the sidebar.'}
                   </p>
                 </div>
                 {activeProducts.length > 0 ? (
                   <div className="flex items-center justify-center gap-3 pt-1 flex-wrap">
-                    {selectedCategory !== 'All' && (
+                    {searchQuery && (
                       <button
                         type="button"
-                        onClick={() => setSelectedCategory('All')}
-                        className="px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] text-[var(--theme-primary)] text-xs font-semibold border border-[var(--theme-border)] transition-colors cursor-pointer"
+                        onClick={() => setSearchQuery('')}
+                        className="px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] text-xs font-semibold border border-[var(--theme-border)] transition-colors cursor-pointer"
                       >
-                        Search across All Categories ({categoryCounts['All'] || activeProducts.length})
+                        Clear Search Query
                       </button>
                     )}
                     <button
                       type="button"
                       onClick={() => {
                         setSearchQuery('');
-                        setSelectedCategory('All');
+                        setSortBy('featured');
+                        if (layoutMode === 'all-products' && defaultCategory) {
+                          setSelectedCategory(defaultCategory);
+                        } else {
+                          setSelectedCategory('All');
+                        }
                       }}
                       className="px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                     >
