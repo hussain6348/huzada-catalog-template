@@ -19,6 +19,12 @@ import {
 } from 'lucide-react';
 import type { Product, CartItem } from '../lib/types';
 import {
+  getStoredCart,
+  saveStoredCart,
+  OPEN_CART_EVENT,
+  CART_UPDATED_EVENT,
+} from '../lib/cart';
+import {
   getStoredProducts,
   fetchCatalogProductsWithStatus,
   CATALOG_UPDATED_EVENT,
@@ -101,9 +107,36 @@ export function CatalogEngine({
     }
   }, [initialProducts]);
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => getStoredCart());
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
+  // Synchronize cart with storage & listen for header bag button trigger
+  useEffect(() => {
+    const handleOpenDrawer = () => setIsDrawerOpen(true);
+    const handleCartSync = (e: any) => {
+      if (e?.detail?.items && Array.isArray(e.detail.items)) {
+        setCart((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(e.detail.items)) return prev;
+          return e.detail.items;
+        });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener(OPEN_CART_EVENT, handleOpenDrawer);
+      window.addEventListener(CART_UPDATED_EVENT, handleCartSync);
+      return () => {
+        window.removeEventListener(OPEN_CART_EVENT, handleOpenDrawer);
+        window.removeEventListener(CART_UPDATED_EVENT, handleCartSync);
+      };
+    }
+  }, []);
+
+  // Save cart to storage whenever it updates locally
+  useEffect(() => {
+    saveStoredCart(cart);
+  }, [cart]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
@@ -453,24 +486,6 @@ export function CatalogEngine({
                     </select>
                     <SlidersHorizontal className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--theme-text-subtle)] pointer-events-none" />
                   </div>
-
-                  {/* Cart Trigger Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsDrawerOpen(true)}
-                    className="h-10 bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] rounded-[var(--theme-radius-inner)] px-4 text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all shrink-0 cursor-pointer active:scale-95"
-                  >
-                    <ShoppingBag className="w-4 h-4 text-[var(--theme-on-primary)]" />
-                    <span>Bag</span>
-                    <span className="bg-[var(--theme-on-primary-border)] text-[var(--theme-on-primary)] px-1.5 py-0.5 rounded text-[11px] font-mono tabular-nums">
-                      {cartItemCount}
-                    </span>
-                    {cartTotal > 0 && (
-                      <span className="border-l border-[var(--theme-on-primary-border)] pl-2 font-mono tabular-nums text-[var(--theme-on-primary)] hidden sm:inline">
-                        {effectiveCurrency} {cartTotal.toLocaleString()}
-                      </span>
-                    )}
-                  </button>
                 </div>
               </div>
 
@@ -733,16 +748,6 @@ export function CatalogEngine({
                   <span>View All Products</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
-
-                {/* Cart Trigger Button */}
-                <button
-                  type="button"
-                  onClick={() => setIsDrawerOpen(true)}
-                  className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] rounded-[var(--theme-radius-inner)] px-3.5 py-1.5 text-xs font-semibold flex items-center gap-2 shadow-xs transition-all shrink-0 cursor-pointer active:scale-95"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5 text-[var(--theme-on-primary)]" />
-                  <span>Bag ({cartItemCount})</span>
-                </button>
               </div>
             </div>
 
@@ -875,24 +880,6 @@ export function CatalogEngine({
         </div>
       )}
 
-      {/* ── 3D Elevated Floating Shopping Bag Button (Tactile Quick-Access) ──── */}
-      {cartItemCount > 0 && (
-        <button
-          type="button"
-          onClick={() => setIsDrawerOpen(true)}
-          className="!fixed !bottom-6 !right-6 md:!bottom-8 md:!right-8 !z-40 flex items-center gap-2.5 px-4.5 py-3 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.3)] hover:brightness-110 active:scale-95 transition-all duration-300 btn-radar isolate touch-manipulation cursor-pointer border border-[var(--theme-on-primary-border)]"
-          aria-label={`Open shopping bag with ${cartItemCount} items`}
-        >
-          <ShoppingBag className="w-5 h-5 text-[var(--theme-on-primary)]" />
-          <span className="text-xs font-bold font-mono">
-            {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
-          </span>
-          <span className="border-l border-[var(--theme-on-primary-border)] pl-2 text-xs font-mono font-bold tabular-nums">
-            {effectiveCurrency} {cartTotal.toLocaleString()}
-          </span>
-        </button>
-      )}
-
       {/* ── Slide-over Cart Drawer with 3D Slide & Backdrop Blur ─────────────── */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden font-sans">
@@ -947,12 +934,22 @@ export function CatalogEngine({
                 </h4>
 
                 {(!cart || cart.length === 0) ? (
-                  <div className="py-16 text-center space-y-2">
+                  <div className="py-16 text-center space-y-3">
                     <ShoppingBag className="w-10 h-10 text-[var(--theme-text-subtle)] mx-auto opacity-50" />
-                    <p className="text-sm font-medium text-[var(--theme-text)]">Your bag is empty.</p>
-                    <p className="text-xs text-[var(--theme-text-muted)] max-w-xs mx-auto leading-relaxed">
-                      Explore our products and add items to your bag to proceed with checkout.
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-[var(--theme-text)]">Your bag is empty.</p>
+                      <p className="text-xs text-[var(--theme-text-muted)] max-w-xs mx-auto leading-relaxed">
+                        Explore our products and add items to your bag to proceed with checkout.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      <span>Start Shopping</span>
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-3 pt-1">

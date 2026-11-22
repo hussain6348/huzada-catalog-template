@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { EditableImage } from './EditableImage';
 import { CatalogEngine } from './CatalogEngine';
+import { HeaderBagButton } from './HeaderBagButton';
+import { openCartDrawer } from '../lib/cart';
 import type { Product } from '../lib/types';
 import { clientConfig } from '../config/client';
 
@@ -705,13 +707,12 @@ export default function AITheme({
 
             {/* Right: CTA Button & Mobile Hamburger Toggle */}
             <div className="shrink-0 lg:flex-1 flex items-center justify-end gap-2 sm:gap-2.5">
-              <a
-                href="#catalog"
-                className="shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] text-xs sm:text-sm font-semibold rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all duration-300 isolate outline-none focus:outline-none whitespace-nowrap cursor-pointer"
-              >
-                <ShoppingBag className="w-4 h-4 shrink-0" />
-                <span>Browse Store</span>
-              </a>
+              <HeaderBagButton
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  openCartDrawer();
+                }}
+              />
 
               {/* Mobile Hamburger Toggle Button */}
               <button
@@ -803,14 +804,13 @@ export default function AITheme({
             </nav>
 
             <div className="pt-4 space-y-3">
-              <a
-                href="#catalog"
-                onClick={() => setIsMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-[var(--theme-primary)] text-[var(--theme-on-primary)] font-semibold text-base shadow-lg hover:brightness-110 active:scale-95 transition-all cursor-pointer"
-              >
-                <ShoppingBag className="w-5 h-5" />
-                <span>Browse Store Catalog</span>
-              </a>
+              <HeaderBagButton
+                className="w-full justify-center !py-3.5 !text-base"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  openCartDrawer();
+                }}
+              />
 
               {biz.phone && (
                 <a

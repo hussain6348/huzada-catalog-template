@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { CatalogEngine } from '../components/CatalogEngine';
+import { HeaderBagButton } from '../components/HeaderBagButton';
 import { clientConfig } from '../config/client';
 import { getStoredBusinessInfo, fetchBusinessInfo, BUSINESS_INFO_UPDATED_EVENT } from '../lib/businessInfo';
 import type { BusinessInfo, Product } from '../lib/types';
@@ -134,6 +135,7 @@ export function Catalog() {
             >
               <span>Storefront Home</span>
             </Link>
+            <HeaderBagButton />
           </nav>
         </div>
       </header>
