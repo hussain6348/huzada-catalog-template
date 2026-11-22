@@ -743,7 +743,7 @@ export function CatalogEngine({
         <div className="space-y-6">
           {/* Quick Category Filter Bar */}
           <div className="bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] p-4 sm:p-5 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--theme-text-subtle)] font-mono">
                   Curated Catalog Preview
@@ -751,18 +751,6 @@ export function CatalogEngine({
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] border border-[var(--theme-border)]">
                   {paginatedProducts.length} of {activeProducts.length} items
                 </span>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                {/* View All Products Link Button in Header */}
-                <Link
-                  to="/catalog"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] text-[var(--theme-primary)] hover:text-[var(--theme-primary-hover)] text-xs font-semibold border border-[var(--theme-border)] transition-all cursor-pointer shadow-xs"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>View All Products</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
               </div>
             </div>
 
