@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { Product } from '../lib/types';
 import {
   X,
@@ -113,7 +114,7 @@ export function ProductModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-50 overflow-y-auto font-sans animate-in fade-in duration-200">
       {/* Elevated Glassmorphic Backdrop */}
       <div
@@ -308,6 +309,8 @@ export function ProductModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }
 
 export default ProductModal;

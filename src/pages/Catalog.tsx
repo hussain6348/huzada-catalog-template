@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -188,8 +189,8 @@ export function Catalog() {
         />
       </main>
 
-      {/* Fullscreen Lightbox Overlay */}
-      {lightboxProduct && lightboxProduct.images.length > 0 && (
+      {/* Fullscreen Lightbox Overlay (Portaled to document.body) */}
+      {lightboxProduct && lightboxProduct.images.length > 0 && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 select-none animate-in fade-in duration-200"
           onClick={() => setLightboxProduct(null)}
@@ -297,7 +298,8 @@ export function Catalog() {
               {lightboxProduct.index + 1} / {lightboxProduct.images.length}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Footer */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   LoaderCircle,
@@ -168,7 +169,7 @@ export function CheckoutModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 z-50 overflow-y-auto animate-in fade-in duration-200 font-sans text-[var(--theme-text)]">
       <div
         onClick={(e) => e.stopPropagation()}
@@ -470,6 +471,8 @@ export function CheckoutModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }
 
 export default CheckoutModal;

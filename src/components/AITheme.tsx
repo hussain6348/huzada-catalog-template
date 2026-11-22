@@ -1028,8 +1028,8 @@ export default function AITheme({
           id="catalog"
           className="scroll-mt-28 sm:scroll-mt-32 border-t border-[var(--theme-border)] py-16 lg:py-24 bg-[var(--theme-surface)]"
         >
-          <FadeInSection>
-            <div className="mx-auto max-w-7xl px-6 lg:px-8 space-y-8">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8 space-y-8">
+            <FadeInSection>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="max-w-2xl">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--theme-primary)] text-[var(--theme-on-primary)] mb-2.5 shadow-xs">
@@ -1055,19 +1055,19 @@ export default function AITheme({
                   </Link>
                 </div>
               </div>
+            </FadeInSection>
 
-              {/* Real Catalog Engine Mounted Visibly with 8-Product Category-Divided Split */}
-              <div className="pt-2">
-                <CatalogEngine
-                  products={safeProducts.length > 0 ? safeProducts : undefined}
-                  currencySymbol={currencySymbol}
-                  onOpenLightbox={onOpenLightbox}
-                  layoutMode="home-preview"
-                  maxProducts={8}
-                />
-              </div>
+            {/* Real Catalog Engine Mounted Visibly with 8-Product Category-Divided Split */}
+            <div className="pt-2">
+              <CatalogEngine
+                products={safeProducts.length > 0 ? safeProducts : undefined}
+                currencySymbol={currencySymbol}
+                onOpenLightbox={onOpenLightbox}
+                layoutMode="home-preview"
+                maxProducts={8}
+              />
             </div>
-          </FadeInSection>
+          </div>
         </section>
 
         {/* ── Storefront Marquee Ticker ──────────────────────────────────────── */}

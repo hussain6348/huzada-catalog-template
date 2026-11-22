@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Navigate, Route, Routes, Link } from 'react-router-dom';
 import {
   X,
@@ -407,8 +408,8 @@ function PublicStorefrontPortal() {
 
 
 
-      {/* High-Fidelity Interactive Lightbox Overlay */}
-      {lightboxItem && (
+      {/* High-Fidelity Interactive Lightbox Overlay (Portaled to document.body) */}
+      {lightboxItem && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-[100] bg-zinc-950/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 select-none animate-in fade-in duration-200"
           onClick={() => setLightboxItem(null)}
@@ -518,7 +519,8 @@ function PublicStorefrontPortal() {
               {currentImageIndex + 1} / {lightboxItem.images?.length || 1}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

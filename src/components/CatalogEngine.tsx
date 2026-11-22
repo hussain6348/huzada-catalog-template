@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   ShoppingBag,
@@ -339,6 +340,20 @@ export function CatalogEngine({
     return () => {
       document.body.style.overflow = originalOverflow;
     };
+  }, [isDrawerOpen]);
+
+  // Close cart drawer on Escape key
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDrawerOpen(false);
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
   }, [isDrawerOpen]);
 
   const addToCart = (product: Product, quantity = 1) => {
@@ -880,8 +895,8 @@ export function CatalogEngine({
         </div>
       )}
 
-      {/* ── Slide-over Cart Drawer with 3D Slide & Backdrop Blur ─────────────── */}
-      {isDrawerOpen && (
+      {/* ── Slide-over Cart Drawer with 3D Slide & Backdrop Blur (Portaled to document.body) ── */}
+      {isDrawerOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 overflow-hidden font-sans">
           {/* Backdrop with Blur */}
           <div
@@ -889,8 +904,8 @@ export function CatalogEngine({
             className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
           />
 
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-[var(--theme-surface)] border-l border-[var(--theme-border)] shadow-2xl flex flex-col justify-between text-[var(--theme-text)] animate-in slide-in-from-right duration-300 ease-out">
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10 pointer-events-none">
+            <div className="w-screen max-w-md bg-[var(--theme-surface)] border-l border-[var(--theme-border)] shadow-2xl flex flex-col justify-between text-[var(--theme-text)] animate-in slide-in-from-right duration-300 ease-out pointer-events-auto">
               {/* Drawer Header */}
               <div className="p-5 border-b border-[var(--theme-border)] flex items-center justify-between bg-[var(--theme-surface)]">
                 <div className="flex items-center gap-2.5">
@@ -1044,7 +1059,8 @@ export function CatalogEngine({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Product Detail Modal */}
