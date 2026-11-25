@@ -18,6 +18,7 @@ import { HeaderBagButton } from './HeaderBagButton';
 import { openCartDrawer } from '../lib/cart';
 import type { Product } from '../lib/types';
 import { clientConfig } from '../config/client';
+import { DEFAULT_BUSINESS_INFO } from '../lib/businessInfo';
 
 // ─── Fallback image used when a service has no image ─────────────────────────
 const SERVICE_IMAGE_FALLBACK =
@@ -230,24 +231,24 @@ export default function AITheme({
     (currencyCode === 'PKR' ? 'Rs.' : '$');
 
   const biz = {
-    name: businessInfo.name || clientConfig.businessName || 'Huzada Storefront',
-    tagline: businessInfo.tagline || clientConfig.tagline || 'Curated Products & Premium Selection',
-    whatsapp: businessInfo.whatsapp || clientConfig.whatsappNumber || '',
-    phone: businessInfo.phone || '+1 (409) 256-3597',
+    name: businessInfo.name || DEFAULT_BUSINESS_INFO.name || clientConfig.businessName || 'Huzada Storefront',
+    tagline: businessInfo.tagline || DEFAULT_BUSINESS_INFO.tagline || clientConfig.tagline || 'Curated Products & Premium Selection',
+    whatsapp: businessInfo.whatsapp || DEFAULT_BUSINESS_INFO.whatsapp || clientConfig.whatsappNumber || '',
+    phone: businessInfo.phone || DEFAULT_BUSINESS_INFO.phone || '+1 (409) 256-3597',
     currency: currencyCode,
     currencySymbol: currencySymbol,
-    address: businessInfo.address || '811 6th St N #200, Texas City, TX 77590',
-    hours: businessInfo.hours || 'Mon–Sat, 9:00 AM – 6:00 PM',
-    rating: businessInfo.rating || '4.9',
-    reviewCount: businessInfo.reviewCount || '48+',
-    mapsUrl: businessInfo.mapsUrl || 'https://maps.google.com/',
+    address: businessInfo.address || DEFAULT_BUSINESS_INFO.address || '811 6th St N #200, Texas City, TX 77590',
+    hours: businessInfo.hours || DEFAULT_BUSINESS_INFO.hours || 'Mon–Sat, 9:00 AM – 6:00 PM',
+    rating: businessInfo.rating || DEFAULT_BUSINESS_INFO.rating || '4.9',
+    reviewCount: businessInfo.reviewCount || DEFAULT_BUSINESS_INFO.reviewCount || '48+',
+    mapsUrl: businessInfo.mapsUrl || DEFAULT_BUSINESS_INFO.mapsUrl || 'https://maps.google.com/',
     imageSlots: businessInfo.imageSlots || {},
   };
 
   const promoText =
     businessInfo?.promoText !== undefined && businessInfo?.promoText !== ''
       ? businessInfo.promoText
-      : '⚡ CURATED STOREFRONT CATALOG • FAST DOORSTEP DELIVERY & SECURE DIRECT CHECKOUT ⚡';
+      : (DEFAULT_BUSINESS_INFO.promoText || '⚡ CURATED STOREFRONT CATALOG • FAST DOORSTEP DELIVERY & SECURE DIRECT CHECKOUT ⚡');
 
   const safeServices = Array.isArray(services) ? services : [];
   const safeProducts = Array.isArray(products) ? products : [];
@@ -894,11 +895,11 @@ export default function AITheme({
                 </div>
 
                 <h1 className="font-editorial headline-balance mt-5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-semibold leading-[1.08] tracking-tight animate-text-shimmer whitespace-normal break-words [overflow-wrap:anywhere]">
-                  {businessInfo?.heroHeadline || biz.tagline}
+                  {businessInfo?.heroHeadline || DEFAULT_BUSINESS_INFO.heroHeadline || biz.tagline}
                 </h1>
 
                 <p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--theme-text-muted)] whitespace-normal break-words [overflow-wrap:anywhere]">
-                  {businessInfo?.heroSubheadline ||
+                  {businessInfo?.heroSubheadline || DEFAULT_BUSINESS_INFO.heroSubheadline ||
                     'Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery.'}
                 </p>
               </div>
@@ -1146,7 +1147,7 @@ export default function AITheme({
                     {biz.name}
                   </h2>
                   <p className="mt-5 text-base leading-relaxed text-[var(--theme-text-muted)]">
-                    {businessInfo?.aboutDescription || `${biz.tagline} We combine years of specialized craft with dedicated personal attention to deliver an unhurried, exceptional client experience.`}
+                    {businessInfo?.aboutDescription || DEFAULT_BUSINESS_INFO.aboutDescription || `${biz.tagline} We combine years of specialized craft with dedicated personal attention to deliver an unhurried, exceptional client experience.`}
                   </p>
                   <div className="mt-8 divide-y divide-[var(--theme-border)] border-y border-[var(--theme-border)]">
                     {[
@@ -1201,7 +1202,7 @@ export default function AITheme({
                 <div className="lg:col-span-7">
                   <p className="text-xs font-medium text-[var(--theme-on-primary)] opacity-80">Direct Storefront Assistance</p>
                   <h2 className="font-editorial headline-balance mt-2 text-3xl font-semibold text-[var(--theme-on-primary)] sm:text-4xl">
-                    {businessInfo?.ctaHeadline || 'Ready to Explore Our Catalog?'}
+                    {businessInfo?.ctaHeadline || DEFAULT_BUSINESS_INFO.ctaHeadline || 'Ready to Explore Our Catalog?'}
                   </h2>
                   <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--theme-on-primary-muted)]">
                     Browse our full collection online with fast doorstep delivery, or reach out directly for custom orders, wholesale inquiries, and dedicated customer support.

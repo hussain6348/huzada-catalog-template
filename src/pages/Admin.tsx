@@ -2074,12 +2074,11 @@ export function Admin({ onLogout }: AdminProps = {}) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className="block text-xs font-semibold text-zinc-700 mb-1">
-                      WhatsApp Number (Intl digits) <span className="text-red-500">*</span>
+                      WhatsApp Number (Intl digits) <span className="text-zinc-400 font-normal">(Optional)</span>
                     </label>
                     <input
-                      required
                       type="text"
-                      value={businessInfo.whatsapp}
+                      value={businessInfo.whatsapp || ''}
                       onChange={e => setBusinessInfo({ ...businessInfo, whatsapp: e.target.value })}
                       placeholder="e.g. 923322264855"
                       className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-xs font-mono text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"

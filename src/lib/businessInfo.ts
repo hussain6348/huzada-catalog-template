@@ -1,29 +1,55 @@
 import type { BusinessInfo } from './types';
 import { getAuthHeaders } from './auth';
+import initialTextData from '../config/initial-text.json';
 
 // ─── Event Keys ───────────────────────────────────────────────────────────────
 export const BUSINESS_INFO_UPDATED_EVENT = 'waas-business-info-updated';
 export const IMAGE_SLOT_UPDATED_EVENT = 'waas-update-slot-image';
 
-// ─── Default business info (WaaS platform defaults) ──────────────────────────
+// Helper to normalize initial text config with support for both snake_case and camelCase
+export function parseInitialTextConfig(raw: any = {}): Partial<BusinessInfo> {
+  if (!raw || typeof raw !== 'object') return {};
+
+  return {
+    name: raw.business_name || raw.businessName || raw.name,
+    tagline: raw.tagline,
+    phone: raw.display_phone || raw.displayPhone || raw.phone,
+    currency: raw.currency_code || raw.currencyCode || raw.currency,
+    currencySymbol: raw.currency_symbol || raw.currencySymbol,
+    address: raw.studio_address || raw.studioAddress || raw.address,
+    hours: raw.operating_hours || raw.operatingHours || raw.hours,
+    mapsUrl: raw.google_maps_link || raw.googleMapsLink || raw.mapsUrl,
+    rating: raw.rating_score != null ? String(raw.rating_score) : (raw.ratingScore != null ? String(raw.ratingScore) : (raw.rating != null ? String(raw.rating) : undefined)),
+    reviewCount: raw.review_count != null ? String(raw.review_count) : (raw.reviewCount != null ? String(raw.reviewCount) : undefined),
+    promoText: raw.announcement_banner !== undefined ? raw.announcement_banner : (raw.announcementBanner !== undefined ? raw.announcementBanner : raw.promoText),
+    heroHeadline: raw.hero_headline || raw.heroHeadline,
+    heroSubheadline: raw.hero_subheadline || raw.heroSubheadline,
+    aboutDescription: raw.about_description || raw.aboutDescription,
+    ctaHeadline: raw.cta_headline || raw.ctaHeadline,
+  };
+}
+
+const parsedInitial = parseInitialTextConfig(initialTextData);
+
+// ─── Default business info (WaaS platform defaults + initial text config) ─────
 export const DEFAULT_BUSINESS_INFO: BusinessInfo = {
-  name: 'Huzada Storefront',
-  tagline: 'Curated Products & Premium Essentials',
+  name: parsedInitial.name || 'Huzada Storefront',
+  tagline: parsedInitial.tagline || 'Curated Products & Premium Selection',
   whatsapp: '923322264855',
-  phone: '+1 (409) 256-3597',
-  currency: 'USD',
-  currencySymbol: '$',
-  address: '811 6th St N #200, Texas City, TX 77590',
-  hours: 'Mon–Sat, 9:00 AM – 6:00 PM',
-  rating: '4.9',
-  reviewCount: '48+',
-  mapsUrl: 'https://maps.google.com/',
+  phone: parsedInitial.phone || '+1 (409) 256-3597',
+  currency: parsedInitial.currency || 'USD',
+  currencySymbol: parsedInitial.currencySymbol || '$',
+  address: parsedInitial.address || '811 6th St N #200, Texas City, TX 77590',
+  hours: parsedInitial.hours || 'Mon–Sat, 9:00 AM – 6:00 PM',
+  rating: parsedInitial.rating || '4.9',
+  reviewCount: parsedInitial.reviewCount || '48+',
+  mapsUrl: parsedInitial.mapsUrl || 'https://maps.google.com/',
   imageSlots: {},
-  promoText: '',
-  heroHeadline: '',
-  heroSubheadline: '',
-  aboutDescription: '',
-  ctaHeadline: '',
+  promoText: parsedInitial.promoText !== undefined ? parsedInitial.promoText : '⚡ CURATED STOREFRONT CATALOG • FAST DOORSTEP DELIVERY & SECURE DIRECT CHECKOUT ⚡',
+  heroHeadline: parsedInitial.heroHeadline || '',
+  heroSubheadline: parsedInitial.heroSubheadline || '',
+  aboutDescription: parsedInitial.aboutDescription || '',
+  ctaHeadline: parsedInitial.ctaHeadline || '',
   heroImage: '',
   heroImage2: '',
   heroImage3: '',

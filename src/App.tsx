@@ -17,7 +17,7 @@ import { clientConfig } from './config/client';
 import AITheme from './components/AITheme';
 
 import { isAuthenticated, AUTH_CHANGE_EVENT } from './lib/auth';
-import { getStoredBusinessInfo, fetchBusinessInfo, BUSINESS_INFO_UPDATED_EVENT } from './lib/businessInfo';
+import { getStoredBusinessInfo, fetchBusinessInfo, DEFAULT_BUSINESS_INFO, BUSINESS_INFO_UPDATED_EVENT } from './lib/businessInfo';
 import type { BusinessInfo, Service, Product } from './lib/types';
 
 export const FALLBACK_SERVICES: Service[] = [];
@@ -103,25 +103,33 @@ function PublicStorefrontPortal() {
   const symbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', PKR: 'Rs.', AED: 'AED ', CAD: '$', AUD: '$' };
 
   const formatBusinessInfo = (storedBiz: Partial<BusinessInfo>): BusinessInfo => {
-    const effectiveCode = storedBiz.currency || currencyCode || 'USD';
-    const effectiveSym = storedBiz.currencySymbol || symbols[effectiveCode] || currencySymbol || '$';
+    const effectiveCode = storedBiz.currency || DEFAULT_BUSINESS_INFO.currency || currencyCode || 'USD';
+    const effectiveSym = storedBiz.currencySymbol || symbols[effectiveCode] || DEFAULT_BUSINESS_INFO.currencySymbol || currencySymbol || '$';
 
     return {
+      ...DEFAULT_BUSINESS_INFO,
       ...storedBiz,
-      name: storedBiz.name || clientConfig.businessName || 'Huzada Storefront',
-      tagline: storedBiz.tagline || clientConfig.tagline || 'Curated Products & Premium Selection',
-      whatsapp: storedBiz.whatsapp || clientConfig.whatsappNumber,
+      name: storedBiz.name || DEFAULT_BUSINESS_INFO.name || clientConfig.businessName || 'Huzada Storefront',
+      tagline: storedBiz.tagline || DEFAULT_BUSINESS_INFO.tagline || clientConfig.tagline || 'Curated Products & Premium Selection',
+      whatsapp: storedBiz.whatsapp || DEFAULT_BUSINESS_INFO.whatsapp || clientConfig.whatsappNumber,
+      phone: storedBiz.phone || DEFAULT_BUSINESS_INFO.phone || '',
       currency: effectiveCode,
       currencySymbol: effectiveSym,
-      promoText: storedBiz.promoText,
+      address: storedBiz.address || DEFAULT_BUSINESS_INFO.address || '',
+      hours: storedBiz.hours || DEFAULT_BUSINESS_INFO.hours || '',
+      rating: storedBiz.rating || DEFAULT_BUSINESS_INFO.rating || '',
+      reviewCount: storedBiz.reviewCount || DEFAULT_BUSINESS_INFO.reviewCount || '',
+      mapsUrl: storedBiz.mapsUrl || DEFAULT_BUSINESS_INFO.mapsUrl || '',
+      promoText: storedBiz.promoText !== undefined ? storedBiz.promoText : DEFAULT_BUSINESS_INFO.promoText,
       logo: storedBiz.logo || storedBiz.imageSlots?.logo,
       imageSlots: {
+        ...(DEFAULT_BUSINESS_INFO.imageSlots || {}),
         ...(storedBiz.imageSlots || {}),
       },
-      heroHeadline: storedBiz.heroHeadline,
-      heroSubheadline: storedBiz.heroSubheadline,
-      aboutDescription: storedBiz.aboutDescription,
-      ctaHeadline: storedBiz.ctaHeadline,
+      heroHeadline: storedBiz.heroHeadline !== undefined && storedBiz.heroHeadline !== '' ? storedBiz.heroHeadline : DEFAULT_BUSINESS_INFO.heroHeadline,
+      heroSubheadline: storedBiz.heroSubheadline !== undefined && storedBiz.heroSubheadline !== '' ? storedBiz.heroSubheadline : DEFAULT_BUSINESS_INFO.heroSubheadline,
+      aboutDescription: storedBiz.aboutDescription !== undefined && storedBiz.aboutDescription !== '' ? storedBiz.aboutDescription : DEFAULT_BUSINESS_INFO.aboutDescription,
+      ctaHeadline: storedBiz.ctaHeadline !== undefined && storedBiz.ctaHeadline !== '' ? storedBiz.ctaHeadline : DEFAULT_BUSINESS_INFO.ctaHeadline,
       heroImage: storedBiz.heroImage || storedBiz.imageSlots?.hero || '',
       heroImage2: storedBiz.heroImage2 || storedBiz.imageSlots?.hero2 || '',
       heroImage3: storedBiz.heroImage3 || storedBiz.imageSlots?.hero3 || '',
