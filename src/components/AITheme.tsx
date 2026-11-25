@@ -861,12 +861,12 @@ export default function AITheme({
       )}
 
       <main id="top" className="flex-grow flex flex-col">
-        {/* ── Hero Section (Full-Bleed Edge-to-Edge with Floating Depth) ────── */}
+        {/* ── Hero Section (Weightless Editorial Floating Plane with Sculpted Rounded Bottom) ────── */}
         <section
-          className="relative w-full overflow-hidden border-b min-h-[360px] sm:min-h-[440px] lg:min-h-[520px] flex items-center"
+          className="relative w-full overflow-hidden rounded-b-[28px] sm:rounded-b-[36px] min-h-[380px] sm:min-h-[460px] lg:min-h-[540px] flex items-center border-b"
           style={{
-            borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
-            boxShadow: '0 20px 50px -15px rgba(0,0,0,0.45)',
+            borderColor: 'color-mix(in srgb, var(--theme-border) 40%, transparent)',
+            boxShadow: '0 24px 60px -15px rgba(0,0,0,0.5)',
           }}
         >
           {/* Full-Bleed Slideshow Background Layer */}
@@ -913,109 +913,76 @@ export default function AITheme({
             })}
           </div>
 
-          {/* Directional Readability Scrim (Dual-Layer for Desktop & Mobile) */}
-          <div
-            className="absolute inset-0 pointer-events-none z-[1]"
-            style={{
-              background: `linear-gradient(to right, color-mix(in srgb, var(--theme-bg) 96%, transparent) 0%, color-mix(in srgb, var(--theme-bg) 88%, transparent) 38%, color-mix(in srgb, var(--theme-bg) 55%, transparent) 65%, color-mix(in srgb, var(--theme-bg) 10%, transparent) 100%)`,
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none z-[1] sm:hidden"
-            style={{
-              background: `linear-gradient(to top, color-mix(in srgb, var(--theme-bg) 96%, transparent) 0%, color-mix(in srgb, var(--theme-bg) 80%, transparent) 55%, color-mix(in srgb, var(--theme-bg) 35%, transparent) 100%)`,
-            }}
-          />
+          {/* Silky Edge-Free Readability Scrim (Full-bleed photo shines unobstructed on right/top) */}
+          <div className="absolute inset-0 pointer-events-none z-[1] bg-gradient-to-t from-black/85 via-black/40 to-black/15 md:bg-gradient-to-r md:from-black/80 md:via-black/40 md:to-transparent" />
 
-          {/* Floating Left-Aligned Text & CTA Stage */}
-          <div className="relative z-10 w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+          {/* Weightless Floating Left-Aligned Content Stage (No bulky frosted box) */}
+          <div className="relative z-10 w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-18">
             <div
               ref={heroRef}
-              onMouseMove={handleCardMouseMove}
-              onMouseLeave={handleCardMouseLeave}
-              onTouchStart={handleCardTouchMove}
-              onTouchMove={handleCardTouchMove}
-              onTouchEnd={handleCardTouchEnd}
-              onTouchCancel={handleCardTouchEnd}
-              className="w-full max-w-xl lg:max-w-2xl rounded-[var(--theme-radius)] backdrop-blur-md p-6 sm:p-8 lg:p-10 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)] transition-transform duration-200 ease-out border"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--theme-surface) 84%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
-              }}
+              className="w-full max-w-xl lg:max-w-2xl py-2 sm:py-4"
             >
-              {/* Trust/Rating Pill */}
-              <div
-                className="inline-flex flex-wrap items-center gap-2 rounded-full px-3 py-1 text-xs font-medium text-[var(--theme-text-muted)] border"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--theme-surface-subtle) 90%, transparent)',
-                  borderColor: 'color-mix(in srgb, var(--theme-border) 50%, transparent)',
-                }}
-              >
+              {/* Slim Glass Trust Pill */}
+              <div className="inline-flex flex-wrap items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium backdrop-blur-sm bg-white/10 border border-white/20 text-white/90 shadow-sm">
                 <span>{biz.address.split(',').slice(-2).join(',').trim()}</span>
-                <span aria-hidden="true">·</span>
-                <span className="tabular-nums text-[var(--theme-text)] font-semibold">
+                <span aria-hidden="true" className="text-white/50">·</span>
+                <span className="tabular-nums font-semibold text-white">
                   <AnimatedCounter end={biz.rating} decimals={1} /> ★ Rated
                 </span>
               </div>
 
-              {/* Hero Headline */}
-              <h1 className="font-editorial headline-balance mt-4 text-[clamp(1.85rem,3.8vw,3.25rem)] font-semibold leading-[1.08] tracking-tight animate-text-shimmer whitespace-normal break-words [overflow-wrap:anywhere] text-[var(--theme-text)]">
+              {/* Crisp Editorial Headline with Ambient Drop Shadow */}
+              <h1 className="font-editorial headline-balance mt-4 text-[clamp(2.1rem,4.2vw,3.6rem)] font-semibold leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] whitespace-normal break-words [overflow-wrap:anywhere]">
                 {businessInfo?.heroHeadline || DEFAULT_BUSINESS_INFO.heroHeadline || biz.tagline}
               </h1>
 
-              {/* Hero Subheadline */}
-              <p className="mt-4 max-w-xl text-sm sm:text-base leading-relaxed text-[var(--theme-text-muted)] whitespace-normal break-words [overflow-wrap:anywhere]">
+              {/* Clean Luminous Subheadline */}
+              <p className="mt-4 max-w-xl text-sm sm:text-base leading-relaxed text-white/85 whitespace-normal break-words [overflow-wrap:anywhere] drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)]">
                 {businessInfo?.heroSubheadline || DEFAULT_BUSINESS_INFO.heroSubheadline ||
                   'Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery.'}
               </p>
 
-              {/* CTA Buttons & Contact Meta */}
-              <div
-                className="mt-6 pt-5 border-t"
-                style={{ borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)' }}
-              >
+              {/* Sleek Side-by-Side CTAs & Contact Meta */}
+              <div className="mt-7 pt-5 border-t border-white/15">
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                  {/* High-Contrast Primary Pill Button */}
                   <a
                     href="#catalog"
-                    className="btn-radar inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2.5 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-all duration-150 hover:bg-[var(--theme-primary-hover)] hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2.5 rounded-full bg-[var(--theme-primary)] px-6 sm:px-7 py-2.5 sm:py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-lg hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
                   >
                     <ShoppingBag className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
                     <span>Explore Catalog</span>
                   </a>
 
+                  {/* Translucent Secondary Glass Pill Button */}
                   <a
                     href="#contact"
-                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-all duration-150 hover:border-[var(--theme-text)] hover:-translate-y-0.5 active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] cursor-pointer"
+                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2 rounded-full backdrop-blur-sm bg-white/10 border border-white/25 px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-white whitespace-nowrap shrink-0 transition-all duration-200 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   >
                     <span>Contact &amp; Inquiries</span>
                   </a>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--theme-text-subtle)] tabular-nums">
+                {/* Subtitle Contact & Hours Meta */}
+                <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/70 tabular-nums">
                   <span>{biz.address}</span>
-                  <span aria-hidden="true">·</span>
+                  <span aria-hidden="true" className="text-white/40">·</span>
                   <a
                     href={`tel:${biz.phone.replace(/\s+/g, '')}`}
-                    className="font-medium text-[var(--theme-text)] hover:text-[var(--theme-primary)] transition-colors"
+                    className="font-medium text-white/90 hover:text-white transition-colors"
                   >
                     {biz.phone}
                   </a>
-                  <span aria-hidden="true">·</span>
+                  <span aria-hidden="true" className="text-white/40">·</span>
                   <span>{biz.hours}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Slide Indicator & Fullscreen Trigger (Floating bottom right) */}
+          {/* Slide Indicator & Fullscreen Trigger (Compact Glass Pill in bottom-right corner) */}
           {slideImages.length > 1 && (
-            <div
-              className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border shadow-lg"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--theme-border) 50%, transparent)',
-              }}
-            >
+            <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/40 border border-white/20 shadow-lg">
               {slideImages.map((_, idx) => (
                 <button
                   key={idx}
@@ -1025,7 +992,7 @@ export default function AITheme({
                   className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                     currentSlide === idx
                       ? 'w-6 bg-[var(--theme-primary)]'
-                      : 'w-1.5 bg-[var(--theme-text-muted)] hover:bg-[var(--theme-text)] opacity-60'
+                      : 'w-1.5 bg-white/50 hover:bg-white'
                   }`}
                 />
               ))}
@@ -1033,7 +1000,7 @@ export default function AITheme({
                 type="button"
                 onClick={() => dispatchImageOpen(slideImages[currentSlide], `${biz.name} Studio Visual`)}
                 aria-label="Expand image"
-                className="ml-1 text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] transition-colors cursor-pointer"
+                className="ml-1 text-white/70 hover:text-white transition-colors cursor-pointer"
                 title="View image full size"
               >
                 <Sparkles className="w-3.5 h-3.5" />
