@@ -861,54 +861,123 @@ export default function AITheme({
       )}
 
       <main id="top" className="flex-grow flex flex-col">
-        {/* ── Hero Section ──────────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden w-full">
-          {/* HARDWARE-ACCELERATED NEON PATTERN */}
-          <div 
-            className="absolute inset-0 pointer-events-none z-0"
+        {/* ── Hero Section (Full-Bleed Edge-to-Edge with Floating Depth) ────── */}
+        <section
+          className="relative w-full overflow-hidden border-b min-h-[360px] sm:min-h-[440px] lg:min-h-[520px] flex items-center"
+          style={{
+            borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
+            boxShadow: '0 20px 50px -15px rgba(0,0,0,0.45)',
+          }}
+        >
+          {/* Full-Bleed Slideshow Background Layer */}
+          <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
+            {/* Themed gradient & aurora fallback layer */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--theme-surface)] to-[var(--theme-bg)] z-0" />
+
+            {/* HARDWARE-ACCELERATED NEON PATTERN */}
+            <div
+              className="absolute inset-0 pointer-events-none z-0"
+              style={{
+                backgroundImage: `radial-gradient(color-mix(in srgb, var(--theme-primary) 70%, transparent) 2px, transparent 2px)`,
+                backgroundSize: '32px 32px',
+                filter: 'drop-shadow(0 0 4px var(--theme-primary))',
+                transform: 'translateZ(0)',
+                opacity: 0.35,
+                WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)',
+              }}
+            />
+
+            {/* Aurora Glow Blobs */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+              <div className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] -top-32 -left-32 opacity-25"></div>
+              <div
+                className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] top-32 -right-32 opacity-20"
+                style={{ animationDelay: '2s' }}
+              ></div>
+            </div>
+
+            {/* Slideshow Images with Smooth Transitions and Gentle Drift */}
+            {slideImages.map((src, index) => {
+              const isCurrent = currentSlide === index;
+              return (
+                <img
+                  key={index}
+                  src={src}
+                  alt={`${biz.name} visual ${index + 1}`}
+                  draggable={false}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out motion-safe:scale-[1.03] select-none ${
+                    isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                  }`}
+                />
+              );
+            })}
+          </div>
+
+          {/* Directional Readability Scrim (Dual-Layer for Desktop & Mobile) */}
+          <div
+            className="absolute inset-0 pointer-events-none z-[1]"
             style={{
-              backgroundImage: `radial-gradient(color-mix(in srgb, var(--theme-primary) 70%, transparent) 2px, transparent 2px)`,
-              backgroundSize: '32px 32px',
-              filter: 'drop-shadow(0 0 4px var(--theme-primary))',
-              transform: 'translateZ(0)', // Forces 60fps GPU acceleration
-              opacity: 0.5,
-              WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)'
+              background: `linear-gradient(to right, color-mix(in srgb, var(--theme-bg) 96%, transparent) 0%, color-mix(in srgb, var(--theme-bg) 88%, transparent) 38%, color-mix(in srgb, var(--theme-bg) 55%, transparent) 65%, color-mix(in srgb, var(--theme-bg) 10%, transparent) 100%)`,
+            }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none z-[1] sm:hidden"
+            style={{
+              background: `linear-gradient(to top, color-mix(in srgb, var(--theme-bg) 96%, transparent) 0%, color-mix(in srgb, var(--theme-bg) 80%, transparent) 55%, color-mix(in srgb, var(--theme-bg) 35%, transparent) 100%)`,
             }}
           />
 
-          {/* Aurora Glow Wrapper (Isolated from image shadow) */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            <div className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] -top-32 -left-32"></div>
-            <div className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] top-32 -right-32" style={{ animationDelay: '2s', opacity: 0.2 }}></div>
-          </div>
-
-          <div className="relative z-10 mx-auto max-w-7xl px-6 pt-10 sm:pt-12 lg:pt-16 pb-14 lg:px-8 lg:pb-20">
-            <div className="grid grid-cols-1 items-stretch gap-10 lg:grid-cols-12 lg:gap-12">
-            <div className="flex flex-col justify-between lg:col-span-6 py-2">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[var(--theme-text-muted)]">
-                  <span>{biz.address.split(',').slice(-2).join(',').trim()}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="tabular-nums text-[var(--theme-text)] font-semibold">
-                    <AnimatedCounter end={biz.rating} decimals={1} /> ★ Rated
-                  </span>
-                </div>
-
-                <h1 className="font-editorial headline-balance mt-5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-semibold leading-[1.08] tracking-tight animate-text-shimmer whitespace-normal break-words [overflow-wrap:anywhere]">
-                  {businessInfo?.heroHeadline || DEFAULT_BUSINESS_INFO.heroHeadline || biz.tagline}
-                </h1>
-
-                <p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--theme-text-muted)] whitespace-normal break-words [overflow-wrap:anywhere]">
-                  {businessInfo?.heroSubheadline || DEFAULT_BUSINESS_INFO.heroSubheadline ||
-                    'Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery.'}
-                </p>
+          {/* Floating Left-Aligned Text & CTA Stage */}
+          <div className="relative z-10 w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+            <div
+              ref={heroRef}
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
+              onTouchStart={handleCardTouchMove}
+              onTouchMove={handleCardTouchMove}
+              onTouchEnd={handleCardTouchEnd}
+              onTouchCancel={handleCardTouchEnd}
+              className="w-full max-w-xl lg:max-w-2xl rounded-[var(--theme-radius)] backdrop-blur-md p-6 sm:p-8 lg:p-10 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)] transition-transform duration-200 ease-out border"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--theme-surface) 84%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
+              }}
+            >
+              {/* Trust/Rating Pill */}
+              <div
+                className="inline-flex flex-wrap items-center gap-2 rounded-full px-3 py-1 text-xs font-medium text-[var(--theme-text-muted)] border"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--theme-surface-subtle) 90%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--theme-border) 50%, transparent)',
+                }}
+              >
+                <span>{biz.address.split(',').slice(-2).join(',').trim()}</span>
+                <span aria-hidden="true">·</span>
+                <span className="tabular-nums text-[var(--theme-text)] font-semibold">
+                  <AnimatedCounter end={biz.rating} decimals={1} /> ★ Rated
+                </span>
               </div>
 
-              <div className="mt-9 pt-6 border-t border-[var(--theme-border)]">
-                <div className="flex flex-wrap items-center gap-4">
+              {/* Hero Headline */}
+              <h1 className="font-editorial headline-balance mt-4 text-[clamp(1.85rem,3.8vw,3.25rem)] font-semibold leading-[1.08] tracking-tight animate-text-shimmer whitespace-normal break-words [overflow-wrap:anywhere] text-[var(--theme-text)]">
+                {businessInfo?.heroHeadline || DEFAULT_BUSINESS_INFO.heroHeadline || biz.tagline}
+              </h1>
+
+              {/* Hero Subheadline */}
+              <p className="mt-4 max-w-xl text-sm sm:text-base leading-relaxed text-[var(--theme-text-muted)] whitespace-normal break-words [overflow-wrap:anywhere]">
+                {businessInfo?.heroSubheadline || DEFAULT_BUSINESS_INFO.heroSubheadline ||
+                  'Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery.'}
+              </p>
+
+              {/* CTA Buttons & Contact Meta */}
+              <div
+                className="mt-6 pt-5 border-t"
+                style={{ borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)' }}
+              >
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <a
                     href="#catalog"
-                    className="btn-radar inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:bg-[var(--theme-primary-hover)] active:scale-[0.99] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                    className="btn-radar inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2.5 rounded-[var(--theme-radius)] bg-[var(--theme-primary)] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-all duration-150 hover:bg-[var(--theme-primary-hover)] hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
                   >
                     <ShoppingBag className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
                     <span>Explore Catalog</span>
@@ -916,13 +985,13 @@ export default function AITheme({
 
                   <a
                     href="#contact"
-                    className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-6 py-3 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[var(--theme-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] cursor-pointer"
+                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] border border-[var(--theme-border-strong)] bg-[var(--theme-surface)] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-[var(--theme-text)] whitespace-nowrap shrink-0 transition-all duration-150 hover:border-[var(--theme-text)] hover:-translate-y-0.5 active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)] cursor-pointer"
                   >
                     <span>Contact &amp; Inquiries</span>
                   </a>
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--theme-text-subtle)] tabular-nums">
+                <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--theme-text-subtle)] tabular-nums">
                   <span>{biz.address}</span>
                   <span aria-hidden="true">·</span>
                   <a
@@ -936,71 +1005,47 @@ export default function AITheme({
                 </div>
               </div>
             </div>
-
-            <div className="lg:col-span-6 flex items-center justify-center">
-              <div
-                ref={heroRef}
-                onMouseMove={handleCardMouseMove}
-                onMouseLeave={handleCardMouseLeave}
-                onTouchStart={handleCardTouchMove}
-                onTouchMove={handleCardTouchMove}
-                onTouchEnd={handleCardTouchEnd}
-                onTouchCancel={handleCardTouchEnd}
-                onClick={() =>
-                  dispatchImageOpen(
-                    slideImages[currentSlide],
-                    `${biz.name} Studio`
-                  )
-                }
-                className="relative w-full max-w-md mx-auto aspect-[4/5] animate-float select-none cursor-pointer rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface-subtle)] shadow-2xl transition-transform duration-200 ease-out"
-              >
-                {slideImages.map((src, index) => {
-                  let dynamicClasses = '';
-
-                  if (index === 0) {
-                    if (isIntroAnimating) {
-                      dynamicClasses = 'opacity-100 z-30 translate-x-0 rotate-0';
-                    } else {
-                      const isCurrent = currentSlide === 0;
-                      dynamicClasses = `translate-x-0 rotate-0 ${isCurrent ? 'opacity-100 z-30' : 'opacity-0 z-10'}`;
-                    }
-                  } else if (index === 1) {
-                    if (!hasIntersected) {
-                      dynamicClasses = 'translate-x-0 rotate-0 opacity-0 z-10';
-                    } else if (isIntroAnimating) {
-                      dynamicClasses = '-translate-x-12 rotate-[-8deg] opacity-60 z-20';
-                    } else {
-                      const isCurrent = currentSlide === 1;
-                      dynamicClasses = `translate-x-0 rotate-0 ${isCurrent ? 'opacity-100 z-30' : 'opacity-0 z-10'}`;
-                    }
-                  } else if (index === 2) {
-                    if (!hasIntersected) {
-                      dynamicClasses = 'translate-x-0 rotate-0 opacity-0 z-10';
-                    } else if (isIntroAnimating) {
-                      dynamicClasses = 'translate-x-12 rotate-[8deg] opacity-60 z-20';
-                    } else {
-                      const isCurrent = currentSlide === 2;
-                      dynamicClasses = `translate-x-0 rotate-0 ${isCurrent ? 'opacity-100 z-30' : 'opacity-0 z-10'}`;
-                    }
-                  }
-
-                  return (
-                    <img
-                      key={index}
-                      src={src}
-                      alt={`${biz.name} visual ${index + 1}`}
-                      draggable={false}
-                      className={`absolute inset-0 object-cover w-full h-full rounded-[var(--theme-radius)] transition-all duration-1000 ease-out shadow-2xl pointer-events-none select-none ${dynamicClasses}`}
-                    />
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
-          {/* Trust Strip */}
+          {/* Slide Indicator & Fullscreen Trigger (Floating bottom right) */}
+          {slideImages.length > 1 && (
+            <div
+              className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border shadow-lg"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--theme-border) 50%, transparent)',
+              }}
+            >
+              {slideImages.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setCurrentSlide(idx)}
+                  aria-label={`Go to visual slide ${idx + 1}`}
+                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    currentSlide === idx
+                      ? 'w-6 bg-[var(--theme-primary)]'
+                      : 'w-1.5 bg-[var(--theme-text-muted)] hover:bg-[var(--theme-text)] opacity-60'
+                  }`}
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => dispatchImageOpen(slideImages[currentSlide], `${biz.name} Studio Visual`)}
+                aria-label="Expand image"
+                className="ml-1 text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] transition-colors cursor-pointer"
+                title="View image full size"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* ── Trust Strip (Canvas Layer beneath Full-Bleed Hero) ────────────── */}
+        <div className="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <FadeInSection>
-            <div className="mt-12 grid grid-cols-1 divide-y divide-[var(--theme-border)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4">
+            <div className="grid grid-cols-1 divide-y divide-[var(--theme-border)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4 shadow-sm">
               {[
                 {
                   value: (
@@ -1045,8 +1090,7 @@ export default function AITheme({
               ))}
             </div>
           </FadeInSection>
-          </div>
-        </section>
+        </div>
 
         {/* ── Storefront Catalog & Product Section ───────────────────────────── */}
         <section
