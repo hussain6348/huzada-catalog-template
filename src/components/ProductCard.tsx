@@ -121,8 +121,20 @@ export function ProductCard({
         />
 
         {product.badge && (
-          <span className="card-3d-leaf absolute top-3 left-3 bg-[var(--theme-surface-translucent)] backdrop-blur-md text-[var(--theme-text)] text-[11px] font-semibold px-2.5 py-0.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] shadow-xs z-10">
-            {product.badge}
+          <span
+            className="card-3d-leaf absolute top-3 left-3 backdrop-blur-md text-[11px] font-bold px-2.5 py-0.5 rounded-[var(--theme-radius-inner)] border shadow-xs z-10 shrink-0 max-w-fit truncate flex items-center gap-1.5"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--theme-spice) 14%, var(--theme-surface-translucent))',
+              borderColor: 'color-mix(in srgb, var(--theme-spice) 35%, transparent)',
+              color: 'var(--theme-spice)',
+              boxShadow: '0 2px 8px color-mix(in srgb, var(--theme-spice) 18%, transparent)',
+            }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: 'var(--theme-spice)' }}
+            />
+            <span className="truncate">{product.badge}</span>
           </span>
         )}
 

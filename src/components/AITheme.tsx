@@ -328,6 +328,30 @@ export default function AITheme({
             }
             if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
             if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+
+            // 4th Spice Accent synchronization (scoped to product badges)
+            const primary = (themeData.primaryColor || '').toLowerCase().trim();
+            const bg = (themeData.bgColor || '').toLowerCase().trim();
+            let spiceColor = '#ea580c';
+            if (primary === '#10b981' || bg === '#09090b') {
+              spiceColor = '#a855f7'; // Neon Midnight: Electric Ultraviolet
+            } else if (primary === '#d97706' || bg === '#1c1917') {
+              spiceColor = '#f43f5e'; // Luxury Amber: Crimson Ruby
+            } else if (primary === '#0ea5e9' || bg === '#ffffff' || bg === '#f8fafc') {
+              spiceColor = '#ea580c'; // Ocean Light: Deep Coral Sunset
+            } else {
+              const h = primary.replace('#', '');
+              if (h.length === 6) {
+                const r = parseInt(h.slice(0, 2), 16) || 0;
+                const g = parseInt(h.slice(2, 4), 16) || 0;
+                const b = parseInt(h.slice(4, 6), 16) || 0;
+                if (g > r + 30 && g > b) spiceColor = '#a855f7';
+                else if (b > r + 30 && b > g) spiceColor = '#ea580c';
+                else if (r > b + 40 && g > b) spiceColor = '#f43f5e';
+              }
+            }
+            document.documentElement.style.setProperty('--theme-spice', spiceColor);
+            document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${spiceColor} 14%, transparent)`);
           }
         }
       } catch (err) {
@@ -493,6 +517,8 @@ export default function AITheme({
           --theme-primary-hover: color-mix(in srgb, var(--theme-primary) 85%, #000000);
           --theme-accent: var(--theme-primary);
           --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+          --theme-spice: #ea580c;
+          --theme-spice-soft: color-mix(in srgb, var(--theme-spice) 14%, transparent);
           --theme-surface: color-mix(in srgb, var(--theme-text) 6%, var(--theme-bg));
           --theme-surface-subtle: color-mix(in srgb, var(--theme-text) 10%, var(--theme-bg));
           --theme-surface-translucent: color-mix(in srgb, var(--theme-bg) 88%, transparent);

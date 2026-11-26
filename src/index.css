@@ -11,6 +11,10 @@
   --theme-accent: var(--theme-primary);
   --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 14%, transparent);
 
+  /* ── 4th Distinct Theme Spice Accent (Scoped to Product Badges) ────────── */
+  --theme-spice: #ea580c;
+  --theme-spice-soft: color-mix(in srgb, var(--theme-spice) 14%, transparent);
+
   /* Root canvas and typography */
   --theme-bg: #0f172a;
   --theme-text: #ffffff;
