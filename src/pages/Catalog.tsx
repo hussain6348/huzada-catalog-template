@@ -147,7 +147,14 @@ export function Catalog() {
         <div className="relative overflow-hidden rounded-[var(--theme-radius)] bg-[var(--theme-surface)] border border-[var(--theme-border)] text-[var(--theme-text)] p-6 sm:p-8 shadow-xs">
           <div className="relative z-10 max-w-3xl space-y-2.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--theme-surface-subtle)] text-[var(--theme-primary)] border border-[var(--theme-border)]">
+              <div
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border shadow-xs"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--theme-spice) 12%, var(--theme-surface-translucent))',
+                  color: 'var(--theme-spice)',
+                  borderColor: 'color-mix(in srgb, var(--theme-spice) 30%, transparent)',
+                }}
+              >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Complete Collection</span>
               </div>

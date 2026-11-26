@@ -1158,7 +1158,14 @@ export default function AITheme({
             <FadeInSection>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="max-w-2xl">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--theme-primary)] text-[var(--theme-on-primary)] mb-2.5 shadow-xs">
+                  <div
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-2.5 shadow-xs border"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--theme-spice) 12%, var(--theme-surface-translucent))',
+                      color: 'var(--theme-spice)',
+                      borderColor: 'color-mix(in srgb, var(--theme-spice) 30%, transparent)',
+                    }}
+                  >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Storefront Product Catalog</span>
                   </div>
