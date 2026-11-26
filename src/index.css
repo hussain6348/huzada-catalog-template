@@ -18,6 +18,7 @@
   /* Root canvas and typography */
   --theme-bg: #0f172a;
   --theme-text: #ffffff;
+  --shading-base: var(--theme-text);
 
   /* Dynamically calculated surfaces derived from active bg and text colors */
   --theme-surface: color-mix(in srgb, var(--theme-text) 6%, var(--theme-bg));
@@ -169,11 +170,11 @@ html, body {
 .hero-headline-shading {
   background: linear-gradient(
     to right,
-    #ffffff 0%,
-    color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 25%,
-    color-mix(in srgb, var(--theme-spice) 80%, #ffffff) 50%,
-    color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 75%,
-    #ffffff 100%
+    var(--shading-base, var(--theme-text)) 0%,
+    color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 25%,
+    color-mix(in srgb, var(--theme-spice) 80%, var(--shading-base, var(--theme-text))) 50%,
+    color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 75%,
+    var(--shading-base, var(--theme-text)) 100%
   );
   background-size: 200% auto;
   color: transparent !important;
@@ -192,6 +193,12 @@ html, body {
     drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
     drop-shadow(0 4px 16px rgba(0, 0, 0, 0.8))
     drop-shadow(0 0 24px color-mix(in srgb, var(--theme-spice) 25%, transparent));
+}
+
+.metric-headline-depth {
+  filter:
+    drop-shadow(0 2px 4px color-mix(in srgb, var(--theme-text) 14%, transparent))
+    drop-shadow(0 0 14px color-mix(in srgb, var(--theme-spice) 20%, transparent));
 }
 
 .hero-subheadline-depth {

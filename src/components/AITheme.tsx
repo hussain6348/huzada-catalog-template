@@ -534,6 +534,7 @@ export default function AITheme({
           --theme-border-strong: color-mix(in srgb, var(--theme-text) 24%, transparent);
           --theme-radius: 0.75rem;
           --theme-radius-inner: 0.5rem;
+          --shading-base: var(--theme-text);
           --font-display: 'Cormorant Garamond', Georgia, serif;
           --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -556,11 +557,11 @@ export default function AITheme({
         .hero-headline-shading {
           background: linear-gradient(
             to right,
-            #ffffff 0%,
-            color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 25%,
-            color-mix(in srgb, var(--theme-spice) 80%, #ffffff) 50%,
-            color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 75%,
-            #ffffff 100%
+            var(--shading-base, var(--theme-text)) 0%,
+            color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 25%,
+            color-mix(in srgb, var(--theme-spice) 80%, var(--shading-base, var(--theme-text))) 50%,
+            color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 75%,
+            var(--shading-base, var(--theme-text)) 100%
           );
           background-size: 200% auto;
           color: transparent !important;
@@ -578,6 +579,12 @@ export default function AITheme({
             drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
             drop-shadow(0 4px 16px rgba(0, 0, 0, 0.8))
             drop-shadow(0 0 24px color-mix(in srgb, var(--theme-spice) 25%, transparent));
+        }
+
+        .metric-headline-depth {
+          filter:
+            drop-shadow(0 2px 4px color-mix(in srgb, var(--theme-text) 14%, transparent))
+            drop-shadow(0 0 14px color-mix(in srgb, var(--theme-spice) 20%, transparent));
         }
 
         .hero-subheadline-depth {
@@ -742,6 +749,7 @@ export default function AITheme({
           .animate-float-micro,
           .animate-shimmer,
           .animate-text-shimmer,
+          .hero-headline-shading,
           .animate-marquee,
           .aurora-blob,
           .btn-radar::after {
@@ -973,7 +981,8 @@ export default function AITheme({
           style={{
             borderColor: 'color-mix(in srgb, var(--theme-spice) 25%, color-mix(in srgb, var(--theme-border) 40%, transparent))',
             boxShadow: '0 24px 60px -15px rgba(0,0,0,0.5), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 12%, transparent)',
-          }}
+            '--shading-base': '#ffffff',
+          } as React.CSSProperties}
         >
           {/* Full-Bleed Slideshow Background Layer */}
           <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none z-0">
@@ -1150,7 +1159,7 @@ export default function AITheme({
                   value: (
                     <>
                       <AnimatedCounter end={biz.rating} decimals={1} />
-                      <span className="text-base sm:text-lg font-normal text-[var(--theme-text-muted)]">/ 5.0</span>
+                      <span className="text-base sm:text-lg font-normal opacity-70 ml-1">/ 5.0</span>
                     </>
                   ),
                   label: 'Client Rating',
@@ -1185,19 +1194,23 @@ export default function AITheme({
                   className="group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] motion-safe:animate-float-subtle motion-safe:hover:-translate-y-0.5 transition-[box-shadow,border-color] duration-200 flex flex-col justify-between"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--theme-spice) 20%, color-mix(in srgb, var(--theme-border) 60%, transparent))',
+                    boxShadow: '0 14px 34px -14px rgba(0,0,0,0.25), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 10%, transparent)',
                     animationDelay: `${mIdx * 0.75}s`,
                   }}
                 >
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--theme-primary)]">
+                    <p className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-[var(--theme-primary)]">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--theme-spice)' }} />
                       {metric.label}
                     </p>
                     <div
-                      className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--theme-text)] tabular-nums mt-1.5 flex items-baseline gap-1 motion-safe:animate-float-micro"
+                      className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1.5 flex items-baseline gap-1 motion-safe:animate-float-micro metric-headline-depth"
                       style={{ animationDelay: `${mIdx * 0.75 + 0.35}s` }}
                     >
-                      {metric.value}
+                      <span className="hero-headline-shading">
+                        {metric.value}
+                      </span>
                     </div>
                   </div>
                   <p className="mt-3 text-xs text-[var(--theme-text-muted)] leading-relaxed tabular-nums">
