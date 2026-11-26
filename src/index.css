@@ -165,23 +165,33 @@ html, body {
   animation: shimmer 2.5s infinite linear;
 }
 
-.animate-text-shimmer {
-  background: linear-gradient(to right, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 50%, var(--theme-text)) 50%, var(--theme-primary) 100%);
+.animate-text-shimmer,
+.hero-headline-shading {
+  background: linear-gradient(
+    to right,
+    #ffffff 0%,
+    color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 25%,
+    color-mix(in srgb, var(--theme-spice) 80%, #ffffff) 50%,
+    color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 75%,
+    #ffffff 100%
+  );
   background-size: 200% auto;
   color: transparent !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
   animation: text-shimmer 4s linear infinite;
-  display: inline-block;
+  display: inline;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 /* ── Hero Headline Optical Depth & Shading ──────────────────────────────────── */
 .hero-headline-depth {
-  text-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.95),
-    0 4px 18px rgba(0, 0, 0, 0.8),
-    0 10px 32px rgba(0, 0, 0, 0.55),
-    0 0 28px color-mix(in srgb, var(--theme-spice) 24%, transparent);
+  filter:
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 4px 16px rgba(0, 0, 0, 0.8))
+    drop-shadow(0 0 24px color-mix(in srgb, var(--theme-spice) 25%, transparent));
 }
 
 .hero-subheadline-depth {
@@ -298,6 +308,7 @@ html, body {
   .animate-wavy-float,
   .animate-shimmer,
   .animate-text-shimmer,
+  .hero-headline-shading,
   .animate-marquee,
   .aurora-blob,
   .btn-radar::after {

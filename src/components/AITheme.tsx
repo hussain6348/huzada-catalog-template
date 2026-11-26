@@ -547,12 +547,37 @@ export default function AITheme({
         .font-editorial { font-family: var(--font-display); }
         .headline-balance { text-wrap: balance; }
 
+        @keyframes text-shimmer {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+
+        .animate-text-shimmer,
+        .hero-headline-shading {
+          background: linear-gradient(
+            to right,
+            #ffffff 0%,
+            color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 25%,
+            color-mix(in srgb, var(--theme-spice) 80%, #ffffff) 50%,
+            color-mix(in srgb, var(--theme-primary) 85%, #ffffff) 75%,
+            #ffffff 100%
+          );
+          background-size: 200% auto;
+          color: transparent !important;
+          -webkit-background-clip: text !important;
+          background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          animation: text-shimmer 4s linear infinite;
+          display: inline;
+          -webkit-box-decoration-break: clone;
+          box-decoration-break: clone;
+        }
+
         .hero-headline-depth {
-          text-shadow:
-            0 2px 4px rgba(0, 0, 0, 0.95),
-            0 4px 18px rgba(0, 0, 0, 0.8),
-            0 10px 32px rgba(0, 0, 0, 0.55),
-            0 0 28px color-mix(in srgb, var(--theme-spice) 24%, transparent);
+          filter:
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
+            drop-shadow(0 4px 16px rgba(0, 0, 0, 0.8))
+            drop-shadow(0 0 24px color-mix(in srgb, var(--theme-spice) 25%, transparent));
         }
 
         .hero-subheadline-depth {
@@ -631,21 +656,6 @@ export default function AITheme({
           animation: wavy-float 6s ease-in-out infinite;
           will-change: transform, filter;
           transform-origin: center;
-        }
-
-        /* 1. Text Shimmer */
-        @keyframes text-shimmer {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 200% 50%; }
-        }
-        .animate-text-shimmer {
-          background: linear-gradient(to right, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 50%, var(--theme-text)) 50%, var(--theme-primary) 100%);
-          background-size: 200% auto;
-          color: transparent !important;
-          -webkit-background-clip: text !important;
-          background-clip: text !important;
-          animation: text-shimmer 4s linear infinite;
-          display: inline-block;
         }
 
         /* 2. Aurora Glow */
@@ -1041,14 +1051,11 @@ export default function AITheme({
                 </span>
               </div>
 
-              {/* Crisp Editorial Headline with Restored Multi-Depth Shading & Subtle Spice Atmospheric Trace */}
-              <h1
-                className="font-editorial headline-balance hero-headline-depth mt-4 text-[clamp(2.1rem,4.2vw,3.6rem)] font-semibold leading-[1.08] tracking-tight text-white whitespace-normal break-words [overflow-wrap:anywhere]"
-                style={{
-                  textShadow: '0 2px 4px rgba(0,0,0,0.95), 0 4px 16px rgba(0,0,0,0.8), 0 10px 32px rgba(0,0,0,0.55), 0 0 28px color-mix(in srgb, var(--theme-spice) 24%, transparent)',
-                }}
-              >
-                {businessInfo?.heroHeadline || DEFAULT_BUSINESS_INFO.heroHeadline || biz.tagline}
+              {/* Crisp Editorial Headline with Visible Transparent Color Shading & Subtle Spice Atmospheric Depth */}
+              <h1 className="font-editorial headline-balance hero-headline-depth mt-4 text-[clamp(2.1rem,4.2vw,3.6rem)] font-semibold leading-[1.08] tracking-tight whitespace-normal break-words [overflow-wrap:anywhere]">
+                <span className="hero-headline-shading">
+                  {businessInfo?.heroHeadline || DEFAULT_BUSINESS_INFO.heroHeadline || biz.tagline}
+                </span>
               </h1>
 
               {/* Clean Luminous Subheadline with Restored Optical Shading */}
