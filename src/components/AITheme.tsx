@@ -328,6 +328,31 @@ export default function AITheme({
             }
             if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
             if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+
+            // 4th Spice Accent synchronization
+            const primary = (themeData.primaryColor || '').toLowerCase().trim();
+            const bg = (themeData.bgColor || '').toLowerCase().trim();
+            let spiceColor = '#f97316';
+            if (primary === '#10b981' || bg === '#09090b') {
+              spiceColor = '#a855f7'; // Neon Midnight: Electric Ultraviolet
+            } else if (primary === '#d97706' || bg === '#1c1917') {
+              spiceColor = '#f43f5e'; // Luxury Amber: Crimson Ruby
+            } else if (primary === '#0ea5e9' || bg === '#ffffff' || bg === '#f8fafc') {
+              spiceColor = '#f97316'; // Ocean Light: Coral Sunset
+            } else {
+              const h = primary.replace('#', '');
+              if (h.length === 6) {
+                const r = parseInt(h.slice(0, 2), 16) || 0;
+                const g = parseInt(h.slice(2, 4), 16) || 0;
+                const b = parseInt(h.slice(4, 6), 16) || 0;
+                if (g > r + 30 && g > b) spiceColor = '#a855f7';
+                else if (b > r + 30 && b > g) spiceColor = '#f97316';
+                else if (r > b + 40 && g > b) spiceColor = '#f43f5e';
+              }
+            }
+            document.documentElement.style.setProperty('--theme-spice', spiceColor);
+            document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${spiceColor} 14%, transparent)`);
+            document.documentElement.style.setProperty('--theme-spice-glow', `color-mix(in srgb, ${spiceColor} 28%, transparent)`);
           }
         }
       } catch (err) {
@@ -493,6 +518,9 @@ export default function AITheme({
           --theme-primary-hover: color-mix(in srgb, var(--theme-primary) 85%, #000000);
           --theme-accent: var(--theme-primary);
           --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+          --theme-spice: #f97316;
+          --theme-spice-soft: color-mix(in srgb, var(--theme-spice) 14%, transparent);
+          --theme-spice-glow: color-mix(in srgb, var(--theme-spice) 28%, transparent);
           --theme-surface: color-mix(in srgb, var(--theme-text) 6%, var(--theme-bg));
           --theme-surface-subtle: color-mix(in srgb, var(--theme-text) 10%, var(--theme-bg));
           --theme-surface-translucent: color-mix(in srgb, var(--theme-bg) 88%, transparent);
@@ -631,7 +659,7 @@ export default function AITheme({
           content: '';
           position: absolute;
           inset: 0;
-          border: 2px solid var(--theme-primary);
+          border: 2px solid var(--theme-spice);
           border-radius: inherit;
           animation: radar-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
           z-index: -1;
@@ -972,8 +1000,10 @@ export default function AITheme({
               <div className="inline-flex flex-wrap items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium backdrop-blur-sm bg-white/10 border border-white/20 text-white/90 shadow-sm">
                 <span>{biz.address.split(',').slice(-2).join(',').trim()}</span>
                 <span aria-hidden="true" className="text-white/50">·</span>
-                <span className="tabular-nums font-semibold text-white">
-                  <AnimatedCounter end={biz.rating} decimals={1} /> ★ Rated
+                <span className="inline-flex items-center gap-1.5 tabular-nums font-semibold text-white">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--theme-spice)' }} />
+                  <AnimatedCounter end={biz.rating} decimals={1} />
+                  <span style={{ color: 'var(--theme-spice)' }}>★</span> Rated
                 </span>
               </div>
 
@@ -1100,11 +1130,18 @@ export default function AITheme({
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
                     borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
+                    boxShadow: '0 14px 34px -14px rgba(0,0,0,0.25), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 8%, transparent)',
                     animationDelay: `${mIdx * 0.75}s`,
                   }}
                 >
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--theme-primary)]">
+                    <p className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-[var(--theme-primary)]">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: mIdx === 0 ? 'var(--theme-spice)' : 'color-mix(in srgb, var(--theme-spice) 45%, var(--theme-primary))',
+                        }}
+                      />
                       {metric.label}
                     </p>
                     <div
@@ -1132,8 +1169,14 @@ export default function AITheme({
             <FadeInSection>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="max-w-2xl">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--theme-primary)] text-[var(--theme-on-primary)] mb-2.5 shadow-xs">
-                    <Sparkles className="w-3.5 h-3.5" />
+                  <div
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--theme-primary)] text-[var(--theme-on-primary)] mb-2.5 shadow-xs border"
+                    style={{
+                      borderColor: 'color-mix(in srgb, var(--theme-spice) 40%, transparent)',
+                      boxShadow: '0 2px 10px color-mix(in srgb, var(--theme-spice) 18%, transparent)',
+                    }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: 'color-mix(in srgb, var(--theme-spice) 45%, var(--theme-on-primary))' }} />
                     <span>Storefront Product Catalog</span>
                   </div>
                   <h2 className="font-editorial headline-balance text-3xl font-semibold tracking-tight text-[var(--theme-text)] sm:text-4xl">
@@ -1191,7 +1234,7 @@ export default function AITheme({
                     · {formatPrice(item.price, biz.currencySymbol)}
                   </span>
                 )}
-                <span className="mx-4 text-[var(--theme-primary)] opacity-40">✦</span>
+                <span className="mx-4 text-xs select-none" style={{ color: 'var(--theme-spice)' }}>✦</span>
               </span>
             ))}
           </div>
@@ -1207,9 +1250,10 @@ export default function AITheme({
               <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
                 <div className="lg:col-span-5">
                   <div
-                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.48)] motion-safe:animate-float-gentle motion-safe:hover:-translate-y-1 transition-[box-shadow,border-color] duration-300 group"
+                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] motion-safe:animate-float-gentle motion-safe:hover:-translate-y-1 transition-[box-shadow,border-color] duration-300 group"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--theme-border) 45%, transparent)',
+                      boxShadow: '0 24px 60px -15px rgba(0,0,0,0.48), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 14%, transparent)',
                     }}
                   >
                     <EditableImage
@@ -1240,7 +1284,10 @@ export default function AITheme({
                       `${safeProducts.length > 0 ? safeProducts.length + ' catalog items' : 'Curated products'} available for direct web checkout`,
                     ].map((point, idx) => (
                       <div key={idx} className="flex items-baseline gap-4 py-3.5 text-sm text-[var(--theme-text)]">
-                        <span className="text-xs font-semibold text-[var(--theme-primary)] tabular-nums shrink-0">
+                        <span
+                          className="text-xs font-bold tabular-nums shrink-0"
+                          style={{ color: 'var(--theme-spice)' }}
+                        >
                           0{idx + 1}.
                         </span>
                         <span className="font-medium">{point}</span>

@@ -36,6 +36,39 @@ const EMPTY_BUSINESS_INFO: BusinessInfo = {
   imageSlots: {},
 };
 
+export function determineSpiceColor(primaryColor?: string, bgColor?: string): string {
+  const primary = (primaryColor || '').toLowerCase().trim();
+  const bg = (bgColor || '').toLowerCase().trim();
+
+  // 1. Exact preset: Neon Midnight (#10b981 emerald on #09090b obsidian)
+  if (primary === '#10b981' || bg === '#09090b') {
+    return '#a855f7'; // Electric Ultraviolet
+  }
+
+  // 2. Exact preset: Luxury Amber (#d97706 amber on #1c1917 espresso)
+  if (primary === '#d97706' || bg === '#1c1917') {
+    return '#f43f5e'; // Radiant Crimson Ruby
+  }
+
+  // 3. Exact preset: Ocean Light (#0ea5e9 sky blue on #ffffff / #f8fafc canvas)
+  if (primary === '#0ea5e9' || bg === '#ffffff' || bg === '#f8fafc') {
+    return '#f97316'; // Vivid Coral Sunset
+  }
+
+  // 4. Perceptual hue check for custom themes:
+  const hex = primary.replace('#', '');
+  if (hex.length === 6) {
+    const r = parseInt(hex.slice(0, 2), 16) || 0;
+    const g = parseInt(hex.slice(2, 4), 16) || 0;
+    const b = parseInt(hex.slice(4, 6), 16) || 0;
+    if (g > r + 30 && g > b) return '#a855f7';
+    if (b > r + 30 && b > g) return '#f97316';
+    if (r > b + 40 && g > b) return '#f43f5e';
+  }
+
+  return '#f97316';
+}
+
 function applyThemeCss(themeData: any) {
   if (!themeData || typeof document === 'undefined') return;
   if (themeData.primaryColor) {
@@ -52,6 +85,12 @@ function applyThemeCss(themeData: any) {
   }
   if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
   if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
+
+  // 4th Spice Accent synchronization
+  const spiceColor = determineSpiceColor(themeData.primaryColor, themeData.bgColor);
+  document.documentElement.style.setProperty('--theme-spice', spiceColor);
+  document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${spiceColor} 14%, transparent)`);
+  document.documentElement.style.setProperty('--theme-spice-glow', `color-mix(in srgb, ${spiceColor} 28%, transparent)`);
 }
 
 function PublicStorefrontPortal() {
