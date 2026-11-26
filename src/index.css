@@ -11,11 +11,6 @@
   --theme-accent: var(--theme-primary);
   --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 14%, transparent);
 
-  /* ── 4th Distinct Theme Spice Accent ─────────────────────────────────────── */
-  --theme-spice: #f97316;
-  --theme-spice-soft: color-mix(in srgb, var(--theme-spice) 14%, transparent);
-  --theme-spice-glow: color-mix(in srgb, var(--theme-spice) 28%, transparent);
-
   /* Root canvas and typography */
   --theme-bg: #0f172a;
   --theme-text: #ffffff;
@@ -204,7 +199,7 @@ html, body {
   content: '';
   position: absolute;
   inset: 0;
-  border: 2px solid var(--theme-spice);
+  border: 2px solid var(--theme-primary);
   border-radius: inherit;
   animation: radar-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
   z-index: -1;
