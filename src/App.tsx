@@ -401,7 +401,7 @@ function PublicStorefrontPortal() {
   const effectiveCurrencySymbol = businessInfo.currencySymbol || symbols[effectiveCurrencyCode] || currencySymbol || '$';
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] font-sans text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-bg)] relative overflow-x-clip">
+    <div className="min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] font-sans text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-bg)] relative">
       {/* WaaS Master Theme Storefront */}
       <ErrorBoundary fallback={null}>
         <AITheme

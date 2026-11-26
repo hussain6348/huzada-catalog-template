@@ -485,7 +485,7 @@ export default function AITheme({
 
   return (
     <>
-      <div className={`min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative overflow-x-clip transition-opacity duration-700 ease-in-out ${isThemeReady ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative transition-opacity duration-700 ease-in-out ${isThemeReady ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
       {/* ── Zero-Dependency CSS Layer ───────────────────────────────────────── */}
       <style>{`
         :root {
@@ -530,18 +530,18 @@ export default function AITheme({
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
-        /* ── Continuous Floating Motion Keyframes (4px-8px gentle vertical drift) ── */
+        /* ── Continuous Floating Motion Keyframes (8px-10px & 5px-6px smooth vertical drift) ── */
         @keyframes float-gentle {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
+          50% { transform: translateY(-9px); }
         }
         @keyframes float-subtle {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-4px); }
+          50% { transform: translateY(-5.5px); }
         }
         @keyframes float-micro {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-2.5px); }
+          50% { transform: translateY(-3px); }
         }
         .animate-float { animation: float 4s ease-in-out infinite; }
         .animate-float-gentle {
@@ -1096,7 +1096,7 @@ export default function AITheme({
               ].map((metric, mIdx) => (
                 <div
                   key={mIdx}
-                  className="group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] motion-safe:animate-float-subtle motion-safe:hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
+                  className="group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] motion-safe:animate-float-subtle motion-safe:hover:-translate-y-0.5 transition-[box-shadow,border-color] duration-200 flex flex-col justify-between"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
                     borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
@@ -1207,7 +1207,7 @@ export default function AITheme({
               <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
                 <div className="lg:col-span-5">
                   <div
-                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.48)] motion-safe:animate-float-gentle motion-safe:hover:-translate-y-1 transition-all duration-300 group"
+                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.48)] motion-safe:animate-float-gentle motion-safe:hover:-translate-y-1 transition-[box-shadow,border-color] duration-300 group"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--theme-border) 45%, transparent)',
                     }}
