@@ -530,7 +530,36 @@ export default function AITheme({
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
+        /* ── Continuous Floating Motion Keyframes (4px-8px gentle vertical drift) ── */
+        @keyframes float-gentle {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes float-subtle {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes float-micro {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-2.5px); }
+        }
         .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-float-gentle {
+          animation: float-gentle 5s ease-in-out infinite;
+          will-change: transform;
+        }
+        .animate-float-subtle {
+          animation: float-subtle 4.5s ease-in-out infinite;
+          will-change: transform;
+        }
+        .animate-float-micro {
+          animation: float-micro 3.8s ease-in-out infinite;
+          will-change: transform;
+        }
+        .animate-float-gentle:hover,
+        .animate-float-subtle:hover {
+          animation-play-state: paused;
+        }
         .animate-shimmer {
           background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
           background-size: 400px 100%;
@@ -648,6 +677,23 @@ export default function AITheme({
         @media (hover: hover) and (pointer: fine) {
           .spotlight-card:hover::before {
             opacity: 1;
+          }
+        }
+
+        /* ── Strict Prefers-Reduced-Motion Guardrail ── */
+        @media (prefers-reduced-motion: reduce) {
+          .animate-float,
+          .animate-wavy-float,
+          .animate-float-gentle,
+          .animate-float-subtle,
+          .animate-float-micro,
+          .animate-shimmer,
+          .animate-text-shimmer,
+          .animate-marquee,
+          .aurora-blob,
+          .btn-radar::after {
+            animation: none !important;
+            transform: none !important;
           }
         }
       `}</style>
@@ -1050,17 +1096,21 @@ export default function AITheme({
               ].map((metric, mIdx) => (
                 <div
                   key={mIdx}
-                  className="group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] motion-safe:hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
+                  className="group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] motion-safe:animate-float-subtle motion-safe:hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
                     borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
+                    animationDelay: `${mIdx * 0.75}s`,
                   }}
                 >
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--theme-primary)]">
                       {metric.label}
                     </p>
-                    <div className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--theme-text)] tabular-nums mt-1.5 flex items-baseline gap-1">
+                    <div
+                      className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--theme-text)] tabular-nums mt-1.5 flex items-baseline gap-1 motion-safe:animate-float-micro"
+                      style={{ animationDelay: `${mIdx * 0.75 + 0.35}s` }}
+                    >
                       {metric.value}
                     </div>
                   </div>
@@ -1157,7 +1207,7 @@ export default function AITheme({
               <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
                 <div className="lg:col-span-5">
                   <div
-                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.48)] motion-safe:hover:-translate-y-1 transition-all duration-300 group"
+                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.48)] motion-safe:animate-float-gentle motion-safe:hover:-translate-y-1 transition-all duration-300 group"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--theme-border) 45%, transparent)',
                     }}

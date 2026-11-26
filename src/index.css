@@ -223,6 +223,9 @@ html, body {
     scroll-behavior: auto !important;
   }
   .animate-float,
+  .animate-float-gentle,
+  .animate-float-subtle,
+  .animate-float-micro,
   .animate-wavy-float,
   .animate-shimmer,
   .animate-text-shimmer,
