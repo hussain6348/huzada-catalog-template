@@ -90,13 +90,13 @@ export function HeaderBagButton({ className = '', onClick }: HeaderBagButtonProp
             <span
               className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--theme-on-primary) 90%, transparent)',
+                backgroundColor: 'color-mix(in srgb, var(--theme-spice) 85%, transparent)',
               }}
             />
             <span
               className="relative inline-flex rounded-full h-2 w-2"
               style={{
-                backgroundColor: 'var(--theme-on-primary)',
+                backgroundColor: 'var(--theme-spice)',
               }}
             />
           </span>
@@ -105,15 +105,15 @@ export function HeaderBagButton({ className = '', onClick }: HeaderBagButtonProp
 
       <span className="font-medium tracking-tight">Bag</span>
 
-      {/* Distinct Badge: Calm surface on 0, vivid accent on 1+ */}
+      {/* Distinct Badge: Calm surface on 0, vivid spice accent on 1+ */}
       <span
-        className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold tabular-nums min-w-[20px] transition-colors"
+        className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold tabular-nums min-w-[20px] transition-colors shrink-0 shadow-xs"
         style={
           isFilled
             ? {
-                backgroundColor:
-                  'color-mix(in srgb, var(--theme-on-primary) 22%, transparent)',
-                color: 'var(--theme-on-primary)',
+                backgroundColor: 'var(--theme-spice)',
+                color: '#ffffff',
+                boxShadow: '0 2px 6px color-mix(in srgb, var(--theme-spice) 35%, transparent)',
               }
             : {
                 backgroundColor: 'var(--theme-surface-subtle)',

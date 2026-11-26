@@ -442,13 +442,29 @@ export function CatalogEngine({
                             : 'bg-transparent text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)]'
                         }`}
                       >
-                        <span className="truncate">{cat}</span>
+                        <span className="truncate flex items-center gap-2">
+                          {isActive && (
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ backgroundColor: 'var(--theme-spice)' }}
+                            />
+                          )}
+                          <span className="truncate">{cat}</span>
+                        </span>
                         <span
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full transition-colors ${
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full transition-colors tabular-nums shrink-0 ${
                             isActive
-                              ? 'bg-[var(--theme-on-primary-border)] text-[var(--theme-on-primary)]'
+                              ? 'shadow-xs font-bold'
                               : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-subtle)] border border-[var(--theme-border)]'
                           }`}
+                          style={
+                            isActive
+                              ? {
+                                  backgroundColor: 'var(--theme-spice)',
+                                  color: '#ffffff',
+                                }
+                              : undefined
+                          }
                         >
                           {count}
                         </span>
@@ -507,12 +523,18 @@ export function CatalogEngine({
               {/* Active Filter Summary Bar */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--theme-border)] text-xs text-[var(--theme-text-muted)]">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-[var(--theme-text)]">
-                    {layoutMode === 'all-products'
-                      ? selectedCategory || 'Store Catalog'
-                      : selectedCategory === 'All'
-                      ? 'All Catalog Products'
-                      : selectedCategory}
+                  <span className="font-semibold text-[var(--theme-text)] flex items-center gap-1.5">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: 'var(--theme-spice)' }}
+                    />
+                    <span>
+                      {layoutMode === 'all-products'
+                        ? selectedCategory || 'Store Catalog'
+                        : selectedCategory === 'All'
+                        ? 'All Catalog Products'
+                        : selectedCategory}
+                    </span>
                   </span>
                   <span>·</span>
                   <span>{filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found</span>
@@ -764,13 +786,19 @@ export function CatalogEngine({
                       type="button"
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-1 rounded-[var(--theme-radius-inner)] text-xs font-medium whitespace-nowrap transition-all duration-150 cursor-pointer active:scale-95 ${
+                      className={`px-3 py-1 rounded-[var(--theme-radius-inner)] text-xs font-medium whitespace-nowrap transition-all duration-150 cursor-pointer active:scale-95 inline-flex items-center gap-1.5 ${
                         active
                           ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-xs font-semibold'
                           : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-border)] border border-[var(--theme-border)]'
                       }`}
                     >
-                      {cat === 'All' ? 'All Featured (8 max)' : cat}
+                      {active && (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: 'var(--theme-spice)' }}
+                        />
+                      )}
+                      <span>{cat === 'All' ? 'All Featured (8 max)' : cat}</span>
                     </button>
                   );
                 })}
