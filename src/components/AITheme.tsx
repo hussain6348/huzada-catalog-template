@@ -1012,12 +1012,13 @@ export default function AITheme({
         {/* ── Trust Strip (Canvas Layer beneath Full-Bleed Hero) ────────────── */}
         <div className="w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <FadeInSection>
-            <div className="grid grid-cols-1 divide-y divide-[var(--theme-border)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4 shadow-sm">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-5">
               {[
                 {
                   value: (
                     <>
-                      <AnimatedCounter end={biz.rating} decimals={1} /> / 5.0
+                      <AnimatedCounter end={biz.rating} decimals={1} />
+                      <span className="text-base sm:text-lg font-normal text-[var(--theme-text-muted)]">/ 5.0</span>
                     </>
                   ),
                   label: 'Client Rating',
@@ -1047,12 +1048,25 @@ export default function AITheme({
                   detail: biz.hours,
                 },
               ].map((metric, mIdx) => (
-                <div key={mIdx} className="p-6">
-                  <p className="font-editorial text-2xl font-semibold tracking-tight text-[var(--theme-text)] tabular-nums">
-                    {metric.value}
+                <div
+                  key={mIdx}
+                  className="group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] motion-safe:hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--theme-border) 60%, transparent)',
+                  }}
+                >
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--theme-primary)]">
+                      {metric.label}
+                    </p>
+                    <div className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--theme-text)] tabular-nums mt-1.5 flex items-baseline gap-1">
+                      {metric.value}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-[var(--theme-text-muted)] leading-relaxed tabular-nums">
+                    {metric.detail}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--theme-text)]">{metric.label}</p>
-                  <p className="mt-0.5 text-xs text-[var(--theme-text-muted)] tabular-nums">{metric.detail}</p>
                 </div>
               ))}
             </div>
@@ -1142,12 +1156,17 @@ export default function AITheme({
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
               <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
                 <div className="lg:col-span-5">
-                  <div className="overflow-hidden rounded-[var(--theme-radius)] border border-[var(--theme-border)] bg-[var(--theme-surface-subtle)]">
+                  <div
+                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.48)] motion-safe:hover:-translate-y-1 transition-all duration-300 group"
+                    style={{
+                      borderColor: 'color-mix(in srgb, var(--theme-border) 45%, transparent)',
+                    }}
+                  >
                     <EditableImage
                       slot="about"
                       src={biz.imageSlots?.about}
                       alt={`${biz.name} studio`}
-                      className="aspect-[3/4] w-full object-cover"
+                      className="aspect-[3/4] w-full object-cover transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.02]"
                     />
                   </div>
                 </div>
