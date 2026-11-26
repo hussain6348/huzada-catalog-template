@@ -87,7 +87,7 @@ function applyThemeCss(themeData: any) {
   if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
 
   // 4th Spice Accent synchronization (scoped to product badges)
-  const spiceColor = determineSpiceColor(themeData.primaryColor, themeData.bgColor);
+  const spiceColor = themeData.spiceColor || determineSpiceColor(themeData.primaryColor, themeData.bgColor);
   document.documentElement.style.setProperty('--theme-spice', spiceColor);
   document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${spiceColor} 14%, transparent)`);
 }

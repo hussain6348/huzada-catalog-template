@@ -5,4 +5,5 @@ export const storefrontSettings = sqliteTable('storefront_settings', {
   primaryColor: text('primary_color').notNull().default('#0ea5e9'),
   bgColor: text('bg_color').notNull().default('#0f172a'),
   textColor: text('text_color').notNull().default('#ffffff'),
+  spiceColor: text('spice_color').notNull().default('#ea580c'),
 });

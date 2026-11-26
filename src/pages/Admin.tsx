@@ -422,7 +422,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
   const [themeForm, setThemeForm] = useState({
     primaryColor: "#0ea5e9",
     bgColor: "#0f172a",
-    textColor: "#ffffff"
+    textColor: "#ffffff",
+    spiceColor: "#ea580c"
   });
   const [isDeployingTheme, setIsDeployingTheme] = useState<boolean>(false);
   const isSavingTheme = isDeployingTheme; // Backward compatibility alias
@@ -442,7 +443,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
             setThemeForm({
               primaryColor: item.primaryColor || '#0ea5e9',
               bgColor: item.bgColor || '#0f172a',
-              textColor: item.textColor || '#ffffff'
+              textColor: item.textColor || '#ffffff',
+              spiceColor: item.spiceColor || '#ea580c'
             });
           }
         }
@@ -467,7 +469,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
         body: JSON.stringify({
           primaryColor: themeForm.primaryColor,
           bgColor: themeForm.bgColor,
-          textColor: themeForm.textColor
+          textColor: themeForm.textColor,
+          spiceColor: themeForm.spiceColor
         }),
       });
 
@@ -498,7 +501,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
           setThemeForm({
             primaryColor: verifiedTheme.primaryColor,
             bgColor: verifiedTheme.bgColor,
-            textColor: verifiedTheme.textColor
+            textColor: verifiedTheme.textColor,
+            spiceColor: verifiedTheme.spiceColor || themeForm.spiceColor || '#ea580c'
           });
         }
       }
@@ -513,6 +517,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
         document.documentElement.style.setProperty('--theme-primary', themeForm.primaryColor);
         document.documentElement.style.setProperty('--theme-bg', themeForm.bgColor);
         document.documentElement.style.setProperty('--theme-text', themeForm.textColor);
+        document.documentElement.style.setProperty('--theme-spice', themeForm.spiceColor);
+        document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${themeForm.spiceColor} 14%, transparent)`);
       }
 
       if (isMounted.current) {
@@ -2859,14 +2865,14 @@ export function Admin({ onLogout }: AdminProps = {}) {
         <div className="mb-10">
           <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">1-Click Presets</h3>
           <div className="flex flex-wrap gap-3">
-            <button type="button" disabled={isDeployingTheme} onClick={() => setThemeForm({ primaryColor: "#0ea5e9", bgColor: "#ffffff", textColor: "#0f172a" })} className="px-5 py-2.5 rounded-xl bg-white text-zinc-900 text-sm font-bold border border-zinc-200 transition-transform hover:scale-105 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Ocean Light</button>
-            <button type="button" disabled={isDeployingTheme} onClick={() => setThemeForm({ primaryColor: "#10b981", bgColor: "#09090b", textColor: "#ffffff" })} className="px-5 py-2.5 rounded-xl bg-black text-white text-sm font-bold border border-zinc-800 transition-transform hover:scale-105 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Neon Midnight</button>
-            <button type="button" disabled={isDeployingTheme} onClick={() => setThemeForm({ primaryColor: "#d97706", bgColor: "#1c1917", textColor: "#f5f5f4" })} className="px-5 py-2.5 rounded-xl bg-stone-900 text-stone-100 text-sm font-bold border border-stone-700 transition-transform hover:scale-105 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Luxury Amber</button>
+            <button type="button" disabled={isDeployingTheme} onClick={() => setThemeForm({ primaryColor: "#0ea5e9", bgColor: "#ffffff", textColor: "#0f172a", spiceColor: "#ea580c" })} className="px-5 py-2.5 rounded-xl bg-white text-zinc-900 text-sm font-bold border border-zinc-200 transition-transform hover:scale-105 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Ocean Light</button>
+            <button type="button" disabled={isDeployingTheme} onClick={() => setThemeForm({ primaryColor: "#10b981", bgColor: "#09090b", textColor: "#ffffff", spiceColor: "#a855f7" })} className="px-5 py-2.5 rounded-xl bg-black text-white text-sm font-bold border border-zinc-800 transition-transform hover:scale-105 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Neon Midnight</button>
+            <button type="button" disabled={isDeployingTheme} onClick={() => setThemeForm({ primaryColor: "#d97706", bgColor: "#1c1917", textColor: "#f5f5f4", spiceColor: "#f43f5e" })} className="px-5 py-2.5 rounded-xl bg-stone-900 text-stone-100 text-sm font-bold border border-stone-700 transition-transform hover:scale-105 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Luxury Amber</button>
           </div>
         </div>
 
         {/* Explicit Native Color Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {/* Primary */}
           <div className="flex flex-col">
             <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Primary Color</label>
@@ -2891,6 +2897,14 @@ export function Admin({ onLogout }: AdminProps = {}) {
               <span className="text-sm text-white font-mono uppercase tracking-widest opacity-80">{themeForm.textColor}</span>
             </div>
           </div>
+          {/* Spice Accent */}
+          <div className="flex flex-col">
+            <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Spice Accent Color</label>
+            <div className="flex items-center gap-4 bg-black/50 p-3 rounded-2xl border border-zinc-800 transition-colors focus-within:border-zinc-600">
+              <input type="color" value={themeForm.spiceColor} onChange={(e) => setThemeForm({ ...themeForm, spiceColor: e.target.value })} className="h-10 w-10 rounded-lg cursor-pointer border-0 bg-transparent p-0 flex-shrink-0" />
+              <span className="text-sm text-white font-mono uppercase tracking-widest opacity-80">{themeForm.spiceColor}</span>
+            </div>
+          </div>
         </div>
 
         {/* Isolated Live Preview Sandbox */}
@@ -2900,6 +2914,12 @@ export function Admin({ onLogout }: AdminProps = {}) {
           </div>
           <div className="p-4 sm:p-8 md:p-12">
             <div className="max-w-md mx-auto p-4 sm:p-8 rounded-3xl border bg-transparent backdrop-blur-md shadow-xl transition-colors duration-300" style={{ borderColor: `${themeForm.textColor}20` }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide" style={{ backgroundColor: `color-mix(in srgb, ${themeForm.spiceColor} 14%, transparent)`, color: themeForm.spiceColor, border: `1px solid color-mix(in srgb, ${themeForm.spiceColor} 30%, transparent)` }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: themeForm.spiceColor }} />
+                  Featured
+                </span>
+              </div>
               <h4 className="text-3xl font-black mb-3 transition-colors duration-300" style={{ color: themeForm.textColor }}>Signature Product</h4>
               <p className="text-sm mb-8 opacity-70 leading-relaxed transition-colors duration-300" style={{ color: themeForm.textColor }}>This is an exact physical replica of how your chosen colors will render for your customers.</p>
               <button type="button" className="w-full py-4 rounded-2xl font-black shadow-lg transition-transform duration-300 hover:scale-[1.02] active:scale-95" style={{ backgroundColor: themeForm.primaryColor, color: themeForm.bgColor }}>

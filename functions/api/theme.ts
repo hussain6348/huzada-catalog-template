@@ -19,7 +19,8 @@ export async function onRequestGet(context: any) {
         id: 1,
         primaryColor: '#0ea5e9',
         bgColor: '#0f172a',
-        textColor: '#ffffff'
+        textColor: '#ffffff',
+        spiceColor: '#ea580c'
       }), {
         headers: jsonHeaders,
         status: 200,
@@ -36,9 +37,14 @@ export async function onRequestGet(context: any) {
         id INTEGER PRIMARY KEY,
         primary_color TEXT NOT NULL DEFAULT '#0ea5e9',
         bg_color TEXT NOT NULL DEFAULT '#0f172a',
-        text_color TEXT NOT NULL DEFAULT '#ffffff'
+        text_color TEXT NOT NULL DEFAULT '#ffffff',
+        spice_color TEXT NOT NULL DEFAULT '#ea580c'
       )
     `);
+
+    try {
+      await client.execute("ALTER TABLE storefront_settings ADD COLUMN spice_color TEXT NOT NULL DEFAULT '#ea580c'");
+    } catch {}
 
     const db = drizzle(client);
     const result = await db.select().from(storefrontSettings).where(eq(storefrontSettings.id, 1));
@@ -94,6 +100,7 @@ export async function onRequestGet(context: any) {
       primaryColor: '#0ea5e9',
       bgColor: '#0f172a',
       textColor: '#ffffff',
+      spiceColor: '#ea580c',
       logo,
     }), {
       headers: jsonHeaders,
@@ -106,6 +113,7 @@ export async function onRequestGet(context: any) {
       primaryColor: '#0ea5e9',
       bgColor: '#0f172a',
       textColor: '#ffffff',
+      spiceColor: '#ea580c',
       logo: null,
       error: err.message
     }), {
@@ -138,9 +146,14 @@ export async function onRequestPost(context: any) {
         id INTEGER PRIMARY KEY,
         primary_color TEXT NOT NULL DEFAULT '#0ea5e9',
         bg_color TEXT NOT NULL DEFAULT '#0f172a',
-        text_color TEXT NOT NULL DEFAULT '#ffffff'
+        text_color TEXT NOT NULL DEFAULT '#ffffff',
+        spice_color TEXT NOT NULL DEFAULT '#ea580c'
       )
     `);
+
+    try {
+      await client.execute("ALTER TABLE storefront_settings ADD COLUMN spice_color TEXT NOT NULL DEFAULT '#ea580c'");
+    } catch {}
 
     const db = drizzle(client);
 
@@ -148,17 +161,18 @@ export async function onRequestPost(context: any) {
     const primaryColor = payload.primaryColor || '#0ea5e9';
     const bgColor = payload.bgColor || '#0f172a';
     const textColor = payload.textColor || '#ffffff';
+    const spiceColor = payload.spiceColor || '#ea580c';
 
     await db.insert(storefrontSettings)
-      .values({ id: 1, primaryColor, bgColor, textColor })
+      .values({ id: 1, primaryColor, bgColor, textColor, spiceColor })
       .onConflictDoUpdate({
         target: storefrontSettings.id,
-        set: { primaryColor, bgColor, textColor }
+        set: { primaryColor, bgColor, textColor, spiceColor }
       });
 
     return new Response(JSON.stringify({
       success: true,
-      data: { id: 1, primaryColor, bgColor, textColor }
+      data: { id: 1, primaryColor, bgColor, textColor, spiceColor }
     }), {
       headers: jsonHeaders,
       status: 200,
