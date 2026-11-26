@@ -102,7 +102,7 @@ export function ProductCard({
       aria-label={`View details for ${product.name}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="group bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col h-full hover:border-[var(--theme-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 transition-all duration-200 ease-out shadow-xs hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--theme-primary)_12%,transparent)] cursor-pointer text-[var(--theme-text)] spotlight-card card-3d relative select-none"
+      className="group bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col h-full hover:border-[var(--theme-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] transition-all duration-200 ease-out shadow-xs hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--theme-primary)_12%,transparent)] cursor-pointer text-[var(--theme-text)] spotlight-card card-3d relative select-none"
     >
       {/* Product Image with Hover Zoom & Carousel - Click to open Lightbox */}
       <div

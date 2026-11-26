@@ -441,6 +441,14 @@ export function CatalogEngine({
                             ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-sm font-semibold'
                             : 'bg-transparent text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)]'
                         }`}
+                        style={
+                          isActive
+                            ? {
+                                boxShadow:
+                                  '0 2px 8px color-mix(in srgb, var(--theme-spice) 22%, transparent), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 35%, transparent)',
+                              }
+                            : undefined
+                        }
                       >
                         <span className="truncate">{cat}</span>
                         <span

@@ -60,11 +60,11 @@ export function HeaderBagButton({ className = '', onClick }: HeaderBagButtonProp
           ? {
               backgroundColor: 'var(--theme-accent, var(--theme-primary))',
               color: 'var(--theme-on-primary)',
-              borderColor: 'color-mix(in srgb, var(--theme-on-primary) 30%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--theme-spice) 45%, var(--theme-on-primary))',
               borderWidth: '1px',
               borderStyle: 'solid',
               boxShadow:
-                '0 4px 18px color-mix(in srgb, var(--theme-accent, var(--theme-primary)) 40%, transparent)',
+                '0 4px 18px color-mix(in srgb, var(--theme-accent, var(--theme-primary)) 40%, transparent), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 25%, transparent)',
             }
           : {
               backgroundColor: 'var(--theme-surface)',

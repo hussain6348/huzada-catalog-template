@@ -547,6 +547,20 @@ export default function AITheme({
         .font-editorial { font-family: var(--font-display); }
         .headline-balance { text-wrap: balance; }
 
+        .hero-headline-depth {
+          text-shadow:
+            0 2px 4px rgba(0, 0, 0, 0.95),
+            0 4px 18px rgba(0, 0, 0, 0.8),
+            0 10px 32px rgba(0, 0, 0, 0.55),
+            0 0 28px color-mix(in srgb, var(--theme-spice) 24%, transparent);
+        }
+
+        .hero-subheadline-depth {
+          text-shadow:
+            0 1px 3px rgba(0, 0, 0, 0.9),
+            0 2px 10px rgba(0, 0, 0, 0.65);
+        }
+
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-8px); }
@@ -729,12 +743,19 @@ export default function AITheme({
 
       {/* ── True Glassmorphic Sticky Header & Marquee Wrapper ──────────────── */}
       <div
-        className="sticky top-0 z-40 w-full backdrop-blur-md border-b transition-all"
+        className="sticky top-0 z-40 w-full backdrop-blur-md border-b transition-all relative"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--theme-bg) 75%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)'
+          borderColor: 'color-mix(in srgb, var(--theme-spice) 22%, color-mix(in srgb, var(--theme-text) 10%, transparent))'
         }}
       >
+        {/* Subtle luminous Spice Accent hairline strip */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-[1px] pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--theme-spice) 35%, transparent) 20%, color-mix(in srgb, var(--theme-spice) 50%, transparent) 50%, color-mix(in srgb, var(--theme-spice) 35%, transparent) 80%, transparent 100%)',
+          }}
+        />
         {/* ── Top-Level Marquee Announcement Bar ───────────────────────────────── */}
         <div
           className="w-full overflow-hidden py-2 border-b select-none relative"
@@ -940,8 +961,8 @@ export default function AITheme({
         <section
           className="relative w-full overflow-hidden rounded-b-[28px] sm:rounded-b-[36px] min-h-[380px] sm:min-h-[460px] lg:min-h-[540px] flex items-center border-b"
           style={{
-            borderColor: 'color-mix(in srgb, var(--theme-border) 40%, transparent)',
-            boxShadow: '0 24px 60px -15px rgba(0,0,0,0.5)',
+            borderColor: 'color-mix(in srgb, var(--theme-spice) 25%, color-mix(in srgb, var(--theme-border) 40%, transparent))',
+            boxShadow: '0 24px 60px -15px rgba(0,0,0,0.5), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 12%, transparent)',
           }}
         >
           {/* Full-Bleed Slideshow Background Layer */}
@@ -988,8 +1009,14 @@ export default function AITheme({
             })}
           </div>
 
-          {/* Silky Edge-Free Readability Scrim (Full-bleed photo shines unobstructed on right/top) */}
-          <div className="absolute inset-0 pointer-events-none z-[1] bg-gradient-to-t from-black/85 via-black/40 to-black/15 md:bg-gradient-to-r md:from-black/80 md:via-black/40 md:to-transparent" />
+          {/* Silky Edge-Free Readability Scrim (Multi-stop depth for bulletproof contrast across all presets) */}
+          <div className="absolute inset-0 pointer-events-none z-[1] bg-gradient-to-t from-black/95 via-black/75 via-50% to-black/25 md:bg-gradient-to-r md:from-black/90 md:via-black/65 md:via-50% md:to-transparent" />
+          <div
+            className="absolute inset-0 pointer-events-none z-[1]"
+            style={{
+              background: 'radial-gradient(ellipse 65% 75% at 20% 45%, rgba(0,0,0,0.68) 0%, transparent 80%)',
+            }}
+          />
 
           {/* Weightless Floating Left-Aligned Content Stage (No bulky frosted box) */}
           <div className="relative z-10 w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-18">
@@ -997,22 +1024,40 @@ export default function AITheme({
               ref={heroRef}
               className="w-full max-w-xl lg:max-w-2xl py-2 sm:py-4"
             >
-              {/* Slim Glass Trust Pill */}
-              <div className="inline-flex flex-wrap items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium backdrop-blur-sm bg-white/10 border border-white/20 text-white/90 shadow-sm">
+              {/* Slim Glass Trust Pill with Crisp Spice Rim */}
+              <div
+                className="inline-flex flex-wrap items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium backdrop-blur-sm bg-white/10 text-white/90 shadow-sm border"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--theme-spice) 35%, rgba(255,255,255,0.25))',
+                  boxShadow: '0 0 12px color-mix(in srgb, var(--theme-spice) 12%, transparent)',
+                }}
+              >
                 <span>{biz.address.split(',').slice(-2).join(',').trim()}</span>
                 <span aria-hidden="true" className="text-white/50">·</span>
-                <span className="tabular-nums font-semibold text-white">
-                  <AnimatedCounter end={biz.rating} decimals={1} /> ★ Rated
+                <span className="tabular-nums font-semibold text-white flex items-center gap-1">
+                  <AnimatedCounter end={biz.rating} decimals={1} />
+                  <span style={{ color: 'var(--theme-spice)' }}>★</span>
+                  <span>Rated</span>
                 </span>
               </div>
 
-              {/* Crisp Editorial Headline with Ambient Drop Shadow */}
-              <h1 className="font-editorial headline-balance mt-4 text-[clamp(2.1rem,4.2vw,3.6rem)] font-semibold leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] whitespace-normal break-words [overflow-wrap:anywhere]">
+              {/* Crisp Editorial Headline with Restored Multi-Depth Shading & Subtle Spice Atmospheric Trace */}
+              <h1
+                className="font-editorial headline-balance hero-headline-depth mt-4 text-[clamp(2.1rem,4.2vw,3.6rem)] font-semibold leading-[1.08] tracking-tight text-white whitespace-normal break-words [overflow-wrap:anywhere]"
+                style={{
+                  textShadow: '0 2px 4px rgba(0,0,0,0.95), 0 4px 16px rgba(0,0,0,0.8), 0 10px 32px rgba(0,0,0,0.55), 0 0 28px color-mix(in srgb, var(--theme-spice) 24%, transparent)',
+                }}
+              >
                 {businessInfo?.heroHeadline || DEFAULT_BUSINESS_INFO.heroHeadline || biz.tagline}
               </h1>
 
-              {/* Clean Luminous Subheadline */}
-              <p className="mt-4 max-w-xl text-sm sm:text-base leading-relaxed text-white/85 whitespace-normal break-words [overflow-wrap:anywhere] drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)]">
+              {/* Clean Luminous Subheadline with Restored Optical Shading */}
+              <p
+                className="hero-subheadline-depth mt-4 max-w-xl text-sm sm:text-base leading-relaxed text-white/90 whitespace-normal break-words [overflow-wrap:anywhere]"
+                style={{
+                  textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 2px 10px rgba(0,0,0,0.65)',
+                }}
+              >
                 {businessInfo?.heroSubheadline || DEFAULT_BUSINESS_INFO.heroSubheadline ||
                   'Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery.'}
               </p>
@@ -1057,7 +1102,12 @@ export default function AITheme({
 
           {/* Slide Indicator & Fullscreen Trigger (Compact Glass Pill in bottom-right corner) */}
           {slideImages.length > 1 && (
-            <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/40 border border-white/20 shadow-lg">
+            <div
+              className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/40 border shadow-lg"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--theme-spice) 30%, rgba(255,255,255,0.2))',
+              }}
+            >
               {slideImages.map((_, idx) => (
                 <button
                   key={idx}
@@ -1243,9 +1293,10 @@ export default function AITheme({
               <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
                 <div className="lg:col-span-5">
                   <div
-                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.48)] motion-safe:animate-float-gentle motion-safe:hover:-translate-y-1 transition-[box-shadow,border-color] duration-300 group"
+                    className="relative overflow-hidden rounded-3xl border bg-[var(--theme-surface-subtle)] motion-safe:animate-float-gentle motion-safe:hover:-translate-y-1 transition-[box-shadow,border-color] duration-300 group"
                     style={{
                       borderColor: 'color-mix(in srgb, var(--theme-border) 45%, transparent)',
+                      boxShadow: '0 24px 60px -15px rgba(0,0,0,0.48), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 12%, transparent)',
                     }}
                   >
                     <EditableImage
