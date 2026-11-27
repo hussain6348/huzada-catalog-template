@@ -146,18 +146,23 @@ const FadeInSection = ({ children, className = '' }: { children: React.ReactNode
 
   useEffect(() => {
     const currentRef = domRef.current;
+    if (!currentRef) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) setVisible(true);
+          if (entry.isIntersecting) {
+            setVisible(true);
+            observer.unobserve(entry.target);
+          }
         });
       },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+      { threshold: 0.02, rootMargin: '0px 0px 40px 0px' }
     );
 
-    if (currentRef) observer.observe(currentRef);
+    observer.observe(currentRef);
     return () => {
-      if (currentRef) observer.unobserve(currentRef);
+      observer.disconnect();
     };
   }, []);
 
@@ -401,6 +406,7 @@ export default function AITheme({
   ];
 
   const [hasIntersected, setHasIntersected] = useState(false);
+  const [isHeroInView, setIsHeroInView] = useState(false);
   const [showSecondarySlides, setShowSecondarySlides] = useState(false);
   const [isIntroAnimating, setIsIntroAnimating] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -412,12 +418,13 @@ export default function AITheme({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        const visible = entry.isIntersecting;
+        setIsHeroInView(visible);
+        if (visible) {
           setHasIntersected(true);
-          observer.disconnect();
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.05 }
     );
 
     observer.observe(el);
@@ -438,16 +445,24 @@ export default function AITheme({
       setIsIntroAnimating(false);
     }, 1500);
 
+    return () => {
+      clearTimeout(secondaryTimer);
+      clearTimeout(timer);
+    };
+  }, [hasIntersected]);
+
+  useEffect(() => {
+    if (!isHeroInView) return;
+
     const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       setCurrentSlide((prev) => (prev + 1) % slideImages.length);
     }, 3000);
 
     return () => {
-      clearTimeout(secondaryTimer);
-      clearTimeout(timer);
       clearInterval(interval);
     };
-  }, [hasIntersected, slideImages.length]);
+  }, [isHeroInView, slideImages.length]);
 
   const filteredServices =
     selectedCategory === 'all'
@@ -676,6 +691,11 @@ export default function AITheme({
           animation: aurora-pulse 8s ease-in-out infinite;
           will-change: transform, opacity;
         }
+        @media (max-width: 767px) {
+          .aurora-blob {
+            filter: blur(56px);
+          }
+        }
 
         /* 3. Radar Pulse */
         @keyframes radar-ping {
@@ -697,20 +717,18 @@ export default function AITheme({
           pointer-events: none;
         }
 
-        /* 1. Apple Blur-Fade Reveal */
+        /* 1. Hardware-Composited Scroll Reveal */
         .reveal-blur {
           opacity: 0;
-          filter: blur(12px);
-          transform: translateY(30px);
-          transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
-                      filter 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
-                      transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-          will-change: opacity, filter, transform;
+          transform: translate3d(0, 14px, 0);
+          transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+                      transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, transform;
         }
         .reveal-visible {
           opacity: 1;
-          filter: blur(0);
-          transform: translateY(0);
+          transform: translate3d(0, 0, 0);
+          will-change: auto;
         }
 
         /* 2. Linear Spotlight Card */
@@ -741,6 +759,11 @@ export default function AITheme({
 
         /* ── Strict Prefers-Reduced-Motion Guardrail ── */
         @media (prefers-reduced-motion: reduce) {
+          .reveal-blur {
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+          }
           .animate-float,
           .animate-wavy-float,
           .animate-float-gentle,
@@ -760,7 +783,7 @@ export default function AITheme({
 
       {/* ── True Glassmorphic Sticky Header & Marquee Wrapper ──────────────── */}
       <div
-        className="sticky top-0 z-40 w-full backdrop-blur-md border-b transition-all relative"
+        className="sticky top-0 z-40 w-full backdrop-blur-md border-b transition-colors transform-gpu relative"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--theme-bg) 75%, transparent)',
           borderColor: 'color-mix(in srgb, var(--theme-spice) 22%, color-mix(in srgb, var(--theme-text) 10%, transparent))'
@@ -1031,7 +1054,7 @@ export default function AITheme({
                   loading={index === 0 ? 'eager' : 'lazy'}
                   decoding={index === 0 ? 'sync' : 'async'}
                   fetchPriority={index === 0 ? 'high' : 'auto'}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out motion-safe:scale-[1.03] select-none ${
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out transform-gpu motion-safe:scale-[1.03] select-none ${
                     isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0'
                   }`}
                 />

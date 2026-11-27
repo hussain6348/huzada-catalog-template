@@ -225,6 +225,11 @@ html, body {
   will-change: transform, opacity;
   pointer-events: none;
 }
+@media (max-width: 767px) {
+  .aurora-blob {
+    filter: blur(56px);
+  }
+}
 
 /* ── 3D Tactile Radar Button ───────────────────────────────────────────────── */
 .btn-radar {
@@ -268,16 +273,21 @@ html, body {
   }
 }
 
-/* ── Multi-Plane 3D Card Architecture ───────────────────────────────────────── */
+/* ── Multi-Plane 3D Card Architecture (Desktop Fine Pointer) ────────────────── */
 .card-3d {
-  transform-style: preserve-3d;
   transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.28s ease, border-color 0.2s ease;
-  will-change: transform;
 }
 
-.card-3d-leaf {
-  transform: translateZ(14px);
-  transform-style: preserve-3d;
+@media (hover: hover) and (pointer: fine) {
+  .card-3d {
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .card-3d-leaf {
+    transform: translateZ(14px);
+    transform-style: preserve-3d;
+  }
 }
 
 /* ── Glassmorphic Glow Surface ──────────────────────────────────────────────── */
