@@ -1,5 +1,6 @@
 import type { Product } from './types';
 import { getAuthHeaders } from './auth';
+import { parseJsonResponse } from './safeJson';
 
 export const DEFAULT_FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
@@ -170,8 +171,11 @@ export async function fetchCatalogProductsWithStatus(): Promise<FetchProductsRes
   try {
     const res = await fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
-      const data: any = await res.json();
-      if (data && data.success === false && data.error) {
+      const data = await parseJsonResponse(res);
+      if (!data) {
+        return { products: getStoredProducts(), error: null, status: res.status };
+      }
+      if (data.success === false && data.error) {
         return { products: getStoredProducts(), error: String(data.error), status: res.status };
       }
       const rawList = Array.isArray(data?.products) ? data.products : (Array.isArray(data) ? data : []);
@@ -180,10 +184,8 @@ export async function fetchCatalogProductsWithStatus(): Promise<FetchProductsRes
       return { products: normalized, error: null, status: res.status };
     } else {
       let errorMsg = `Server error (${res.status})`;
-      try {
-        const errJson = await res.json();
-        if (errJson?.error) errorMsg = errJson.error;
-      } catch {}
+      const errJson = await parseJsonResponse(res);
+      if (errJson?.error) errorMsg = errJson.error;
       return { products: getStoredProducts(), error: errorMsg, status: res.status };
     }
   } catch (err: any) {

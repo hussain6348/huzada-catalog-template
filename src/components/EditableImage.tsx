@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { parseJsonResponse } from '../lib/safeJson';
 
 const SLOT_FALLBACKS: Record<string, string> = {
   logo: '/default-logo.png',
@@ -13,7 +14,7 @@ function fetchSlotMedia(slot: string): Promise<{ image_url?: string | null } | n
   const cached = slotFetchCache.get(slot);
   if (cached) return cached;
   const promise = fetch(`/api/theme-media?slot=${encodeURIComponent(slot)}`)
-    .then((res) => (res.ok ? res.json() : null))
+    .then((res) => parseJsonResponse<{ image_url?: string | null }>(res))
     .catch(() => null)
     .finally(() => {
       setTimeout(() => slotFetchCache.delete(slot), 4000);

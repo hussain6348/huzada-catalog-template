@@ -1,5 +1,6 @@
 import type { Service } from './types';
 import { getAuthHeaders } from './auth';
+import { parseJsonResponse } from './safeJson';
 
 export const DEFAULT_SERVICE_IMAGE =
   'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&q=80';
@@ -206,13 +207,13 @@ export function saveStoredServices(services: Service[]) {
 export async function fetchCatalogServices(): Promise<Service[]> {
   try {
     const res = await fetch(`/api/services?t=${Date.now()}`, { cache: 'no-store' });
-    if (res.ok) {
-      const data: any = await res.json();
+    const data = await parseJsonResponse(res);
+    if (data) {
       if (Array.isArray(data)) {
         const normalized = data.map(normalizeService);
         saveStoredServices(normalized);
         return normalized;
-      } else if (data && Array.isArray(data.services)) {
+      } else if (Array.isArray(data.services)) {
         const normalized = data.services.map(normalizeService);
         saveStoredServices(normalized);
         return normalized;

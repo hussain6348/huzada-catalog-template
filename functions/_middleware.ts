@@ -14,10 +14,14 @@ function escapeHtml(str: string): string {
 export const onRequest = async (context: any) => {
   const url = new URL(context.request.url);
 
-  // 1. Strict Route Isolation: Allow API routes and static asset extensions to pass through untouched
+  // 1. Strict Route Isolation: Allow API routes, agentic/discovery files, and static asset extensions to pass through untouched
   if (
     context.request.method !== 'GET' ||
     url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/.well-known/') ||
+    url.pathname === '/robots.txt' ||
+    url.pathname === '/sitemap.xml' ||
+    url.pathname === '/llms.txt' ||
     url.pathname.match(/\.(js|css|webp|png|jpg|jpeg|svg|ico|json|txt|xml)$/i)
   ) {
     return await context.next();
@@ -86,15 +90,17 @@ export const onRequest = async (context: any) => {
     return response;
   }
 
-  // 5. Canonical & Media URL Resolution
-  const canonicalUrl = url.origin + url.pathname;
+  // 5. Absolute HTTPS Canonical & Media URL Resolution from live request origin
+  const isLocalHost = url.hostname === 'localhost' || url.hostname.startsWith('127.');
+  const baseOrigin = isLocalHost ? url.origin : `https://${url.host}`;
+  const canonicalUrl = baseOrigin + url.pathname;
   let fullLogoUrl = businessLogo;
   if (fullLogoUrl) {
     if (!fullLogoUrl.startsWith('http://') && !fullLogoUrl.startsWith('https://')) {
-      fullLogoUrl = url.origin + (fullLogoUrl.startsWith('/') ? '' : '/') + fullLogoUrl;
+      fullLogoUrl = baseOrigin + (fullLogoUrl.startsWith('/') ? '' : '/') + fullLogoUrl;
     }
   } else {
-    fullLogoUrl = url.origin + '/huzada-logo.png';
+    fullLogoUrl = baseOrigin + '/huzada-logo.png';
   }
 
   // 6. XSS Sanitizer: HTML-escape database strings before HTML tag injection

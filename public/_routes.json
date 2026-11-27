@@ -4,8 +4,15 @@
     "/*"
   ],
   "exclude": [
-    "/api/*",
     "/assets/*",
+    "/.well-known/*",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/llms.txt",
+    "/manifest.json",
+    "/sw.js",
+    "/huzada-logo.png",
+    "/huzadalogo.jpeg",
     "/*.js",
     "/*.css",
     "/*.webp",

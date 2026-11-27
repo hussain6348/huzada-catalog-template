@@ -19,6 +19,7 @@ import { openCartDrawer } from '../lib/cart';
 import type { Product } from '../lib/types';
 import { clientConfig } from '../config/client';
 import { DEFAULT_BUSINESS_INFO } from '../lib/businessInfo';
+import { parseJsonResponse } from '../lib/safeJson';
 
 // ─── Fallback image used when a service has no image ─────────────────────────
 const SERVICE_IMAGE_FALLBACK =
@@ -305,10 +306,10 @@ export default function AITheme({
       try {
         // 2. Native fetch with NO CORS preflight penalties
         const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        const raw = await res.json();
+        const raw = await parseJsonResponse(res);
         
         // 3. Memory Leak Protection: Abort if unmounted
-        if (!isMounted) return;
+        if (!isMounted || !raw) return;
         
         // 4. Update existing state safely
         const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);

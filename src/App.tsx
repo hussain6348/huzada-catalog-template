@@ -18,6 +18,7 @@ import AITheme from './components/AITheme';
 
 import { isAuthenticated, AUTH_CHANGE_EVENT } from './lib/auth';
 import { getStoredBusinessInfo, fetchBusinessInfo, DEFAULT_BUSINESS_INFO, BUSINESS_INFO_UPDATED_EVENT } from './lib/businessInfo';
+import { parseJsonResponse } from './lib/safeJson';
 import type { BusinessInfo, Service, Product } from './lib/types';
 
 export const FALLBACK_SERVICES: Service[] = [];
@@ -187,12 +188,10 @@ function PublicStorefrontPortal() {
     const loadBusinessInfo = async () => {
       try {
         const res = await fetch(`/api/business-info?t=${Date.now()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.success && data?.businessInfo && isMounted.current) {
-            setBusinessInfo(formatBusinessInfo(data.businessInfo));
-            return;
-          }
+        const data = await parseJsonResponse(res);
+        if (data?.success && data?.businessInfo && isMounted.current) {
+          setBusinessInfo(formatBusinessInfo(data.businessInfo));
+          return;
         }
         const remoteData = await fetchBusinessInfo();
         if (isMounted.current) {
@@ -219,8 +218,8 @@ function PublicStorefrontPortal() {
     const hydrateThemeCss = async () => {
       try {
         const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const raw = await res.json();
+        const raw = await parseJsonResponse(res);
+        if (raw) {
           const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
           if (themeData && isMounted.current) {
             applyThemeCss(themeData);
@@ -267,8 +266,8 @@ function PublicStorefrontPortal() {
       // Re-fetch theme data to update document CSS variables dynamically without page refresh
       try {
         const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const raw = await res.json();
+        const raw = await parseJsonResponse(res);
+        if (raw) {
           const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
           if (themeData) {
             applyThemeCss(themeData);
@@ -320,10 +319,7 @@ function PublicStorefrontPortal() {
   useEffect(() => {
     // Background hydration from API with cache-busting and no-store
     fetch(`/api/services?t=${Date.now()}`, { cache: 'no-store' })
-      .then(res => {
-        if (!res.ok) throw new Error('Network error');
-        return res.json();
-      })
+      .then(res => parseJsonResponse(res))
       .then((data: any) => {
         if (isMounted.current && Array.isArray(data)) {
           setServices(
@@ -346,12 +342,9 @@ function PublicStorefrontPortal() {
   // Background hydration of catalog products with cache: 'no-store'
   useEffect(() => {
     fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
-      .then(res => {
-        if (!res.ok) throw new Error('Network error');
-        return res.json();
-      })
+      .then(res => parseJsonResponse(res))
       .then((data: any) => {
-        if (isMounted.current) {
+        if (isMounted.current && data) {
           const items = Array.isArray(data?.products)
             ? data.products
             : (Array.isArray(data) ? data : []);
@@ -614,10 +607,10 @@ export default function App() {
       try {
         // 2. Native fetch with NO CORS preflight penalties
         const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        const raw = await res.json();
+        const raw = await parseJsonResponse(res);
         
         // 3. Memory Leak Protection: Abort if unmounted
-        if (!isMounted) return;
+        if (!isMounted || !raw) return;
         
         // 4. Update existing state safely
         const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
@@ -625,7 +618,7 @@ export default function App() {
           applyThemeCss(themeData);
         }
       } catch (err) {
-        console.error("Hydration failed", err);
+        console.warn('[WaaS] Hydration skipped:', err);
       }
     };
 

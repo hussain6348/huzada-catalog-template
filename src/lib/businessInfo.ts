@@ -1,5 +1,6 @@
 import type { BusinessInfo } from './types';
 import { getAuthHeaders } from './auth';
+import { parseJsonResponse } from './safeJson';
 import initialTextData from '../config/initial-text.json';
 
 // ─── Event Keys ───────────────────────────────────────────────────────────────
@@ -115,22 +116,20 @@ export function saveBusinessInfo(info: BusinessInfo): void {
 export async function fetchBusinessInfo(): Promise<BusinessInfo> {
   try {
     const res = await fetch('/api/business-info', { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.success && data?.businessInfo) {
-        const merged: BusinessInfo = {
-          ...DEFAULT_BUSINESS_INFO,
-          ...data.businessInfo,
-          promoText: data.businessInfo.promoText !== undefined ? data.businessInfo.promoText : DEFAULT_BUSINESS_INFO.promoText,
-          imageSlots: {
-            ...DEFAULT_BUSINESS_INFO.imageSlots,
-            ...(data.businessInfo.imageSlots || {}),
-            ...getStoredImageSlots(), // local overrides always win
-          },
-        };
-        saveBusinessInfo(merged);
-        return merged;
-      }
+    const data = await parseJsonResponse(res);
+    if (data?.success && data?.businessInfo) {
+      const merged: BusinessInfo = {
+        ...DEFAULT_BUSINESS_INFO,
+        ...data.businessInfo,
+        promoText: data.businessInfo.promoText !== undefined ? data.businessInfo.promoText : DEFAULT_BUSINESS_INFO.promoText,
+        imageSlots: {
+          ...DEFAULT_BUSINESS_INFO.imageSlots,
+          ...(data.businessInfo.imageSlots || {}),
+          ...getStoredImageSlots(), // local overrides always win
+        },
+      };
+      saveBusinessInfo(merged);
+      return merged;
     }
   } catch (err) {
     console.warn('[WaaS] Business info fetch failed, using stored:', err);

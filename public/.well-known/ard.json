@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "name": "Huzada Storefront",
+  "description": "Curated online storefront catalog with transparent pricing, instant web order placement, and direct doorstep delivery.",
+  "url": "https://penia.pages.dev/",
+  "catalog_url": "https://penia.pages.dev/catalog",
+  "llms_txt": "https://penia.pages.dev/llms.txt",
+  "sitemap": "https://penia.pages.dev/sitemap.xml",
+  "robots": "https://penia.pages.dev/robots.txt",
+  "capabilities": [
+    "product-catalog-browsing",
+    "category-and-search-filtering",
+    "direct-web-order-placement"
+  ],
+  "endpoints": {
+    "products": "/api/products",
+    "services": "/api/services",
+    "business_info": "/api/business-info",
+    "theme": "/api/theme"
+  }
+}

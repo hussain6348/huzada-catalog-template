@@ -1,0 +1,14 @@
+# Huzada Storefront
+
+> Curated online storefront catalog with transparent pricing, instant web order placement, and direct doorstep delivery.
+
+## Storefront Pages
+
+- [Home & Featured Catalog](https://penia.pages.dev/): Main storefront overview, customer rating summary, operating hours, and featured catalog highlights.
+- [Full Product Catalog](https://penia.pages.dev/catalog): Browse, search, and filter all available products with direct checkout support.
+
+## Discovery & Machine-Readable Resources
+
+- [XML Sitemap](https://penia.pages.dev/sitemap.xml): Canonical list of public indexable storefront URLs.
+- [Robots Policy](https://penia.pages.dev/robots.txt): Crawler access rules permitting `/` and `/catalog` while disallowing `/admin` and `/api/`.
+- [Agent Readiness Descriptor](https://penia.pages.dev/.well-known/ard.json): Structured JSON capability and endpoint descriptor for autonomous agents.
