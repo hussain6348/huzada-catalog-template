@@ -49,6 +49,10 @@ export const onRequest = async (context: any) => {
   let businessName = 'Huzada Storefront';
   let businessDesc = 'Curated Storefront Catalog & Direct Ordering';
   let businessLogo = '';
+  let businessAddress = '811 6th St N #200, Texas City, TX 77590';
+  let businessPhone = '+1 (409) 256-3597';
+  let businessHours = 'Mon–Sat, 9:00 AM – 6:00 PM';
+  let businessCurrency = 'USD';
 
   try {
     const env = context.env || {};
@@ -69,7 +73,11 @@ export const onRequest = async (context: any) => {
           if (parsed.name) businessName = parsed.name;
           if (parsed.tagline) businessDesc = parsed.tagline;
           else if (parsed.aboutDescription) businessDesc = parsed.aboutDescription;
-          businessLogo = parsed.logo || parsed.imageSlots?.logo || '';
+          businessLogo = parsed.logo || parsed.imageSlots?.logo || parsed.heroImage || parsed.imageSlots?.hero || '';
+          if (parsed.address) businessAddress = parsed.address;
+          if (parsed.phone) businessPhone = parsed.phone;
+          if (parsed.hours) businessHours = parsed.hours;
+          if (parsed.currency) businessCurrency = parsed.currency;
         }
       }
     }
@@ -78,22 +86,83 @@ export const onRequest = async (context: any) => {
     return response;
   }
 
-  // 5. XSS Sanitizer: HTML-escape database strings before injection
+  // 5. Canonical & Media URL Resolution
+  const canonicalUrl = url.origin + url.pathname;
+  let fullLogoUrl = businessLogo;
+  if (fullLogoUrl) {
+    if (!fullLogoUrl.startsWith('http://') && !fullLogoUrl.startsWith('https://')) {
+      fullLogoUrl = url.origin + (fullLogoUrl.startsWith('/') ? '' : '/') + fullLogoUrl;
+    }
+  } else {
+    fullLogoUrl = url.origin + '/huzada-logo.png';
+  }
+
+  // 6. XSS Sanitizer: HTML-escape database strings before HTML tag injection
   const escapedName = escapeHtml(businessName);
   const escapedDesc = escapeHtml(businessDesc);
-  const escapedLogo = escapeHtml(businessLogo);
+  const escapedLogo = escapeHtml(fullLogoUrl);
+  const escapedCanonicalUrl = escapeHtml(canonicalUrl);
 
-  // 6. HTMLRewriter Protocol (No double tags)
+  // 7. Schema.org Store / OnlineStore JSON-LD Generation
+  const schema: Record<string, any> = {
+    '@context': 'https://schema.org',
+    '@type': ['Store', 'OnlineStore'],
+    name: businessName,
+    description: businessDesc,
+    url: canonicalUrl,
+    image: fullLogoUrl,
+  };
+  if (businessPhone) {
+    schema.telephone = businessPhone;
+  }
+  if (businessAddress) {
+    schema.address = {
+      '@type': 'PostalAddress',
+      streetAddress: businessAddress,
+    };
+  }
+  if (businessHours) {
+    schema.openingHours = businessHours;
+  }
+  if (businessCurrency) {
+    schema.currenciesAccepted = businessCurrency;
+  }
+  schema.priceRange = '$$';
+
+  // Prevent script breakout via Unicode escape for <, while keeping valid JSON quotes
+  const safeJsonLd = JSON.stringify(schema).replace(/</g, '\\u003c');
+
+  // 8. HTMLRewriter Protocol (Atomic replacement to prevent duplicate tags)
   const rewriter = new HTMLRewriter()
     .on('title', {
       element(e) {
         e.setInnerContent(escapedName);
       },
     })
+    .on(
+      'meta[name="description"], meta[property^="og:"], meta[name^="twitter:"], link[rel="canonical"], script#catalog-json-ld, script#storefront-json-ld',
+      {
+        element(e) {
+          e.remove();
+        },
+      }
+    )
     .on('head', {
       element(e) {
         e.append(
-          `<meta name="description" content="${escapedDesc}"><meta property="og:image" content="${escapedLogo}">`,
+          `\n    <meta name="description" content="${escapedDesc}" />` +
+          `\n    <link rel="canonical" href="${escapedCanonicalUrl}" />` +
+          `\n    <meta property="og:title" content="${escapedName}" />` +
+          `\n    <meta property="og:description" content="${escapedDesc}" />` +
+          `\n    <meta property="og:type" content="website" />` +
+          `\n    <meta property="og:url" content="${escapedCanonicalUrl}" />` +
+          `\n    <meta property="og:site_name" content="${escapedName}" />` +
+          `\n    <meta property="og:image" content="${escapedLogo}" />` +
+          `\n    <meta name="twitter:card" content="summary_large_image" />` +
+          `\n    <meta name="twitter:title" content="${escapedName}" />` +
+          `\n    <meta name="twitter:description" content="${escapedDesc}" />` +
+          `\n    <meta name="twitter:image" content="${escapedLogo}" />` +
+          `\n    <script id="catalog-json-ld" type="application/ld+json">${safeJsonLd}</script>`,
           { html: true }
         );
       },

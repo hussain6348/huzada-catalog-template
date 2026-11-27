@@ -245,6 +245,15 @@ function PublicStorefrontPortal() {
     return () => window.removeEventListener(BUSINESS_INFO_UPDATED_EVENT, handleUpdate);
   }, [currencyCode, currencySymbol]);
 
+  // Synchronize document title with active business name & tagline
+  useEffect(() => {
+    if (typeof document !== 'undefined' && businessInfo.name && businessInfo.name.trim() !== '') {
+      document.title = businessInfo.tagline
+        ? `${businessInfo.name} | ${businessInfo.tagline}`
+        : businessInfo.name;
+    }
+  }, [businessInfo.name, businessInfo.tagline]);
+
   // 4. THE GLOBAL BRIDGE - LISTENER (STOREFRONT): Instant two-way synchronization
   useEffect(() => {
     const handleThemeUpdated = async (e: Event) => {
