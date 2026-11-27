@@ -660,10 +660,20 @@ export function Admin({ onLogout }: AdminProps = {}) {
   useEffect(() => {
     fetchOrders();
 
-    // 15-second real-time polling with cleanup to prevent memory leaks
+    // 15-second real-time polling with background pause to save bandwidth & instant wake on tab focus
     const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       fetchOrders();
     }, 15000);
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchOrders();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
 
     // Fetch and sync live catalog products
     fetchCatalogProducts().then(items => {
@@ -707,6 +717,9 @@ export function Admin({ onLogout }: AdminProps = {}) {
     window.addEventListener(BUSINESS_INFO_UPDATED_EVENT, handleBizUpdate);
     return () => {
       clearInterval(pollInterval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
       window.removeEventListener(CATALOG_UPDATED_EVENT, handleCatalogUpdate);
       window.removeEventListener(BUSINESS_INFO_UPDATED_EVENT, handleBizUpdate);
     };

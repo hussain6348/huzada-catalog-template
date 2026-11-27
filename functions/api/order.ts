@@ -48,43 +48,52 @@ export const onRequestPost = async (context: any) => {
   if (tursoUrl && tursoToken && typeof tursoUrl === "string" && typeof tursoToken === "string" && tursoUrl.trim() && tursoToken.trim()) {
     try {
       const db = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS orders (
-          id TEXT PRIMARY KEY,
-          customer_name TEXT,
-          customer_phone TEXT,
-          customer_address TEXT,
-          notes TEXT,
-          items TEXT,
-          total REAL,
-          status TEXT DEFAULT 'pending',
-          created_at TEXT
-        )
-      `);
 
-      await db.execute({
-        sql: `INSERT INTO orders (id, customer_name, customer_phone, customer_address, notes, items, total, status, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-              ON CONFLICT(id) DO UPDATE SET
-                customer_name = excluded.customer_name,
-                customer_phone = excluded.customer_phone,
-                customer_address = excluded.customer_address,
-                notes = excluded.notes,
-                items = excluded.items,
-                total = excluded.total,
-                status = excluded.status`,
-        args: [
-          orderId,
-          customerName,
-          customerPhone,
-          customerAddress,
-          notes,
-          JSON.stringify(items),
-          total,
-          status,
-          new Date().toISOString(),
-        ],
-      });
+      const insertSql = `INSERT INTO orders (id, customer_name, customer_phone, customer_address, notes, items, total, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              customer_name = excluded.customer_name,
+              customer_phone = excluded.customer_phone,
+              customer_address = excluded.customer_address,
+              notes = excluded.notes,
+              items = excluded.items,
+              total = excluded.total,
+              status = excluded.status`;
+      const insertArgs = [
+        orderId,
+        customerName,
+        customerPhone,
+        customerAddress,
+        notes,
+        JSON.stringify(items),
+        total,
+        status,
+        new Date().toISOString(),
+      ];
+
+      try {
+        await db.execute({ sql: insertSql, args: insertArgs });
+      } catch (insertErr: any) {
+        const errMsg = String(insertErr?.message || "").toLowerCase();
+        if (errMsg.includes("no such table") || errMsg.includes("no such column") || errMsg.includes("has no column")) {
+          await db.execute(`
+            CREATE TABLE IF NOT EXISTS orders (
+              id TEXT PRIMARY KEY,
+              customer_name TEXT,
+              customer_phone TEXT,
+              customer_address TEXT,
+              notes TEXT,
+              items TEXT,
+              total REAL,
+              status TEXT DEFAULT 'pending',
+              created_at TEXT
+            )
+          `);
+          await db.execute({ sql: insertSql, args: insertArgs });
+        } else {
+          throw insertErr;
+        }
+      }
 
       // Format clean, professional e-commerce push alert copy
       const customerLabel = customerName.trim() || "Customer";

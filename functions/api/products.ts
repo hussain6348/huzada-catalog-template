@@ -56,7 +56,6 @@ export const onRequestGet = async (context: any) => {
   if (tursoUrl && tursoToken && typeof tursoUrl === "string" && typeof tursoToken === "string" && tursoUrl.trim() && tursoToken.trim()) {
     try {
       const db = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
-      await initProductsTable(db);
 
       const whereClauses: string[] = [];
       const queryArgs: any[] = [];
@@ -73,26 +72,45 @@ export const onRequestGet = async (context: any) => {
       }
 
       const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
-
-      // Count query for total records
-      const countRes = await db.execute({
-        sql: `SELECT COUNT(*) as total FROM products ${whereSql}`,
-        args: [...queryArgs],
-      });
-      const totalCount = Number(countRes.rows?.[0]?.total ?? 0);
-      const totalPages = Math.ceil(totalCount / limit) || 1;
-      const hasMore = page < totalPages;
-
       const dataArgs = [...queryArgs, limit, offset];
-      const result = await db.execute({
-        sql: `SELECT id, name, description, category, price, stock, image, image_path, images, badge, created_at 
-              FROM products ${whereSql} 
-              ORDER BY rowid DESC 
-              LIMIT ? OFFSET ?`,
-        args: dataArgs,
-      });
 
-      const products = (result.rows || []).map((row: any) => {
+      const fetchProductsData = async () => {
+        const countRes = await db.execute({
+          sql: `SELECT COUNT(*) as total FROM products ${whereSql}`,
+          args: [...queryArgs],
+        });
+        const totalCount = Number(countRes.rows?.[0]?.total ?? 0);
+        const totalPages = Math.ceil(totalCount / limit) || 1;
+        const hasMore = page < totalPages;
+
+        const result = await db.execute({
+          sql: `SELECT id, name, description, category, price, stock, image, image_path, images, badge, created_at 
+                FROM products ${whereSql} 
+                ORDER BY rowid DESC 
+                LIMIT ? OFFSET ?`,
+          args: dataArgs,
+        });
+
+        return { totalCount, totalPages, hasMore, rows: result.rows || [] };
+      };
+
+      // High-speed fast-path query first; self-healing migration on catch
+      let queryData;
+      try {
+        queryData = await fetchProductsData();
+      } catch (err: any) {
+        const errMsg = String(err?.message || "").toLowerCase();
+        if (errMsg.includes("no such table") || errMsg.includes("no such column") || errMsg.includes("has no column")) {
+          await initProductsTable(db);
+          queryData = await fetchProductsData();
+        } else {
+          throw err;
+        }
+      }
+
+      const { totalCount, totalPages, hasMore, rows } = queryData;
+
+      const products = rows.map((row: any) => {
         let parsedImages: string[] = [];
         if (typeof row.images === "string" && row.images.trim()) {
           try {
@@ -180,16 +198,27 @@ export const onRequestPost = async (context: any) => {
   if (tursoUrl && tursoToken && typeof tursoUrl === "string" && typeof tursoToken === "string" && tursoUrl.trim() && tursoToken.trim()) {
     try {
       const db = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
-      await initProductsTable(db);
       const cols = ["id", "name", "description", "category", "price", "stock", "image", "image_path", "images", "badge", "created_at"];
       const placeholders = cols.map(() => "?").join(", ");
       const setClause = cols.filter(c => c !== "id" && c !== "created_at").map(c => `${c} = excluded.${c}`).join(", ");
       const args = [id, name, description, category, price, stock, imagePath, imagePath, JSON.stringify(imagesArray), badge, new Date().toISOString()];
       
-      await db.execute({
+      const insertProduct = () => db.execute({
         sql: `INSERT INTO products (${cols.join(", ")}) VALUES (${placeholders}) ON CONFLICT(id) DO UPDATE SET ${setClause}`,
         args,
       });
+
+      try {
+        await insertProduct();
+      } catch (insertErr: any) {
+        const errMsg = String(insertErr?.message || "").toLowerCase();
+        if (errMsg.includes("no such table") || errMsg.includes("no such column") || errMsg.includes("has no column")) {
+          await initProductsTable(db);
+          await insertProduct();
+        } else {
+          throw insertErr;
+        }
+      }
 
       return json({
         success: true,

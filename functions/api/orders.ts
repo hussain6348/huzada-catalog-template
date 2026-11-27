@@ -38,7 +38,6 @@ export const onRequestGet = async (context: any) => {
   if (tursoUrl && tursoToken && typeof tursoUrl === "string" && typeof tursoToken === "string" && tursoUrl.trim() && tursoToken.trim()) {
     try {
       const db = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
-      await ensureOrdersTable(db);
 
       // Build parameterized filter conditions
       const whereClauses: string[] = [];
@@ -56,27 +55,44 @@ export const onRequestGet = async (context: any) => {
       }
 
       const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
-
-      // Total count query for pagination metadata
-      const countRes = await db.execute({
-        sql: `SELECT COUNT(*) as total FROM orders ${whereSql}`,
-        args: [...queryArgs],
-      });
-      const totalCount = Number(countRes.rows?.[0]?.total ?? 0);
-      const totalPages = Math.ceil(totalCount / limit) || 1;
-      const hasMore = page < totalPages;
-
-      // Explicit column query with bounded pagination
       const dataArgs = [...queryArgs, limit, offset];
-      const result = await db.execute({
-        sql: `SELECT id, customer_name, customer_phone, customer_address, notes, items, total, status, created_at 
-              FROM orders ${whereSql} 
-              ORDER BY rowid DESC 
-              LIMIT ? OFFSET ?`,
-        args: dataArgs,
-      });
 
-      const orders = (result.rows || []).map((r: any) => {
+      const fetchOrdersData = async () => {
+        const countRes = await db.execute({
+          sql: `SELECT COUNT(*) as total FROM orders ${whereSql}`,
+          args: [...queryArgs],
+        });
+        const totalCount = Number(countRes.rows?.[0]?.total ?? 0);
+        const totalPages = Math.ceil(totalCount / limit) || 1;
+        const hasMore = page < totalPages;
+
+        const result = await db.execute({
+          sql: `SELECT id, customer_name, customer_phone, customer_address, notes, items, total, status, created_at 
+                FROM orders ${whereSql} 
+                ORDER BY rowid DESC 
+                LIMIT ? OFFSET ?`,
+          args: dataArgs,
+        });
+
+        return { totalCount, totalPages, hasMore, rows: result.rows || [] };
+      };
+
+      let queryData;
+      try {
+        queryData = await fetchOrdersData();
+      } catch (err: any) {
+        const errMsg = String(err?.message || "").toLowerCase();
+        if (errMsg.includes("no such table") || errMsg.includes("no such column") || errMsg.includes("has no column")) {
+          await ensureOrdersTable(db);
+          queryData = await fetchOrdersData();
+        } else {
+          throw err;
+        }
+      }
+
+      const { totalCount, totalPages, hasMore, rows } = queryData;
+
+      const orders = rows.map((r: any) => {
         let parsedItems: any[] = [];
         if (typeof r.items === "string" && r.items.trim()) {
           try {
@@ -151,11 +167,17 @@ export const onRequestPatch = async (context: any) => {
   if (tursoUrl && tursoToken && typeof tursoUrl === "string" && typeof tursoToken === "string" && tursoUrl.trim() && tursoToken.trim()) {
     try {
       const db = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
-      await ensureOrdersTable(db);
-      await db.execute({
+      const updateOrder = () => db.execute({
         sql: "UPDATE orders SET status = ? WHERE id = ?",
         args: [body.status, body.id],
       });
+
+      try {
+        await updateOrder();
+      } catch {
+        await ensureOrdersTable(db);
+        await updateOrder();
+      }
       return json({ success: true, id: body.id, status: body.status });
     } catch (e: any) {
       console.error("Update order status error:", e);

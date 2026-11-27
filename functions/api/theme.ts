@@ -32,31 +32,42 @@ export async function onRequestGet(context: any) {
       authToken: env.TURSO_AUTH_TOKEN.trim(),
     });
 
-    await client.execute(`
-      CREATE TABLE IF NOT EXISTS storefront_settings (
-        id INTEGER PRIMARY KEY,
-        primary_color TEXT NOT NULL DEFAULT '#0ea5e9',
-        bg_color TEXT NOT NULL DEFAULT '#0f172a',
-        text_color TEXT NOT NULL DEFAULT '#ffffff',
-        spice_color TEXT NOT NULL DEFAULT '#ea580c'
-      )
-    `);
-
-    try {
-      await client.execute("ALTER TABLE storefront_settings ADD COLUMN spice_color TEXT NOT NULL DEFAULT '#ea580c'");
-    } catch {}
-
     const db = drizzle(client);
-    const result = await db.select().from(storefrontSettings).where(eq(storefrontSettings.id, 1));
+    let result;
+    try {
+      result = await db.select().from(storefrontSettings).where(eq(storefrontSettings.id, 1));
+    } catch {
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS storefront_settings (
+          id INTEGER PRIMARY KEY,
+          primary_color TEXT NOT NULL DEFAULT '#0ea5e9',
+          bg_color TEXT NOT NULL DEFAULT '#0f172a',
+          text_color TEXT NOT NULL DEFAULT '#ffffff',
+          spice_color TEXT NOT NULL DEFAULT '#ea580c'
+        )
+      `);
+      try {
+        await client.execute("ALTER TABLE storefront_settings ADD COLUMN spice_color TEXT NOT NULL DEFAULT '#ea580c'");
+      } catch {}
+      result = await db.select().from(storefrontSettings).where(eq(storefrontSettings.id, 1));
+    }
 
     // Separate, safe query for logo (NO SQL JOINS)
     let logo: string | null = null;
     try {
-      await client.execute('CREATE TABLE IF NOT EXISTS business_info (id TEXT PRIMARY KEY, data TEXT)');
-      const bizRes = await client.execute({
-        sql: 'SELECT data FROM business_info WHERE id = ?',
-        args: ['default'],
-      });
+      let bizRes;
+      try {
+        bizRes = await client.execute({
+          sql: 'SELECT data FROM business_info WHERE id = ?',
+          args: ['default'],
+        });
+      } catch {
+        await client.execute('CREATE TABLE IF NOT EXISTS business_info (id TEXT PRIMARY KEY, data TEXT)');
+        bizRes = await client.execute({
+          sql: 'SELECT data FROM business_info WHERE id = ?',
+          args: ['default'],
+        });
+      }
 
       if (bizRes.rows && bizRes.rows.length > 0 && bizRes.rows[0]?.data) {
         try {
@@ -72,11 +83,19 @@ export async function onRequestGet(context: any) {
 
     if (!logo) {
       try {
-        await client.execute('CREATE TABLE IF NOT EXISTS theme_settings (slot_id TEXT PRIMARY KEY, image_url TEXT)');
-        const themeMediaRes = await client.execute({
-          sql: 'SELECT image_url FROM theme_settings WHERE slot_id = ?',
-          args: ['logo'],
-        });
+        let themeMediaRes;
+        try {
+          themeMediaRes = await client.execute({
+            sql: 'SELECT image_url FROM theme_settings WHERE slot_id = ?',
+            args: ['logo'],
+          });
+        } catch {
+          await client.execute('CREATE TABLE IF NOT EXISTS theme_settings (slot_id TEXT PRIMARY KEY, image_url TEXT)');
+          themeMediaRes = await client.execute({
+            sql: 'SELECT image_url FROM theme_settings WHERE slot_id = ?',
+            args: ['logo'],
+          });
+        }
         if (themeMediaRes.rows && themeMediaRes.rows.length > 0 && themeMediaRes.rows[0]?.image_url) {
           logo = themeMediaRes.rows[0].image_url as string;
         }
@@ -141,20 +160,6 @@ export async function onRequestPost(context: any) {
       authToken: env.TURSO_AUTH_TOKEN.trim(),
     });
 
-    await client.execute(`
-      CREATE TABLE IF NOT EXISTS storefront_settings (
-        id INTEGER PRIMARY KEY,
-        primary_color TEXT NOT NULL DEFAULT '#0ea5e9',
-        bg_color TEXT NOT NULL DEFAULT '#0f172a',
-        text_color TEXT NOT NULL DEFAULT '#ffffff',
-        spice_color TEXT NOT NULL DEFAULT '#ea580c'
-      )
-    `);
-
-    try {
-      await client.execute("ALTER TABLE storefront_settings ADD COLUMN spice_color TEXT NOT NULL DEFAULT '#ea580c'");
-    } catch {}
-
     const db = drizzle(client);
 
     const payload = await context.request.json();
@@ -163,12 +168,31 @@ export async function onRequestPost(context: any) {
     const textColor = payload.textColor || '#ffffff';
     const spiceColor = payload.spiceColor || '#ea580c';
 
-    await db.insert(storefrontSettings)
-      .values({ id: 1, primaryColor, bgColor, textColor, spiceColor })
-      .onConflictDoUpdate({
-        target: storefrontSettings.id,
-        set: { primaryColor, bgColor, textColor, spiceColor }
-      });
+    const insertOrUpdate = () =>
+      db.insert(storefrontSettings)
+        .values({ id: 1, primaryColor, bgColor, textColor, spiceColor })
+        .onConflictDoUpdate({
+          target: storefrontSettings.id,
+          set: { primaryColor, bgColor, textColor, spiceColor }
+        });
+
+    try {
+      await insertOrUpdate();
+    } catch {
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS storefront_settings (
+          id INTEGER PRIMARY KEY,
+          primary_color TEXT NOT NULL DEFAULT '#0ea5e9',
+          bg_color TEXT NOT NULL DEFAULT '#0f172a',
+          text_color TEXT NOT NULL DEFAULT '#ffffff',
+          spice_color TEXT NOT NULL DEFAULT '#ea580c'
+        )
+      `);
+      try {
+        await client.execute("ALTER TABLE storefront_settings ADD COLUMN spice_color TEXT NOT NULL DEFAULT '#ea580c'");
+      } catch {}
+      await insertOrUpdate();
+    }
 
     return new Response(JSON.stringify({
       success: true,

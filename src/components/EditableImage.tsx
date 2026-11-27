@@ -7,6 +7,21 @@ const SLOT_FALLBACKS: Record<string, string> = {
   promo: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80',
 };
 
+const slotFetchCache = new Map<string, Promise<{ image_url?: string | null } | null>>();
+
+function fetchSlotMedia(slot: string): Promise<{ image_url?: string | null } | null> {
+  const cached = slotFetchCache.get(slot);
+  if (cached) return cached;
+  const promise = fetch(`/api/theme-media?slot=${encodeURIComponent(slot)}`)
+    .then((res) => (res.ok ? res.json() : null))
+    .catch(() => null)
+    .finally(() => {
+      setTimeout(() => slotFetchCache.delete(slot), 4000);
+    });
+  slotFetchCache.set(slot, promise);
+  return promise;
+}
+
 export interface EditableImageProps {
   slot?: string;
   slotId?: string;
@@ -46,11 +61,10 @@ export function EditableImage({
   const [src, setSrc] = useState<string>(resolveInitialSrc);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // 1. Fetch latest asset from backend database on mount if available
+  // 1. Fetch latest asset from backend database on mount if available (with in-memory deduplication)
   useEffect(() => {
     let isMounted = true;
-    fetch(`/api/theme-media?slot=${encodeURIComponent(effectiveSlot)}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchSlotMedia(effectiveSlot)
       .then((data) => {
         if (isMounted && data?.image_url && data.image_url !== src) {
           setSrc(data.image_url);
@@ -58,8 +72,7 @@ export function EditableImage({
             localStorage.setItem(`waas_img_${effectiveSlot}`, data.image_url);
           } catch {}
         }
-      })
-      .catch(() => {});
+      });
 
     return () => {
       isMounted = false;

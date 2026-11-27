@@ -512,7 +512,7 @@ export default function AITheme({
 
   return (
     <>
-      <div className={`min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative transition-opacity duration-700 ease-in-out ${isThemeReady ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+      <div className="min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative">
       {/* ── Zero-Dependency CSS Layer ───────────────────────────────────────── */}
       <style>{`
         :root {

@@ -20,11 +20,19 @@ export async function onRequestGet(context: any) {
       authToken: env.TURSO_AUTH_TOKEN.trim(),
     });
 
-    await db.execute('CREATE TABLE IF NOT EXISTS business_info (id TEXT PRIMARY KEY, data TEXT)');
-    const res = await db.execute({
-      sql: 'SELECT data FROM business_info WHERE id = ?',
-      args: ['default'],
-    });
+    let res;
+    try {
+      res = await db.execute({
+        sql: 'SELECT data FROM business_info WHERE id = ?',
+        args: ['default'],
+      });
+    } catch {
+      await db.execute('CREATE TABLE IF NOT EXISTS business_info (id TEXT PRIMARY KEY, data TEXT)');
+      res = await db.execute({
+        sql: 'SELECT data FROM business_info WHERE id = ?',
+        args: ['default'],
+      });
+    }
 
     if (res.rows && res.rows.length > 0 && res.rows[0].data) {
       const businessInfo = JSON.parse(res.rows[0].data as string);
@@ -52,9 +60,6 @@ export async function onRequestPost(context: any) {
       authToken: env.TURSO_AUTH_TOKEN.trim(),
     });
 
-    await db.execute('CREATE TABLE IF NOT EXISTS business_info (id TEXT PRIMARY KEY, data TEXT)');
-    await db.execute('CREATE TABLE IF NOT EXISTS theme_settings (slot_id TEXT PRIMARY KEY, image_url TEXT)');
-
     let body: any = {};
     try {
       body = await context.request.json();
@@ -64,16 +69,29 @@ export async function onRequestPost(context: any) {
 
     const serializedData = JSON.stringify(body);
 
-    await db.execute({
+    const upsertBiz = () => db.execute({
       sql: 'INSERT INTO business_info (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data',
       args: ['default', serializedData],
     });
 
+    try {
+      await upsertBiz();
+    } catch {
+      await db.execute('CREATE TABLE IF NOT EXISTS business_info (id TEXT PRIMARY KEY, data TEXT)');
+      await upsertBiz();
+    }
+
     if (body.promoText !== undefined) {
-      await db.execute({
+      const upsertPromo = () => db.execute({
         sql: 'INSERT INTO theme_settings (slot_id, image_url) VALUES (?, ?) ON CONFLICT(slot_id) DO UPDATE SET image_url=excluded.image_url',
         args: ['promo_text', body.promoText || ''],
       });
+      try {
+        await upsertPromo();
+      } catch {
+        await db.execute('CREATE TABLE IF NOT EXISTS theme_settings (slot_id TEXT PRIMARY KEY, image_url TEXT)');
+        await upsertPromo();
+      }
     }
 
     return json({ success: true }, 200, jsonHeaders);
