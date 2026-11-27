@@ -6,6 +6,35 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    <link
+      id="hero-lcp-preload"
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=960&q=75"
+      imagesrcset="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=640&q=75 640w, https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1080&q=75 1080w"
+      imagesizes="100vw"
+      fetchpriority="high"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <script>
+      if (typeof window !== 'undefined' && typeof fetch === 'function' && window.location.pathname === '/') {
+        window.__WAAS_BIZ_PROMISE__ = fetch('/api/business-info?t=' + Date.now(), { cache: 'no-store' }).catch(function () { return null; });
+      }
+    </script>
     <title>Huzada Storefront | Curated Products & Premium Selection</title>
     <meta name="description" content="Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery." />
     <link rel="canonical" href="https://penia.pages.dev/" />

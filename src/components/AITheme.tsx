@@ -19,11 +19,12 @@ import { openCartDrawer } from '../lib/cart';
 import type { Product } from '../lib/types';
 import { clientConfig } from '../config/client';
 import { DEFAULT_BUSINESS_INFO } from '../lib/businessInfo';
-import { parseJsonResponse } from '../lib/safeJson';
+import { fetchThemePayload } from '../lib/themeCache';
+import { DEFAULT_HERO_IMAGE, optimizeUnsplashUrl, buildUnsplashSrcSet } from '../lib/imageOptimize';
 
 // ─── Fallback image used when a service has no image ─────────────────────────
 const SERVICE_IMAGE_FALLBACK =
-  'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80';
+  'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=75';
 
 export interface ServiceItem {
   id?: string | number;
@@ -287,26 +288,21 @@ export default function AITheme({
     }
   }, [isMenuOpen]);
 
-  const [isThemeReady, setIsThemeReady] = useState(false);
   const [themeLogo, setThemeLogo] = useState<string | null>(null);
   const lastThemeFetchTime = useRef<number>(0);
 
   useEffect(() => {
     let isMounted = true;
-    const timer = setTimeout(() => {
-      if (isMounted) setIsThemeReady(true);
-    }, 1500);
 
-    const fetchHydratedData = async () => {
+    const fetchHydratedData = async (forceRefresh = false) => {
       // 1. Throttle: Prevent DB spam from notification shade fidgeting
       const now = Date.now();
       if (now - lastThemeFetchTime.current < 30000) return; 
       lastThemeFetchTime.current = now;
 
       try {
-        // 2. Native fetch with NO CORS preflight penalties
-        const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        const raw = await parseJsonResponse(res);
+        // 2. Coalesced mount fetch / fresh visibility resume fetch with NO CORS preflight penalties
+        const raw = await fetchThemePayload(forceRefresh);
         
         // 3. Memory Leak Protection: Abort if unmounted
         if (!isMounted || !raw) return;
@@ -359,9 +355,7 @@ export default function AITheme({
           }
         }
       } catch (err) {
-        console.error("Hydration failed", err);
-      } finally {
-        if (isMounted) setIsThemeReady(true);
+        console.warn('[WaaS] Hydration skipped:', err);
       }
     };
 
@@ -371,7 +365,7 @@ export default function AITheme({
     // BFCache Defeat: Listen for foreground return
     const handleVisibilityChange = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        fetchHydratedData();
+        fetchHydratedData(true);
       }
     };
 
@@ -382,7 +376,6 @@ export default function AITheme({
     // Strict Cleanup: Prevent memory leaks
     return () => {
       isMounted = false;
-      clearTimeout(timer);
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
@@ -395,20 +388,20 @@ export default function AITheme({
   const activeLogo = themeLogo || businessInfo?.logo || businessInfo?.imageSlots?.logo;
 
   const defaultHero =
-    biz.imageSlots?.hero ||
-    'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80';
+    biz.imageSlots?.hero || DEFAULT_HERO_IMAGE;
 
   const slideImages = [
     businessInfo?.heroImage?.trim() ? businessInfo.heroImage : defaultHero,
     businessInfo?.heroImage2?.trim()
       ? businessInfo.heroImage2
-      : 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800',
+      : 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=75',
     businessInfo?.heroImage3?.trim()
       ? businessInfo.heroImage3
-      : 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800',
+      : 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=75',
   ];
 
   const [hasIntersected, setHasIntersected] = useState(false);
+  const [showSecondarySlides, setShowSecondarySlides] = useState(false);
   const [isIntroAnimating, setIsIntroAnimating] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -437,6 +430,10 @@ export default function AITheme({
   useEffect(() => {
     if (!hasIntersected) return;
 
+    const secondaryTimer = setTimeout(() => {
+      setShowSecondarySlides(true);
+    }, 1200);
+
     const timer = setTimeout(() => {
       setIsIntroAnimating(false);
     }, 1500);
@@ -446,6 +443,7 @@ export default function AITheme({
     }, 3000);
 
     return () => {
+      clearTimeout(secondaryTimer);
       clearTimeout(timer);
       clearInterval(interval);
     };
@@ -825,6 +823,7 @@ export default function AITheme({
                 <img 
                   src={activeLogo} 
                   alt="Logo" 
+                  decoding="async"
                   className="w-8 h-8 md:w-10 md:h-10 rounded-[var(--theme-radius)] object-cover shrink-0 aspect-square"
                 />
               )}
@@ -1014,13 +1013,24 @@ export default function AITheme({
 
             {/* Slideshow Images with Smooth Transitions and Gentle Drift */}
             {slideImages.map((src, index) => {
+              if (index > 0 && !showSecondarySlides && currentSlide !== index) {
+                return null;
+              }
               const isCurrent = currentSlide === index;
+              const slideSrc = optimizeUnsplashUrl(src, index === 0 ? 960 : 800, 75);
+              const slideSrcSet =
+                index === 0 ? buildUnsplashSrcSet(src, [640, 1080], 75) : undefined;
               return (
                 <img
                   key={index}
-                  src={src}
+                  src={slideSrc}
+                  srcSet={slideSrcSet}
+                  sizes={slideSrcSet ? '100vw' : undefined}
                   alt={`${biz.name} visual ${index + 1}`}
                   draggable={false}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  decoding={index === 0 ? 'sync' : 'async'}
+                  fetchPriority={index === 0 ? 'high' : 'auto'}
                   className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out motion-safe:scale-[1.03] select-none ${
                     isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0'
                   }`}

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { parseJsonResponse } from '../lib/safeJson';
+import { DEFAULT_HERO_IMAGE, optimizeUnsplashUrl, buildUnsplashSrcSet } from '../lib/imageOptimize';
 
 const SLOT_FALLBACKS: Record<string, string> = {
   logo: '/default-logo.png',
-  hero: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80',
-  about: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=800&q=80',
-  promo: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80',
+  hero: DEFAULT_HERO_IMAGE,
+  about: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=640&q=75',
+  promo: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=640&q=75',
 };
 
 const slotFetchCache = new Map<string, Promise<{ image_url?: string | null } | null>>();
@@ -123,11 +124,19 @@ export function EditableImage({
 
   if (!src) return null;
 
+  const isHeroSlot = effectiveSlot === 'hero';
+  const optimizedSrc = optimizeUnsplashUrl(src, isHeroSlot ? 960 : 640, 75);
+  const srcSet = buildUnsplashSrcSet(src, isHeroSlot ? [640, 1080] : [400, 640], 75);
+
   return (
     <img
       ref={imgRef}
       data-slot-id={effectiveSlot}
-      src={src}
+      src={optimizedSrc}
+      srcSet={srcSet}
+      sizes={srcSet ? (isHeroSlot ? '100vw' : '(max-width: 1024px) 100vw, 42vw') : undefined}
+      loading={isHeroSlot ? 'eager' : 'lazy'}
+      decoding={isHeroSlot ? 'sync' : 'async'}
       className={className}
       alt={alt}
       style={style}

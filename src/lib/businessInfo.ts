@@ -115,7 +115,7 @@ export function saveBusinessInfo(info: BusinessInfo): void {
 
 export async function fetchBusinessInfo(): Promise<BusinessInfo> {
   try {
-    const res = await fetch('/api/business-info', { cache: 'no-store' });
+    const res = await fetch(`/api/business-info?t=${Date.now()}`, { cache: 'no-store' });
     const data = await parseJsonResponse(res);
     if (data?.success && data?.businessInfo) {
       const merged: BusinessInfo = {

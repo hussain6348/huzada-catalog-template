@@ -3,6 +3,7 @@ import type { Product, CartItem } from '../lib/types';
 import { Plus, Minus, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { clientConfig } from '../config/client';
 import { getProductPrimaryImage, resolveImageUrl, handleImageError } from '../lib/products';
+import { optimizeUnsplashUrl, buildUnsplashSrcSet } from '../lib/imageOptimize';
 
 export interface ProductCardProps {
   product: Product;
@@ -86,6 +87,8 @@ export function ProductCard({
   };
 
   const currentImg = images[activeImgIdx] || primaryImg;
+  const optimizedCardImg = optimizeUnsplashUrl(currentImg, 600, 75);
+  const cardSrcSet = buildUnsplashSrcSet(currentImg, [400, 600], 75);
   const effectiveCurrency = currencySymbol || clientConfig.currencySymbol || 'Rs.';
 
   return (
@@ -111,7 +114,9 @@ export function ProductCard({
         title="Click to view full-screen photo gallery"
       >
         <img
-          src={currentImg}
+          src={optimizedCardImg}
+          srcSet={cardSrcSet}
+          sizes={cardSrcSet ? '(max-width: 640px) 92vw, (max-width: 1024px) 45vw, 25vw' : undefined}
           alt={product.name}
           referrerPolicy="no-referrer"
           loading="lazy"

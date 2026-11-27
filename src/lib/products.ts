@@ -3,7 +3,7 @@ import { getAuthHeaders } from './auth';
 import { parseJsonResponse } from './safeJson';
 
 export const DEFAULT_FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&q=80';
+  'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=75';
 
 const STORAGE_KEY = 'merchant_catalog_products';
 export const CATALOG_UPDATED_EVENT = 'catalog_products_updated';
@@ -167,11 +167,58 @@ export interface FetchProductsResult {
   status: number;
 }
 
-export async function fetchCatalogProductsWithStatus(): Promise<FetchProductsResult> {
-  try {
-    const res = await fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' });
-    if (res.ok) {
+export interface ProductsPayloadResult {
+  ok: boolean;
+  status: number;
+  data: any;
+  error: string | null;
+}
+
+let activeProductsPromise: Promise<ProductsPayloadResult> | null = null;
+
+/**
+ * Coalesces simultaneous mount-time `/api/products` requests across App and
+ * CatalogEngine into a single `?t=${Date.now()}` + `no-store` fetch while preserving
+ * forced refreshes on explicit Retry actions.
+ */
+export function fetchProductsPayload(force = false): Promise<ProductsPayloadResult> {
+  if (!force && activeProductsPromise) {
+    return activeProductsPromise;
+  }
+  const promise: Promise<ProductsPayloadResult> = fetch(`/api/products?t=${Date.now()}`, {
+    cache: 'no-store',
+  })
+    .then(async (res) => {
       const data = await parseJsonResponse(res);
+      if (res.ok) {
+        return { ok: true, status: res.status, data, error: null };
+      }
+      let errorMsg = `Server error (${res.status})`;
+      if (data?.error) errorMsg = String(data.error);
+      return { ok: false, status: res.status, data, error: errorMsg };
+    })
+    .catch((err: any) => ({
+      ok: false,
+      status: 0,
+      data: null,
+      error: err?.message || 'Network connection issue',
+    }))
+    .finally(() => {
+      setTimeout(() => {
+        if (activeProductsPromise === promise) {
+          activeProductsPromise = null;
+        }
+      }, 2500);
+    });
+  activeProductsPromise = promise;
+  return promise;
+}
+
+export async function fetchCatalogProductsWithStatus(force = false): Promise<FetchProductsResult> {
+  try {
+    const res = await fetchProductsPayload(force);
+    if (res.ok) {
+      const data = res.data;
       if (!data) {
         return { products: getStoredProducts(), error: null, status: res.status };
       }
@@ -182,12 +229,12 @@ export async function fetchCatalogProductsWithStatus(): Promise<FetchProductsRes
       const normalized = rawList.map(normalizeProduct);
       saveStoredProducts(normalized);
       return { products: normalized, error: null, status: res.status };
-    } else {
-      let errorMsg = `Server error (${res.status})`;
-      const errJson = await parseJsonResponse(res);
-      if (errJson?.error) errorMsg = errJson.error;
-      return { products: getStoredProducts(), error: errorMsg, status: res.status };
     }
+    return {
+      products: getStoredProducts(),
+      error: res.error || `Server error (${res.status})`,
+      status: res.status,
+    };
   } catch (err: any) {
     console.warn('Live catalog fetch notice:', err);
     return { products: getStoredProducts(), error: err?.message || 'Network connection issue', status: 0 };

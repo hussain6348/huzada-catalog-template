@@ -3,7 +3,7 @@ import { getAuthHeaders } from './auth';
 import { parseJsonResponse } from './safeJson';
 
 export const DEFAULT_SERVICE_IMAGE =
-  'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&q=80';
+  'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=600&q=75';
 
 export const INITIAL_SERVICES: Service[] = [];
 

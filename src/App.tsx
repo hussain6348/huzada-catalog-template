@@ -7,35 +7,23 @@ import {
   ChevronRight,
   ShoppingBag,
 } from 'lucide-react';
-import { Admin } from './pages/Admin';
-import { Catalog } from './pages/Catalog';
-import { AdminLogin } from './components/AdminLogin';
-import EditableImage from './components/EditableImage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { clientConfig } from './config/client';
 
 import AITheme from './components/AITheme';
 
+const Admin = React.lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
+const Catalog = React.lazy(() => import('./pages/Catalog').then(m => ({ default: m.Catalog })));
+const AdminLogin = React.lazy(() => import('./components/AdminLogin').then(m => ({ default: m.AdminLogin })));
+
 import { isAuthenticated, AUTH_CHANGE_EVENT } from './lib/auth';
 import { getStoredBusinessInfo, fetchBusinessInfo, DEFAULT_BUSINESS_INFO, BUSINESS_INFO_UPDATED_EVENT } from './lib/businessInfo';
+import { fetchProductsPayload } from './lib/products';
 import { parseJsonResponse } from './lib/safeJson';
+import { fetchThemePayload } from './lib/themeCache';
 import type { BusinessInfo, Service, Product } from './lib/types';
 
 export const FALLBACK_SERVICES: Service[] = [];
-
-const EMPTY_BUSINESS_INFO: BusinessInfo = {
-  name: '',
-  tagline: '',
-  whatsapp: '',
-  phone: '',
-  currency: '',
-  currencySymbol: '',
-  address: '',
-  hours: '',
-  rating: '',
-  reviewCount: '',
-  imageSlots: {},
-};
 
 export function determineSpiceColor(primaryColor?: string, bgColor?: string): string {
   const primary = (primaryColor || '').toLowerCase().trim();
@@ -133,8 +121,19 @@ function PublicStorefrontPortal() {
     return () => window.removeEventListener('storage', updateCurrency);
   }, []);
 
-  // 1. THE HYDRATION MANDATE: businessInfo initialized with schema-exact empty fallback
-  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(EMPTY_BUSINESS_INFO);
+  // 1. THE HYDRATION MANDATE: businessInfo initialized immediately from stored/initial data for zero-flicker frame-0 paint
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
+    const initialBiz = getStoredBusinessInfo();
+    return {
+      ...DEFAULT_BUSINESS_INFO,
+      ...initialBiz,
+      promoText: initialBiz.promoText !== undefined ? initialBiz.promoText : DEFAULT_BUSINESS_INFO.promoText,
+      imageSlots: {
+        ...(DEFAULT_BUSINESS_INFO.imageSlots || {}),
+        ...(initialBiz.imageSlots || {}),
+      },
+    };
+  });
 
   // 4. THE GLOBAL BRIDGE: activeThemeId state for storefront synchronization
   const [activeThemeId, setActiveThemeId] = useState<string>('1');
@@ -187,7 +186,13 @@ function PublicStorefrontPortal() {
 
     const loadBusinessInfo = async () => {
       try {
-        const res = await fetch(`/api/business-info?t=${Date.now()}`, { cache: 'no-store' });
+        const earlyPromise = typeof window !== 'undefined' ? (window as any).__WAAS_BIZ_PROMISE__ : null;
+        if (earlyPromise && typeof window !== 'undefined') {
+          delete (window as any).__WAAS_BIZ_PROMISE__;
+        }
+        const res = earlyPromise
+          ? await earlyPromise
+          : await fetch(`/api/business-info?t=${Date.now()}`, { cache: 'no-store' });
         const data = await parseJsonResponse(res);
         if (data?.success && data?.businessInfo && isMounted.current) {
           setBusinessInfo(formatBusinessInfo(data.businessInfo));
@@ -217,8 +222,7 @@ function PublicStorefrontPortal() {
   useEffect(() => {
     const hydrateThemeCss = async () => {
       try {
-        const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        const raw = await parseJsonResponse(res);
+        const raw = await fetchThemePayload();
         if (raw) {
           const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
           if (themeData && isMounted.current) {
@@ -265,8 +269,7 @@ function PublicStorefrontPortal() {
 
       // Re-fetch theme data to update document CSS variables dynamically without page refresh
       try {
-        const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        const raw = await parseJsonResponse(res);
+        const raw = await fetchThemePayload(true);
         if (raw) {
           const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
           if (themeData) {
@@ -339,15 +342,14 @@ function PublicStorefrontPortal() {
       });
   }, []);
 
-  // Background hydration of catalog products with cache: 'no-store'
+  // Background hydration of catalog products with coalesced no-store fetch
   useEffect(() => {
-    fetch(`/api/products?t=${Date.now()}`, { cache: 'no-store' })
-      .then(res => parseJsonResponse(res))
-      .then((data: any) => {
-        if (isMounted.current && data) {
-          const items = Array.isArray(data?.products)
-            ? data.products
-            : (Array.isArray(data) ? data : []);
+    fetchProductsPayload()
+      .then((res) => {
+        if (isMounted.current && res?.ok && res.data) {
+          const items = Array.isArray(res.data?.products)
+            ? res.data.products
+            : (Array.isArray(res.data) ? res.data : []);
           setProducts(items);
         }
       })
@@ -598,16 +600,15 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchHydratedData = async () => {
+    const fetchHydratedData = async (forceRefresh = false) => {
       // 1. Throttle: Prevent DB spam from notification shade fidgeting
       const now = Date.now();
       if (now - lastFetchTime.current < 30000) return; 
       lastFetchTime.current = now;
 
       try {
-        // 2. Native fetch with NO CORS preflight penalties
-        const res = await fetch(`/api/theme?t=${Date.now()}`, { cache: 'no-store' });
-        const raw = await parseJsonResponse(res);
+        // 2. Coalesced mount fetch / fresh visibility resume fetch with NO CORS preflight penalties
+        const raw = await fetchThemePayload(forceRefresh);
         
         // 3. Memory Leak Protection: Abort if unmounted
         if (!isMounted || !raw) return;
@@ -628,12 +629,12 @@ export default function App() {
     // BFCache Defeat: Listen for foreground return
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchHydratedData();
+        fetchHydratedData(true);
       }
     };
 
     const handleGlobalThemeUpdate = () => {
-      fetchHydratedData();
+      fetchHydratedData(true);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -648,13 +649,15 @@ export default function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route path="/" element={<PublicStorefrontPortal />} />
-      <Route path="/catalog" element={<Catalog />} />
-      <Route path="/services" element={<Navigate to="/catalog" replace />} />
-      <Route path="/admin" element={<ProtectedAdminRoute />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <React.Suspense fallback={null}>
+      <Routes>
+        <Route path="/" element={<PublicStorefrontPortal />} />
+        <Route path="/catalog" element={<Catalog />} />
+        <Route path="/services" element={<Navigate to="/catalog" replace />} />
+        <Route path="/admin" element={<ProtectedAdminRoute />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </React.Suspense>
   );
 }
 

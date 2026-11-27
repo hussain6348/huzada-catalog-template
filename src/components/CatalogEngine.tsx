@@ -67,11 +67,11 @@ export function CatalogEngine({
 
   const productsTopRef = useRef<HTMLDivElement>(null);
 
-  const loadProducts = async () => {
+  const loadProducts = async (forceRefresh = false) => {
     setIsLoading(true);
     setFetchError(null);
     try {
-      const res = await fetchCatalogProductsWithStatus();
+      const res = await fetchCatalogProductsWithStatus(forceRefresh);
       if (res.error && res.products.length === 0) {
         setFetchError(res.error);
       } else {
@@ -598,7 +598,7 @@ export function CatalogEngine({
                 <div className="pt-2">
                   <button
                     type="button"
-                    onClick={loadProducts}
+                    onClick={() => loadProducts(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -830,7 +830,7 @@ export function CatalogEngine({
               <div className="pt-1">
                 <button
                   type="button"
-                  onClick={loadProducts}
+                  onClick={() => loadProducts(true)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />

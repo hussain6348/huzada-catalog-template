@@ -1,6 +1,9 @@
 // @ts-nocheck
 import { createClient } from '@libsql/client/web';
 
+const DEFAULT_HERO_IMAGE =
+  'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=960&q=75';
+
 function escapeHtml(str: string): string {
   if (!str) return '';
   return String(str)
@@ -9,6 +12,20 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function optimizeUnsplashUrl(rawUrl: string, width = 960, quality = 75): string {
+  if (!rawUrl || !rawUrl.includes('images.unsplash.com')) return rawUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    parsed.searchParams.set('auto', 'format');
+    parsed.searchParams.set('fit', 'crop');
+    parsed.searchParams.set('w', String(width));
+    parsed.searchParams.set('q', String(quality));
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
 }
 
 export const onRequest = async (context: any) => {
@@ -53,6 +70,7 @@ export const onRequest = async (context: any) => {
   let businessName = 'Huzada Storefront';
   let businessDesc = 'Curated Storefront Catalog & Direct Ordering';
   let businessLogo = '';
+  let businessHero = '';
   let businessAddress = '811 6th St N #200, Texas City, TX 77590';
   let businessPhone = '+1 (409) 256-3597';
   let businessHours = 'Mon–Sat, 9:00 AM – 6:00 PM';
@@ -78,6 +96,7 @@ export const onRequest = async (context: any) => {
           if (parsed.tagline) businessDesc = parsed.tagline;
           else if (parsed.aboutDescription) businessDesc = parsed.aboutDescription;
           businessLogo = parsed.logo || parsed.imageSlots?.logo || parsed.heroImage || parsed.imageSlots?.hero || '';
+          businessHero = parsed.heroImage || parsed.imageSlots?.hero || '';
           if (parsed.address) businessAddress = parsed.address;
           if (parsed.phone) businessPhone = parsed.phone;
           if (parsed.hours) businessHours = parsed.hours;
@@ -102,6 +121,18 @@ export const onRequest = async (context: any) => {
   } else {
     fullLogoUrl = baseOrigin + '/huzada-logo.png';
   }
+
+  let effectiveHeroUrl = businessHero || DEFAULT_HERO_IMAGE;
+  if (effectiveHeroUrl && !effectiveHeroUrl.startsWith('http://') && !effectiveHeroUrl.startsWith('https://')) {
+    effectiveHeroUrl = baseOrigin + (effectiveHeroUrl.startsWith('/') ? '' : '/') + effectiveHeroUrl;
+  }
+  const isUnsplashHero = effectiveHeroUrl.includes('images.unsplash.com');
+  const heroPreloadHref = isUnsplashHero
+    ? optimizeUnsplashUrl(effectiveHeroUrl, 960, 75)
+    : effectiveHeroUrl;
+  const heroPreloadSrcSet = isUnsplashHero
+    ? `${optimizeUnsplashUrl(effectiveHeroUrl, 640, 75)} 640w, ${optimizeUnsplashUrl(effectiveHeroUrl, 1080, 75)} 1080w`
+    : '';
 
   // 6. XSS Sanitizer: HTML-escape database strings before HTML tag injection
   const escapedName = escapeHtml(businessName);
@@ -143,6 +174,22 @@ export const onRequest = async (context: any) => {
     .on('title', {
       element(e) {
         e.setInnerContent(escapedName);
+      },
+    })
+    .on('link#hero-lcp-preload', {
+      element(e) {
+        if (url.pathname !== '/') {
+          e.remove();
+          return;
+        }
+        e.setAttribute('href', escapeHtml(heroPreloadHref));
+        if (heroPreloadSrcSet) {
+          e.setAttribute('imagesrcset', escapeHtml(heroPreloadSrcSet));
+          e.setAttribute('imagesizes', '100vw');
+        } else {
+          e.removeAttribute('imagesrcset');
+          e.removeAttribute('imagesizes');
+        }
       },
     })
     .on(
