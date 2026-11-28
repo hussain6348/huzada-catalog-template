@@ -1122,11 +1122,10 @@ export default function AITheme({
               ].map((metric, mIdx) => (
                 <div
                   key={mIdx}
-                  className="group relative rounded-2xl border p-5 sm:p-6 md:backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] md:motion-safe:animate-float-subtle md:motion-safe:hover:-translate-y-0.5 transition-[box-shadow,border-color] duration-200 flex flex-col justify-between"
+                  className="group relative rounded-2xl border p-5 sm:p-6 md:backdrop-blur-md trust-card-surface motion-safe:animate-float-subtle md:motion-safe:hover:-translate-y-0.5 transition-[box-shadow,border-color] duration-200 flex flex-col justify-between"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--theme-surface) 88%, transparent)',
                     borderColor: 'color-mix(in srgb, var(--theme-spice) 20%, color-mix(in srgb, var(--theme-border) 60%, transparent))',
-                    boxShadow: '0 14px 34px -14px rgba(0,0,0,0.25), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 10%, transparent)',
                     animationDelay: `${mIdx * 0.75}s`,
                   }}
                 >
@@ -1136,7 +1135,7 @@ export default function AITheme({
                       {metric.label}
                     </p>
                     <div
-                      className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1.5 flex items-baseline gap-1 md:motion-safe:animate-float-micro metric-headline-depth"
+                      className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1.5 flex items-baseline gap-1 motion-safe:animate-float-micro metric-headline-depth"
                       style={{ animationDelay: `${mIdx * 0.75 + 0.35}s` }}
                     >
                       <span className="hero-headline-shading">

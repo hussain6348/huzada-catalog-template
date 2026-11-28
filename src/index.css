@@ -128,11 +128,6 @@ html, body {
   100% { transform: translate3d(-50%, 0, 0); }
 }
 
-@keyframes text-shimmer {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
-}
-
 @keyframes aurora-pulse {
   0%, 100% { opacity: 0.15; transform: scale(1); }
   50% { opacity: 0.38; transform: scale(1.1); }
@@ -155,6 +150,8 @@ html, body {
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .animate-wavy-float {
@@ -172,11 +169,11 @@ html, body {
 .animate-text-shimmer,
 .hero-headline-shading {
   background: linear-gradient(
-    to right,
+    110deg,
     var(--shading-base, var(--theme-text)) 0%,
-    color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 25%,
-    color-mix(in srgb, var(--theme-spice) 80%, var(--shading-base, var(--theme-text))) 50%,
-    color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 75%,
+    color-mix(in srgb, var(--theme-primary) 90%, var(--shading-base, var(--theme-text))) 28%,
+    color-mix(in srgb, var(--theme-spice) 85%, var(--shading-base, var(--theme-text))) 52%,
+    color-mix(in srgb, var(--theme-primary) 90%, var(--shading-base, var(--theme-text))) 76%,
     var(--shading-base, var(--theme-text)) 100%
   );
   background-size: 100% auto;
@@ -218,8 +215,24 @@ html, body {
   backface-visibility: hidden;
 }
 .animate-marquee:hover,
-.waas-doc-hidden .animate-marquee {
+.waas-doc-hidden .animate-marquee,
+.waas-doc-hidden .animate-float,
+.waas-doc-hidden .animate-float-gentle,
+.waas-doc-hidden .animate-float-subtle,
+.waas-doc-hidden .animate-float-micro {
   animation-play-state: paused;
+}
+
+.trust-card-surface {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-spice) 14%, transparent);
+}
+
+@media (min-width: 768px) {
+  .trust-card-surface {
+    box-shadow:
+      0 14px 34px -14px rgba(0, 0, 0, 0.25),
+      0 0 0 1px color-mix(in srgb, var(--theme-spice) 10%, transparent);
+  }
 }
 
 .aurora-blob {
