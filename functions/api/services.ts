@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { createClient } from '@libsql/client/web';
 import { requireAdmin, json } from '../_lib/guard';
+import { deleteR2UrlsIfUnreferenced, parseImageList } from '../_lib/r2';
 
 interface Env {
   TURSO_DATABASE_URL: string;
@@ -103,12 +104,24 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const description = body.description || '';
     const badge = body.badge || '';
     
+    const nextImages = Array.isArray(body.images) ? body.images.map(String).filter(Boolean) : [body.images].filter(Boolean);
     let imagesJson = '[]';
     try {
-      imagesJson = JSON.stringify(Array.isArray(body.images) ? body.images : [body.images].filter(Boolean));
+      imagesJson = JSON.stringify(nextImages);
     } catch {
       imagesJson = '[]';
     }
+
+    let oldImages: string[] = [];
+    try {
+      const existingRes = await client.execute({
+        sql: 'SELECT images FROM services WHERE id = ?',
+        args: [id],
+      });
+      if (existingRes.rows && existingRes.rows.length > 0) {
+        oldImages = parseImageList(existingRes.rows[0]?.images);
+      }
+    } catch {}
 
     const upsertService = () => client.execute({
       sql: `INSERT INTO services (id, name, category, price, duration, description, images, badge)
@@ -129,6 +142,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         )
       `);
       await upsertService();
+    }
+
+    const nextSet = new Set(nextImages);
+    const removedImages = oldImages.filter((u) => !nextSet.has(u));
+    if (removedImages.length > 0) {
+      await deleteR2UrlsIfUnreferenced(env, removedImages);
     }
 
     return json({ success: true, id }, 200, jsonHeaders);
@@ -167,10 +186,25 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
       authToken: env.TURSO_AUTH_TOKEN.trim(),
     });
 
+    let oldImages: string[] = [];
+    try {
+      const existingRes = await client.execute({
+        sql: 'SELECT images FROM services WHERE id = ?',
+        args: [id],
+      });
+      if (existingRes.rows && existingRes.rows.length > 0) {
+        oldImages = parseImageList(existingRes.rows[0]?.images);
+      }
+    } catch {}
+
     await client.execute({
       sql: 'DELETE FROM services WHERE id = ?',
       args: [id],
     });
+
+    if (oldImages.length > 0) {
+      await deleteR2UrlsIfUnreferenced(env, oldImages);
+    }
 
     return json({ success: true, id }, 200, jsonHeaders);
   } catch (err: any) {

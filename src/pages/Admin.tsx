@@ -65,6 +65,7 @@ import {
 import { applyAndPersistTheme, persistThemeSnapshot } from '../lib/themeCache';
 import { clientConfig } from '../config/client';
 import { compressHero, compressLogo, compressProduct } from '../utils/imageCompression';
+import { normalizeMediaUrl, deleteOrphanR2Image as deleteOrphanR2Asset } from '../utils/r2Media';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -723,38 +724,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
   }, []);
 
   const deleteOrphanR2Image = async (imageUrl?: string) => {
-    if (!imageUrl || typeof imageUrl !== 'string') return;
-    const trimmed = imageUrl.trim();
-    if (!trimmed) return;
-
-    // Check if it is an R2 asset (/api/media/ or .r2.dev)
-    const isR2 = trimmed.includes('/api/media/') || trimmed.includes('.r2.dev');
-    if (!isR2) return;
-
-    try {
-      let key = '';
-      if (trimmed.includes('/api/media/')) {
-        key = trimmed.split('/api/media/').pop()?.split('?')[0] || '';
-      } else {
-        try {
-          const urlObj = new URL(trimmed);
-          key = urlObj.pathname.split('/').filter(Boolean).pop() || '';
-        } catch {
-          key = trimmed.split('/').filter(Boolean).pop() || '';
-        }
-      }
-
-      if (key) {
-        await fetch(`/api/media/${encodeURIComponent(key)}`, {
-          method: 'DELETE',
-          headers: {
-            ...getAuthHeaders(),
-          },
-        });
-      }
-    } catch (err) {
-      console.warn('Orphan R2 asset deletion note:', err);
-    }
+    await deleteOrphanR2Asset(imageUrl, getAuthHeaders);
   };
 
   // Update order status
@@ -883,6 +853,18 @@ export function Admin({ onLogout }: AdminProps = {}) {
     try {
       const updated = await persistProduct(productPayload);
       setInventory(updated);
+
+      if (editingProduct) {
+        const prevUrls = [
+          ...(Array.isArray(editingProduct.images) ? editingProduct.images : []),
+          editingProduct.image || '',
+        ].filter(Boolean);
+        const removedUrls = Array.from(new Set(prevUrls)).filter(u => !finalImages.includes(u));
+        for (const oldUrl of removedUrls) {
+          await deleteOrphanR2Image(oldUrl);
+        }
+      }
+
       setIsProductModalOpen(false);
       setEditingProduct(null);
 
@@ -899,9 +881,21 @@ export function Admin({ onLogout }: AdminProps = {}) {
   };
 
   const handleDeleteProduct = async (productId: string) => {
+    const prodToDelete = inventory.find(p => p.id === productId);
     const updated = await removeProduct(productId);
     setInventory(updated);
     setDeleteConfirmProductId(null);
+    if (prodToDelete) {
+      const urls = Array.from(
+        new Set([
+          ...(Array.isArray(prodToDelete.images) ? prodToDelete.images : []),
+          prodToDelete.image || '',
+        ].filter(Boolean))
+      );
+      for (const oldUrl of urls) {
+        deleteOrphanR2Image(oldUrl);
+      }
+    }
   };
 
   const handleProductFilesUpload = async (filesList: FileList | File[]) => {
@@ -951,8 +945,9 @@ export function Admin({ onLogout }: AdminProps = {}) {
         }
         if (res.ok) {
           const data: any = await res.json();
-          if (data.success && (data.imageUrl || data.url)) {
-            return { success: true, id: asset.id, imageUrl: data.imageUrl || data.url, previewUrl: asset.previewUrl };
+          const uploadedRaw = data.imageUrl || data.url;
+          if (data.success && uploadedRaw) {
+            return { success: true, id: asset.id, imageUrl: normalizeMediaUrl(uploadedRaw), previewUrl: asset.previewUrl };
           }
         }
         if (localDataUrl) {
@@ -1095,17 +1090,8 @@ export function Admin({ onLogout }: AdminProps = {}) {
   };
 
   const handleUpdateSlot = async (slot: 'logo' | 'hero' | 'about' | 'promo' | 'hero2' | 'hero3') => {
-    const url = slotInputs[slot]?.trim() || '';
+    const url = normalizeMediaUrl(slotInputs[slot]?.trim() || '');
     const oldUrl = businessInfo.imageSlots?.[slot] || (slot === 'hero' ? businessInfo.heroImage : slot === 'hero2' ? businessInfo.heroImage2 : slot === 'hero3' ? businessInfo.heroImage3 : '') || '';
-
-    // Clean up previous R2 asset if replaced
-    if (oldUrl && oldUrl !== url) {
-      try {
-        await deleteOrphanR2Image(oldUrl);
-      } catch (cleanErr) {
-        console.warn('Orphan R2 cleanup note (proceeding):', cleanErr);
-      }
-    }
 
     saveImageSlot(slot, url);
     setBusinessInfo(prev => {
@@ -1121,14 +1107,24 @@ export function Admin({ onLogout }: AdminProps = {}) {
       if (slot === 'hero3') updated.heroImage3 = url;
       return updated;
     });
+    let savedToDb = false;
     try {
-      await fetch('/api/theme-media', {
+      const res = await fetch('/api/theme-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ slot_id: slot, image_url: url }),
       });
+      savedToDb = res.ok;
     } catch (e) {
       console.warn('Failed to sync slot to Live Edge Database:', e);
+    }
+    // Clean up previous R2 asset ONLY after DB update so server reference check stays accurate
+    if (savedToDb && oldUrl && oldUrl !== url) {
+      try {
+        await deleteOrphanR2Image(oldUrl);
+      } catch (cleanErr) {
+        console.warn('Orphan R2 cleanup note (proceeding):', cleanErr);
+      }
     }
     setSlotNotice(`Slot "${slot}" updated live!`);
     setTimeout(() => setSlotNotice(null), 2500);
@@ -1206,31 +1202,11 @@ export function Admin({ onLogout }: AdminProps = {}) {
         throw new Error('Upload succeeded but returned an invalid image URL');
       }
 
-      // 2. THE ABSOLUTE STRIPPER & 3. THE ENCODING PRESERVATION
-      // Strips protocols and domains (e.g. localhost), preserves exact percent-encoding (%20)
-      let cleanUrl: string;
-      if (rawUrl.startsWith('data:')) {
-        cleanUrl = rawUrl;
-      } else {
-        try {
-          const parsed = new URL(rawUrl, window.location.origin);
-          cleanUrl = parsed.pathname + parsed.search;
-        } catch {
-          cleanUrl = rawUrl.replace(/^https?:\/\/[^\/]+/, '');
-        }
-        cleanUrl = cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
-      }
+      // 2. Preserve external R2 public URLs (R2_PUBLIC_URL / *.r2.dev) and origin-relative /api/media/... paths
+      const cleanUrl = normalizeMediaUrl(rawUrl);
 
       if (cleanUrl) {
-        // Self-cleaning R2 orphan deletion: check if OLD image URL is an R2 URL
         const oldUrl = slotInputs[slot] || businessInfo.imageSlots?.[slot] || (slot === 'hero' ? businessInfo.heroImage : slot === 'hero2' ? businessInfo.heroImage2 : slot === 'hero3' ? businessInfo.heroImage3 : '') || '';
-        if (oldUrl && oldUrl !== cleanUrl) {
-          try {
-            await deleteOrphanR2Image(oldUrl);
-          } catch (cleanErr) {
-            console.warn('Orphan R2 cleanup error (proceeding with upload):', cleanErr);
-          }
-        }
 
         // 4. THE SYNCHRONIZED PAYLOAD: Use exact cleanUrl for BOTH React UI state and Database payload
         setSlotInputs(prev => ({
@@ -1254,15 +1230,25 @@ export function Admin({ onLogout }: AdminProps = {}) {
           return updated;
         });
 
-        // 3. Save to the Database
+        // 3. Save to the Database BEFORE orphan deletion so reference check stays accurate
+        let savedToDb = false;
         try {
-          await fetch('/api/theme-media', {
+          const themeRes = await fetch('/api/theme-media', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({ slot_id: slot, image_url: cleanUrl }),
           });
+          savedToDb = themeRes.ok;
         } catch (e) {
           console.warn('Failed to mirror slot to Live Edge Database:', e);
+        }
+
+        if (savedToDb && oldUrl && oldUrl !== cleanUrl) {
+          try {
+            await deleteOrphanR2Image(oldUrl);
+          } catch (cleanErr) {
+            console.warn('Orphan R2 cleanup error (proceeding with upload):', cleanErr);
+          }
         }
 
         setSlotNotice(`Slot "${slot}" uploaded to Secure Media Vault & updated live!`);

@@ -1,6 +1,6 @@
 ﻿import { createClient } from '@libsql/client/web';
 import { requireAdmin, json } from '../../_lib/guard';
-import { getR2Bucket, extractFileKey } from '../../_lib/r2';
+import { deleteR2UrlsIfUnreferenced, parseImageList } from '../../_lib/r2';
 
 export async function onRequestPut(context: any) {
   const { request, env } = context;
@@ -37,21 +37,22 @@ export async function onRequestPut(context: any) {
     const imagePath = String(imagesArray[0] || body.image_path || body.image || '').trim();
 
     const client = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
+    const nextUrls = new Set(imagesArray.length > 0 ? imagesArray : imagePath ? [imagePath] : []);
 
-    // Safe R2 image cleanup if primary image changed
+    let oldUrls: string[] = [];
     try {
-      const result = await client.execute({ sql: 'SELECT image_path FROM products WHERE id = ?', args: [id] });
-      const oldImagePath = result.rows.length > 0 ? (result.rows[0].image_path as string) : null;
-      const r2Bucket = getR2Bucket(env);
-
-      if (oldImagePath && oldImagePath !== imagePath && r2Bucket) {
-        const fileKey = extractFileKey(oldImagePath);
-        if (fileKey) {
-          await r2Bucket.delete(fileKey).catch(() => {});
-        }
+      const result = await client.execute({
+        sql: 'SELECT image_path, image, images FROM products WHERE id = ?',
+        args: [id],
+      });
+      if (result.rows.length > 0) {
+        const row = result.rows[0] as any;
+        oldUrls = [row.image_path, row.image, ...parseImageList(row.images)]
+          .map((u) => (typeof u === 'string' ? u.trim() : ''))
+          .filter(Boolean);
       }
-    } catch (cleanupError) {
-      console.warn("Non-fatal R2 cleanup notice:", cleanupError);
+    } catch (lookupError) {
+      console.warn('Non-fatal product media lookup notice:', lookupError);
     }
 
     await client.execute({
@@ -80,6 +81,11 @@ export async function onRequestPut(context: any) {
       ],
     });
 
+    const removedUrls = oldUrls.filter((u) => !nextUrls.has(u));
+    if (removedUrls.length > 0) {
+      await deleteR2UrlsIfUnreferenced(env, removedUrls);
+    }
+
     return json({ success: true, id });
   } catch (error: any) {
     console.error("Product update error:", error);
@@ -107,25 +113,30 @@ export async function onRequestDelete(context: any) {
 
     const client = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
 
+    let oldUrls: string[] = [];
     try {
-      const result = await client.execute({ sql: 'SELECT image_path FROM products WHERE id = ?', args: [id] });
-      const oldImagePath = result.rows.length > 0 ? (result.rows[0].image_path as string) : null;
-      const r2Bucket = getR2Bucket(env);
-
-      if (oldImagePath && r2Bucket) {
-        const fileKey = extractFileKey(oldImagePath);
-        if (fileKey) {
-          await r2Bucket.delete(fileKey).catch(() => {});
-        }
+      const result = await client.execute({
+        sql: 'SELECT image_path, image, images FROM products WHERE id = ?',
+        args: [id],
+      });
+      if (result.rows.length > 0) {
+        const row = result.rows[0] as any;
+        oldUrls = [row.image_path, row.image, ...parseImageList(row.images)]
+          .map((u) => (typeof u === 'string' ? u.trim() : ''))
+          .filter(Boolean);
       }
-    } catch (cleanupError) {
-      console.warn("Non-fatal R2 cleanup notice:", cleanupError);
+    } catch (lookupError) {
+      console.warn('Non-fatal product media lookup notice:', lookupError);
     }
 
     await client.execute({
       sql: 'DELETE FROM products WHERE id = ?',
       args: [id],
     });
+
+    if (oldUrls.length > 0) {
+      await deleteR2UrlsIfUnreferenced(env, oldUrls);
+    }
 
     return json({ success: true, id });
   } catch (error: any) {

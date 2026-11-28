@@ -1,5 +1,6 @@
 import { createClient } from "@libsql/client/web";
 import { requireAdmin, json } from "../_lib/guard";
+import { deleteR2UrlsIfUnreferenced, parseImageList } from "../_lib/r2";
 
 async function initProductsTable(db: any) {
   await db.execute(`
@@ -198,6 +199,24 @@ export const onRequestPost = async (context: any) => {
   if (tursoUrl && tursoToken && typeof tursoUrl === "string" && typeof tursoToken === "string" && tursoUrl.trim() && tursoToken.trim()) {
     try {
       const db = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
+      const nextUrls = new Set(imagesArray.length > 0 ? imagesArray : imagePath ? [imagePath] : []);
+
+      let oldUrls: string[] = [];
+      try {
+        const existingRes = await db.execute({
+          sql: "SELECT image_path, image, images FROM products WHERE id = ?",
+          args: [id],
+        });
+        if (existingRes.rows && existingRes.rows.length > 0) {
+          const row = existingRes.rows[0] as any;
+          oldUrls = [row.image_path, row.image, ...parseImageList(row.images)]
+            .map((u) => (typeof u === "string" ? u.trim() : ""))
+            .filter(Boolean);
+        }
+      } catch {
+        // Table or columns may not exist yet before initProductsTable runs
+      }
+
       const cols = ["id", "name", "description", "category", "price", "stock", "image", "image_path", "images", "badge", "created_at"];
       const placeholders = cols.map(() => "?").join(", ");
       const setClause = cols.filter(c => c !== "id" && c !== "created_at").map(c => `${c} = excluded.${c}`).join(", ");
@@ -218,6 +237,11 @@ export const onRequestPost = async (context: any) => {
         } else {
           throw insertErr;
         }
+      }
+
+      const removedUrls = oldUrls.filter((u) => !nextUrls.has(u));
+      if (removedUrls.length > 0) {
+        await deleteR2UrlsIfUnreferenced(env, removedUrls);
       }
 
       return json({
@@ -275,7 +299,26 @@ export const onRequestDelete = async (context: any) => {
   if (tursoUrl && tursoToken && typeof tursoUrl === "string" && typeof tursoToken === "string" && tursoUrl.trim() && tursoToken.trim()) {
     try {
       const db = createClient({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
+      let oldUrls: string[] = [];
+      try {
+        const existingRes = await db.execute({
+          sql: "SELECT image_path, image, images FROM products WHERE id = ?",
+          args: [id],
+        });
+        if (existingRes.rows && existingRes.rows.length > 0) {
+          const row = existingRes.rows[0] as any;
+          oldUrls = [row.image_path, row.image, ...parseImageList(row.images)]
+            .map((u) => (typeof u === "string" ? u.trim() : ""))
+            .filter(Boolean);
+        }
+      } catch {
+        // Ignore lookup error on missing schema
+      }
+
       await db.execute({ sql: "DELETE FROM products WHERE id = ?", args: [id] });
+      if (oldUrls.length > 0) {
+        await deleteR2UrlsIfUnreferenced(env, oldUrls);
+      }
       return json({ success: true, id });
     } catch (e: any) {
       console.error("Delete product error:", e);

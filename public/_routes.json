@@ -5,6 +5,7 @@
   ],
   "exclude": [
     "/assets/*",
+    "/src/assets/*",
     "/.well-known/*",
     "/robots.txt",
     "/sitemap.xml",
@@ -15,12 +16,6 @@
     "/huzadalogo.jpeg",
     "/*.js",
     "/*.css",
-    "/*.webp",
-    "/*.png",
-    "/*.jpg",
-    "/*.jpeg",
-    "/*.svg",
-    "/*.ico",
     "/*.json",
     "/*.txt",
     "/*.xml"

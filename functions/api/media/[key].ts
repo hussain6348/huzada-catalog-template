@@ -1,5 +1,5 @@
 import { requireAdmin, json } from '../../_lib/guard';
-import { getR2Bucket } from '../../_lib/r2';
+import { getR2Bucket, safeDecodeKey, deleteR2ObjectIfUnreferenced } from '../../_lib/r2';
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -88,7 +88,7 @@ export async function onRequestDelete(context: any) {
   const denied = await requireAdmin(request, env);
   if (denied) return denied;
 
-  const key = params?.key ? decodeURIComponent(params.key) : '';
+  const key = params?.key ? safeDecodeKey(String(params.key)) : '';
   if (!key) {
     return json({ error: 'Missing file key to delete', success: false }, 400, corsHeaders);
   }
@@ -99,7 +99,19 @@ export async function onRequestDelete(context: any) {
   }
 
   try {
-    await bucket.delete(key);
+    const outcome = await deleteR2ObjectIfUnreferenced(env, key);
+    if (outcome.skipped) {
+      return json(
+        {
+          success: true,
+          skipped: true,
+          key,
+          message: 'Media asset retained because it is still referenced',
+        },
+        200,
+        corsHeaders
+      );
+    }
     return json({ success: true, key, message: 'Media asset deleted successfully' }, 200, corsHeaders);
   } catch (error: any) {
     return json({ error: error?.message || 'Failed to delete file from R2', success: false }, 500, corsHeaders);

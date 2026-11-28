@@ -3,6 +3,7 @@ import { UploadCloud, LoaderCircle, Image as ImageIcon } from 'lucide-react';
 import themeManifestData from '../config/theme-manifest.json';
 import { compressHero, compressService, compressLogo } from '../utils/imageCompression';
 import { getAuthHeaders, clearAdminToken } from '../lib/auth';
+import { normalizeMediaUrl, deleteOrphanR2Image } from '../utils/r2Media';
 
 interface ThemeImageItem {
   key: string;
@@ -116,20 +117,13 @@ export default function StorefrontMediaAdmin() {
         throw new Error('Upload succeeded but returned an invalid image URL');
       }
 
-      // 2. THE ABSOLUTE STRIPPER & 3. THE ENCODING PRESERVATION
-      // Strips protocols and domains (e.g., localhost), preserves exact percent-encoding (%20)
-      let cleanUrl: string;
-      try {
-        const parsed = new URL(rawUrl, window.location.origin);
-        cleanUrl = parsed.pathname + parsed.search;
-      } catch {
-        cleanUrl = rawUrl.replace(/^https?:\/\/[^\/]+/, '');
+      // 2. Preserve external R2 public URLs (R2_PUBLIC_URL / *.r2.dev) and origin-relative /api/media/... paths
+      const cleanUrl = normalizeMediaUrl(rawUrl);
+      if (!cleanUrl) {
+        throw new Error('Upload succeeded but normalized URL was empty');
       }
 
-      // Guarantee proper root-relative path formatting
-      if (!cleanUrl.startsWith('/')) {
-        cleanUrl = `/${cleanUrl}`;
-      }
+      const previousUrl = liveImages[slotId];
 
       // 4. THE SYNCHRONIZED PAYLOAD: Use cleanUrl for BOTH the database payload AND React UI state
       // 8. --- PERSIST TO THEME MEDIA WITH AUTH HEADERS ---
@@ -159,6 +153,11 @@ export default function StorefrontMediaAdmin() {
       // 9. --- MEMORY LEAK PROTECTOR FOR STATE UPDATES ---
       if (isMounted.current) {
         setLiveImages((prev) => ({ ...prev, [slotId]: cleanUrl }));
+      }
+
+      // Clean up the replaced R2 object after DB update (server verifies no shared references remain)
+      if (previousUrl && previousUrl !== cleanUrl) {
+        await deleteOrphanR2Image(previousUrl, getAuthHeaders);
       }
     } catch (err) {
       console.error(err);
