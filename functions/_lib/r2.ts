@@ -39,7 +39,9 @@ export function extractFileKey(urlOrPath: string, env?: any): string | null {
     path.startsWith('/assets/') ||
     path.startsWith('/src/assets/') ||
     path === '/huzada-logo.png' ||
-    path === '/huzadalogo.jpeg';
+    path === '/huzadalogo.jpeg' ||
+    path === '/default-logo.png' ||
+    path === '/favicon.ico';
 
   if (trimmed.includes('/api/media/')) {
     const rawSegment = (trimmed.split('/api/media/').pop() || '').split(/[?#]/)[0].replace(/^\/+/, '');
@@ -53,9 +55,23 @@ export function extractFileKey(urlOrPath: string, env?: any): string | null {
       const configuredPublicBase =
         env?.R2_PUBLIC_URL && typeof env.R2_PUBLIC_URL === 'string' ? env.R2_PUBLIC_URL.trim().replace(/\/+$/, '') : '';
 
-      if (configuredPublicBase && normalized.startsWith(`${configuredPublicBase}/`)) {
-        const rel = normalized.slice(configuredPublicBase.length + 1).split(/[?#]/)[0].replace(/^\/+/, '');
-        return rel ? safeDecodeKey(rel) : null;
+      if (configuredPublicBase) {
+        try {
+          const baseUrlObj = new URL(configuredPublicBase);
+          const basePath = baseUrlObj.pathname.replace(/\/+$/, '');
+          if (
+            urlObj.origin.toLowerCase() === baseUrlObj.origin.toLowerCase() &&
+            (!basePath || urlObj.pathname === basePath || urlObj.pathname.startsWith(`${basePath}/`))
+          ) {
+            const rel = urlObj.pathname.slice(basePath.length).replace(/^\/+/, '');
+            return rel ? safeDecodeKey(rel) : null;
+          }
+        } catch {
+          if (normalized.startsWith(`${configuredPublicBase}/`)) {
+            const rel = normalized.slice(configuredPublicBase.length + 1).split(/[?#]/)[0].replace(/^\/+/, '');
+            return rel ? safeDecodeKey(rel) : null;
+          }
+        }
       }
 
       if (urlObj.hostname.endsWith('.r2.dev')) {
@@ -154,7 +170,8 @@ export async function isR2KeyReferenced(env: any, rawKey: string): Promise<boole
         }
       }
     } catch (err: any) {
-      if (String(err?.message || '').toLowerCase().includes('no such column')) {
+      const errMsg = String(err?.message || '').toLowerCase();
+      if (errMsg.includes('no such column') || errMsg.includes('has no column')) {
         try {
           const fallbackProdRes = await db.execute({
             sql: 'SELECT image_path FROM products WHERE image_path LIKE ? OR image_path LIKE ?',

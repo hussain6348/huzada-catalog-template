@@ -3,6 +3,10 @@ compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"
 compatibility_flags = ["nodejs_compat"]
 
+# Base template/demo R2 bucket bindings (keep "huzada-uploads" as the shared template default).
+# During per-client provisioning (n8n -> Cloudflare Pages API), bind a dedicated client bucket
+# named "huzada-<client-slug>-uploads" (lowercase [a-z0-9-], no leading/trailing "-", 3-63 chars)
+# to BOTH "BUCKET" and "R2_STORAGE" on the client's Pages project before triggering the live deploy.
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "huzada-uploads"

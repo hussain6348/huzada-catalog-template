@@ -4,6 +4,20 @@
  * /api/media/... paths without stripping external R2 domains.
  */
 
+function getConfiguredPublicBase(explicitBase?: string): string {
+  const runtimeBase = typeof explicitBase === 'string' ? explicitBase.trim() : '';
+  const viteBase =
+    typeof (import.meta as any)?.env?.VITE_R2_PUBLIC_URL === 'string'
+      ? (import.meta as any).env.VITE_R2_PUBLIC_URL.trim()
+      : '';
+  return (runtimeBase || viteBase).replace(/\/+$/, '');
+}
+
+function isOriginRelativeMediaUrl(parsed: URL): boolean {
+  if (parsed.pathname.startsWith('/api/media/')) return true;
+  return typeof window !== 'undefined' && parsed.origin === window.location.origin;
+}
+
 export function normalizeMediaUrl(rawUrl: string): string {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
   const trimmed = rawUrl.trim();
@@ -16,7 +30,7 @@ export function normalizeMediaUrl(rawUrl: string): string {
       const normalized = trimmed.startsWith('//') ? `https:${trimmed}` : trimmed;
       const parsed = new URL(normalized, origin);
 
-      if (parsed.pathname.startsWith('/api/media/') || (typeof window !== 'undefined' && parsed.origin === window.location.origin)) {
+      if (isOriginRelativeMediaUrl(parsed)) {
         const rel = parsed.pathname + parsed.search;
         return rel.startsWith('/') ? rel : `/${rel}`;
       }
@@ -30,24 +44,46 @@ export function normalizeMediaUrl(rawUrl: string): string {
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 }
 
-export function extractR2KeyFromUrl(imageUrl?: string): string | null {
+export function extractR2KeyFromUrl(imageUrl?: string, publicBaseUrl?: string): string | null {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
   const trimmed = imageUrl.trim();
   if (!trimmed || trimmed.startsWith('data:')) return null;
 
-  const isR2 = trimmed.includes('/api/media/') || trimmed.includes('.r2.dev');
-  if (!isR2) return null;
-
   let rawKey = '';
+
   if (trimmed.includes('/api/media/')) {
     rawKey = (trimmed.split('/api/media/').pop() || '').split(/[?#]/)[0].replace(/^\/+/, '');
-  } else {
+  } else if (/^(https?:)?\/\//i.test(trimmed)) {
     try {
-      const urlObj = new URL(trimmed.startsWith('//') ? `https:${trimmed}` : trimmed);
-      rawKey = urlObj.pathname.replace(/^\/+/, '');
+      const normalized = trimmed.startsWith('//') ? `https:${trimmed}` : trimmed;
+      const urlObj = new URL(normalized);
+      const configuredBase = getConfiguredPublicBase(publicBaseUrl);
+
+      if (configuredBase) {
+        try {
+          const baseObj = new URL(configuredBase);
+          const basePath = baseObj.pathname.replace(/\/+$/, '');
+          if (
+            urlObj.origin.toLowerCase() === baseObj.origin.toLowerCase() &&
+            (!basePath || urlObj.pathname === basePath || urlObj.pathname.startsWith(`${basePath}/`))
+          ) {
+            rawKey = urlObj.pathname.slice(basePath.length).replace(/^\/+/, '');
+          }
+        } catch {
+          if (normalized.startsWith(`${configuredBase}/`)) {
+            rawKey = normalized.slice(configuredBase.length + 1).split(/[?#]/)[0].replace(/^\/+/, '');
+          }
+        }
+      }
+
+      if (!rawKey && urlObj.hostname.endsWith('.r2.dev')) {
+        rawKey = urlObj.pathname.replace(/^\/+/, '');
+      }
     } catch {
-      rawKey = trimmed.split('/').filter(Boolean).pop() || '';
+      return null;
     }
+  } else {
+    return null;
   }
 
   if (!rawKey) return null;
@@ -60,9 +96,10 @@ export function extractR2KeyFromUrl(imageUrl?: string): string | null {
 
 export async function deleteOrphanR2Image(
   imageUrl: string | undefined,
-  getAuthHeaders: () => Record<string, string>
+  getAuthHeaders: () => Record<string, string>,
+  publicBaseUrl?: string
 ): Promise<void> {
-  const key = extractR2KeyFromUrl(imageUrl);
+  const key = extractR2KeyFromUrl(imageUrl, publicBaseUrl);
   if (!key) return;
 
   try {

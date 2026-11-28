@@ -1,5 +1,6 @@
 import { createClient } from '@libsql/client/web';
 import { requireAdmin, json } from '../_lib/guard';
+import { deleteR2UrlsIfUnreferenced } from '../_lib/r2';
 
 const jsonHeaders = {
   'Content-Type': 'application/json',
@@ -122,6 +123,20 @@ export async function onRequestPost(context: any) {
 
     const slotId = body?.slot_id ?? body?.slot ?? body?.slotId ?? (body?.logo !== undefined ? 'logo' : null);
     const imageUrl = body?.image_url ?? body?.imageUrl ?? body?.url ?? (typeof body?.logo === 'string' ? body.logo : null);
+    const previousUrls: string[] = [];
+
+    if (slotId && slotId !== 'promo_text') {
+      try {
+        const prevSlotRes = await db.execute({
+          sql: 'SELECT image_url FROM theme_settings WHERE slot_id = ?',
+          args: [slotId],
+        });
+        const prevSlotUrl = prevSlotRes.rows?.[0]?.image_url;
+        if (typeof prevSlotUrl === 'string' && prevSlotUrl.trim()) {
+          previousUrls.push(prevSlotUrl.trim());
+        }
+      } catch {}
+    }
 
     if (slotId) {
       const upsertSlot = () => db.execute({
@@ -157,6 +172,20 @@ export async function onRequestPost(context: any) {
 
       if (!bizData.imageSlots) bizData.imageSlots = {};
       if (slotId) {
+        if (slotId !== 'promo_text') {
+          const prevBizCandidates = [
+            bizData.imageSlots?.[slotId],
+            slotId === 'logo' ? bizData.logo : null,
+            slotId === 'hero' ? bizData.heroImage : null,
+            slotId === 'hero2' ? bizData.heroImage2 : null,
+            slotId === 'hero3' ? bizData.heroImage3 : null,
+          ];
+          for (const candidate of prevBizCandidates) {
+            if (typeof candidate === 'string' && candidate.trim()) {
+              previousUrls.push(candidate.trim());
+            }
+          }
+        }
         bizData.imageSlots[slotId] = imageUrl ?? null;
         if (slotId === 'logo') bizData.logo = imageUrl ?? null;
         if (slotId === 'hero') bizData.heroImage = imageUrl ?? null;
@@ -174,6 +203,14 @@ export async function onRequestPost(context: any) {
       await syncBizInfo();
     } catch (syncErr) {
       console.warn('Sync to business_info warning:', syncErr);
+    }
+
+    if (slotId && slotId !== 'promo_text') {
+      const nextUrl = typeof imageUrl === 'string' ? imageUrl.trim() : '';
+      const removedUrls = Array.from(new Set(previousUrls)).filter((u) => u && u !== nextUrl);
+      if (removedUrls.length > 0) {
+        await deleteR2UrlsIfUnreferenced(env, removedUrls);
+      }
     }
 
     return json({ success: true, slot_id: slotId, image_url: imageUrl }, 200, jsonHeaders);
