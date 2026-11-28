@@ -50,7 +50,7 @@ export function HeaderBagButton({ className = '', onClick }: HeaderBagButtonProp
           ? `Shopping Bag with ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`
           : 'Shopping Bag (empty)'
       }
-      className={`group relative inline-flex items-center justify-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 isolate outline-none focus:outline-none cursor-pointer active:scale-95 select-none ${
+      className={`group relative inline-flex items-center justify-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-[transform,background-color,border-color,box-shadow,filter] duration-300 isolate outline-none focus:outline-none cursor-pointer active:scale-95 select-none ${
         isFilled
           ? 'shadow-md hover:brightness-110 active:scale-95'
           : 'hover:bg-[var(--theme-surface-subtle)] hover:border-[var(--theme-border-strong)] shadow-2xs'

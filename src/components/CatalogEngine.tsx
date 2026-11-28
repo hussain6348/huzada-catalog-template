@@ -436,7 +436,7 @@ export function CatalogEngine({
                             window.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
                           }
                         }}
-                        className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-[var(--theme-radius-inner)] text-xs font-medium transition-all duration-150 cursor-pointer text-left whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink ${
+                        className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-[var(--theme-radius-inner)] text-xs font-medium transition-[background-color,color,box-shadow] duration-150 cursor-pointer text-left whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink ${
                           isActive
                             ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-sm font-semibold'
                             : 'bg-transparent text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-surface-subtle)]'
@@ -489,7 +489,7 @@ export function CatalogEngine({
                     placeholder="Search by product title or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-10 bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-10 pr-9 text-xs sm:text-sm text-[var(--theme-text)] placeholder:text-[var(--theme-text-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 focus:border-[var(--theme-primary)] transition-all"
+                    className="w-full h-10 bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-10 pr-9 text-xs sm:text-sm text-[var(--theme-text)] placeholder:text-[var(--theme-text-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent-soft)] focus:border-[var(--theme-primary)] transition-[border-color,box-shadow]"
                   />
                   {searchQuery && (
                     <button
@@ -509,7 +509,7 @@ export function CatalogEngine({
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
-                      className="h-10 appearance-none bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-3.5 pr-8 text-xs font-medium text-[var(--theme-text)] hover:border-[var(--theme-border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20 cursor-pointer transition-colors"
+                      className="h-10 appearance-none bg-[var(--theme-surface-subtle)] border border-[var(--theme-border)] rounded-[var(--theme-radius-inner)] pl-3.5 pr-8 text-xs font-medium text-[var(--theme-text)] hover:border-[var(--theme-border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent-soft)] cursor-pointer transition-colors"
                     >
                       <option value="featured">Featured Sort</option>
                       <option value="price-asc">Price: Low to High</option>
@@ -599,7 +599,7 @@ export function CatalogEngine({
                   <button
                     type="button"
                     onClick={() => loadProducts(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-[transform,background-color] active:scale-95 cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Retry Connection</span>
@@ -695,7 +695,7 @@ export function CatalogEngine({
                         type="button"
                         onClick={() => handlePageChange(safeCurrentPage - 1)}
                         disabled={safeCurrentPage <= 1}
-                        className="px-3 py-1.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-xs font-semibold text-[var(--theme-text)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                        className="px-3 py-1.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-xs font-semibold text-[var(--theme-text)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] disabled:opacity-40 disabled:cursor-not-allowed transition-[transform,background-color,opacity] flex items-center gap-1 cursor-pointer active:scale-95"
                         aria-label="Previous page"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
@@ -721,7 +721,7 @@ export function CatalogEngine({
                               key={pageNum}
                               type="button"
                               onClick={() => handlePageChange(pageNum)}
-                              className={`w-8 h-8 rounded-[var(--theme-radius-inner)] text-xs font-mono font-semibold transition-all cursor-pointer ${
+                              className={`w-8 h-8 rounded-[var(--theme-radius-inner)] text-xs font-mono font-semibold transition-[background-color,color,box-shadow] cursor-pointer ${
                                 isCurrent
                                   ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-sm'
                                   : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-border)] border border-[var(--theme-border)]'
@@ -739,7 +739,7 @@ export function CatalogEngine({
                         type="button"
                         onClick={() => handlePageChange(safeCurrentPage + 1)}
                         disabled={safeCurrentPage >= totalPages}
-                        className="px-3 py-1.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-xs font-semibold text-[var(--theme-text)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                        className="px-3 py-1.5 rounded-[var(--theme-radius-inner)] border border-[var(--theme-border)] text-xs font-semibold text-[var(--theme-text)] bg-[var(--theme-surface-subtle)] hover:bg-[var(--theme-surface)] disabled:opacity-40 disabled:cursor-not-allowed transition-[transform,background-color,opacity] flex items-center gap-1 cursor-pointer active:scale-95"
                         aria-label="Next page"
                       >
                         <span>Next</span>
@@ -780,7 +780,7 @@ export function CatalogEngine({
                       type="button"
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-1 rounded-[var(--theme-radius-inner)] text-xs font-medium whitespace-nowrap transition-all duration-150 cursor-pointer active:scale-95 ${
+                      className={`px-3 py-1 rounded-[var(--theme-radius-inner)] text-xs font-medium whitespace-nowrap transition-[transform,background-color,color] duration-150 cursor-pointer active:scale-95 ${
                         active
                           ? 'bg-[var(--theme-primary)] text-[var(--theme-on-primary)] shadow-xs font-semibold'
                           : 'bg-[var(--theme-surface-subtle)] text-[var(--theme-text-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-border)] border border-[var(--theme-border)]'
@@ -831,7 +831,7 @@ export function CatalogEngine({
                 <button
                   type="button"
                   onClick={() => loadProducts(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] text-[var(--theme-on-primary)] hover:bg-[var(--theme-primary-hover)] text-xs font-semibold shadow-xs transition-[transform,background-color] active:scale-95 cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   <span>Retry</span>
@@ -886,7 +886,7 @@ export function CatalogEngine({
 
                   <Link
                     to="/catalog"
-                    className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold shadow-md hover:shadow-lg transition-all active:scale-95 shrink-0"
+                    className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold shadow-md hover:shadow-lg transition-[transform,background-color,box-shadow] active:scale-95 shrink-0"
                   >
                     <ShoppingBag className="w-4 h-4" />
                     <span>View All Products ({activeProducts.length})</span>
@@ -1002,7 +1002,7 @@ export function CatalogEngine({
                             <button
                               type="button"
                               onClick={() => updateQuantity(item.id, -1)}
-                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-all cursor-pointer active:scale-90"
+                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-[transform,background-color] cursor-pointer active:scale-90"
                               aria-label="Decrease quantity"
                             >
                               <Minus className="w-2.5 h-2.5" />
@@ -1013,7 +1013,7 @@ export function CatalogEngine({
                             <button
                               type="button"
                               onClick={() => updateQuantity(item.id, 1)}
-                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-all cursor-pointer active:scale-90"
+                              className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface-subtle)] flex items-center justify-center text-[var(--theme-text)] transition-[transform,background-color] cursor-pointer active:scale-90"
                               aria-label="Increase quantity"
                             >
                               <Plus className="w-2.5 h-2.5" />
@@ -1051,7 +1051,7 @@ export function CatalogEngine({
                   <button
                     type="button"
                     onClick={handleOpenCheckout}
-                    className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] font-medium py-3.5 px-4 rounded-[var(--theme-radius-inner)] flex items-center justify-between text-xs transition-all shadow-md hover:shadow-lg active:scale-[0.99] cursor-pointer"
+                    className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] font-medium py-3.5 px-4 rounded-[var(--theme-radius-inner)] flex items-center justify-between text-xs transition-[transform,background-color,box-shadow] shadow-md hover:shadow-lg active:scale-[0.99] cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="w-4 h-4 text-[var(--theme-on-primary)]" />

@@ -241,7 +241,7 @@ export function Catalog() {
                       : null
                   );
                 }}
-                className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl hover:scale-105"
+                className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center transition-[transform,background-color] cursor-pointer shadow-xl hover:scale-105"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -270,7 +270,7 @@ export function Catalog() {
                       : null
                   );
                 }}
-                className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl hover:scale-105"
+                className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center transition-[transform,background-color] cursor-pointer shadow-xl hover:scale-105"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
@@ -290,7 +290,7 @@ export function Catalog() {
                     onClick={() =>
                       setLightboxProduct((prev) => (prev ? { ...prev, index: i } : null))
                     }
-                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-[transform,opacity,border-color] cursor-pointer shrink-0 ${
                       i === lightboxProduct.index
                         ? 'border-white scale-105 ring-2 ring-white/30'
                         : 'border-zinc-800 opacity-60 hover:opacity-100'

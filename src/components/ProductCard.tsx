@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Product, CartItem } from '../lib/types';
 import { Plus, Minus, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { clientConfig } from '../config/client';
@@ -59,28 +59,54 @@ export function ProductCard({
   };
 
   // ─── Apple TV 3D Kinetic Tilt Physics ───────────────────────────────────────
+  const tiltRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (tiltRafRef.current !== null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(tiltRafRef.current);
+        tiltRafRef.current = null;
+      }
+    };
+  }, []);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (typeof window === 'undefined') return;
     const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!canHover || prefersReducedMotion) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const target = e.currentTarget;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
-    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+    if (tiltRafRef.current !== null) {
+      cancelAnimationFrame(tiltRafRef.current);
+    }
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -6;
-    const rotateY = ((x - centerX) / centerX) * 6;
+    tiltRafRef.current = requestAnimationFrame(() => {
+      tiltRafRef.current = null;
+      const rect = target.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
 
-    e.currentTarget.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`;
+      target.style.setProperty('--mouse-x', `${x}px`);
+      target.style.setProperty('--mouse-y', `${y}px`);
+
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = ((y - centerY) / centerY) * -6;
+      const rotateY = ((x - centerX) / centerX) * 6;
+
+      target.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`;
+    });
   };
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (tiltRafRef.current !== null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(tiltRafRef.current);
+      tiltRafRef.current = null;
+    }
     e.currentTarget.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
     e.currentTarget.style.setProperty('--mouse-x', `-500px`);
     e.currentTarget.style.setProperty('--mouse-y', `-500px`);
@@ -105,7 +131,7 @@ export function ProductCard({
       aria-label={`View details for ${product.name}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="group bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col h-full hover:border-[var(--theme-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] transition-all duration-200 ease-out shadow-xs hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--theme-primary)_12%,transparent)] cursor-pointer text-[var(--theme-text)] spotlight-card card-3d relative select-none"
+      className="group bg-[var(--theme-surface)] rounded-[var(--theme-radius)] border border-[var(--theme-border)] overflow-hidden flex flex-col h-full hover:border-[var(--theme-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)] transition-[transform,box-shadow,border-color] duration-200 ease-out shadow-xs hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--theme-primary)_12%,transparent)] cursor-pointer text-[var(--theme-text)] spotlight-card card-3d relative select-none"
     >
       {/* Product Image with Hover Zoom & Carousel - Click to open Lightbox */}
       <div
@@ -145,7 +171,7 @@ export function ProductCard({
 
         {/* View gallery hover affordance */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center pointer-events-none">
-          <span className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] text-[11px] font-medium px-3 py-1 rounded-full backdrop-blur-xs flex items-center gap-1.5 shadow-md">
+          <span className="opacity-0 group-hover:opacity-100 transition-[transform,opacity] duration-300 transform translate-y-2 group-hover:translate-y-0 bg-[var(--theme-primary)] text-[var(--theme-on-primary)] text-[11px] font-medium px-3 py-1 rounded-full backdrop-blur-xs flex items-center gap-1.5 shadow-md">
             <Maximize2 className="w-3 h-3" />
             <span>View Gallery</span>
           </span>
@@ -162,7 +188,7 @@ export function ProductCard({
               type="button"
               onClick={prevImage}
               aria-label="Previous image"
-              className="card-3d-leaf absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--theme-surface-translucent)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] border border-[var(--theme-border)] shadow-md opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer z-10 hover:scale-110 active:scale-95"
+              className="card-3d-leaf absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--theme-surface-translucent)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] border border-[var(--theme-border)] shadow-md opacity-0 group-hover:opacity-100 transition-[transform,opacity,background-color] flex items-center justify-center cursor-pointer z-10 hover:scale-110 active:scale-95"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -171,7 +197,7 @@ export function ProductCard({
               type="button"
               onClick={nextImage}
               aria-label="Next image"
-              className="card-3d-leaf absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--theme-surface-translucent)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] border border-[var(--theme-border)] shadow-md opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer z-10 hover:scale-110 active:scale-95"
+              className="card-3d-leaf absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--theme-surface-translucent)] hover:bg-[var(--theme-surface)] text-[var(--theme-text)] border border-[var(--theme-border)] shadow-md opacity-0 group-hover:opacity-100 transition-[transform,opacity,background-color] flex items-center justify-center cursor-pointer z-10 hover:scale-110 active:scale-95"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -185,8 +211,8 @@ export function ProductCard({
                     e.stopPropagation();
                     setActiveImgIdx(i);
                   }}
-                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                    activeImgIdx === i ? 'w-3.5 bg-[var(--theme-primary)]' : 'w-1.5 bg-[var(--theme-border-strong)] hover:bg-[var(--theme-text-muted)]'
+                  className={`h-1.5 w-3.5 origin-center rounded-full transition-[transform,background-color] cursor-pointer ${
+                    activeImgIdx === i ? 'scale-x-100 bg-[var(--theme-primary)]' : 'scale-x-[0.45] bg-[var(--theme-border-strong)] hover:bg-[var(--theme-text-muted)]'
                   }`}
                   aria-label={`View photo ${i + 1}`}
                 />
@@ -224,7 +250,7 @@ export function ProductCard({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUpdateQuantity(-1); }}
-                  className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] text-[var(--theme-text)] border border-[var(--theme-border)] flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                  className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-surface)] hover:bg-[var(--theme-surface-subtle)] text-[var(--theme-text)] border border-[var(--theme-border)] flex items-center justify-center transition-[transform,background-color] cursor-pointer active:scale-90"
                   aria-label="Decrease quantity"
                 >
                   <Minus className="w-3 h-3" />
@@ -235,7 +261,7 @@ export function ProductCard({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onUpdateQuantity(1); }}
-                  className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                  className="w-6 h-6 rounded-[calc(var(--theme-radius-inner)-2px)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] flex items-center justify-center transition-[transform,background-color] cursor-pointer active:scale-90"
                   aria-label="Increase quantity"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -245,7 +271,7 @@ export function ProductCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-                className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold px-3.5 py-2 rounded-[var(--theme-radius-inner)] transition-all duration-150 cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow-md active:scale-95"
+                className="bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold px-3.5 py-2 rounded-[var(--theme-radius-inner)] transition-[transform,background-color,box-shadow] duration-150 cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow-md active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add to Bag</span>

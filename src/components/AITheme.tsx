@@ -148,6 +148,11 @@ const FadeInSection = ({ children, className = '' }: { children: React.ReactNode
     const currentRef = domRef.current;
     if (!currentRef) return;
 
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -407,14 +412,34 @@ export default function AITheme({
 
   const [hasIntersected, setHasIntersected] = useState(false);
   const [isHeroInView, setIsHeroInView] = useState(false);
+  const [isDocHidden, setIsDocHidden] = useState<boolean>(() =>
+    typeof document !== 'undefined' ? Boolean(document.hidden) : false
+  );
   const [showSecondarySlides, setShowSecondarySlides] = useState(false);
   const [isIntroAnimating, setIsIntroAnimating] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleVisibility = () => {
+      setIsDocHidden(Boolean(document.hidden));
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsHeroInView(true);
+      setHasIntersected(true);
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -452,7 +477,7 @@ export default function AITheme({
   }, [hasIntersected]);
 
   useEffect(() => {
-    if (!isHeroInView) return;
+    if (!isHeroInView || isDocHidden) return;
 
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
@@ -462,7 +487,7 @@ export default function AITheme({
     return () => {
       clearInterval(interval);
     };
-  }, [isHeroInView, slideImages.length]);
+  }, [isHeroInView, isDocHidden, slideImages.length]);
 
   const filteredServices =
     selectedCategory === 'all'
@@ -484,49 +509,60 @@ export default function AITheme({
   };
 
   // ─── Apple TV 3D Kinetic Tilt Physics ───────────────────────────────────────
+  const tiltRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (tiltRafRef.current !== null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(tiltRafRef.current);
+        tiltRafRef.current = null;
+      }
+    };
+  }, []);
+
   const handleCardMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     if (typeof window === 'undefined') return;
-    const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!canHover || prefersReducedMotion) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
-    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+    const target = e.currentTarget;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -8;
-    const rotateY = ((x - centerX) / centerX) * 8;
-    
-    e.currentTarget.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`;
+    if (tiltRafRef.current !== null) {
+      cancelAnimationFrame(tiltRafRef.current);
+    }
+
+    tiltRafRef.current = requestAnimationFrame(() => {
+      tiltRafRef.current = null;
+      const rect = target.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      target.style.setProperty('--mouse-x', `${x}px`);
+      target.style.setProperty('--mouse-y', `${y}px`);
+
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = ((y - centerY) / centerY) * -8;
+      const rotateY = ((x - centerX) / centerX) * 8;
+
+      target.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`;
+    });
   };
 
   const handleCardMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
+    if (tiltRafRef.current !== null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(tiltRafRef.current);
+      tiltRafRef.current = null;
+    }
     e.currentTarget.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-  };
-
-  const handleCardTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!e.touches || e.touches.length === 0) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
-    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
-  };
-
-  const handleCardTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    e.currentTarget.style.setProperty('--mouse-x', `-1000px`);
-    e.currentTarget.style.setProperty('--mouse-y', `-1000px`);
   };
 
   return (
     <>
-      <div className="min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative">
+      <div className={`min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative${isDocHidden ? ' waas-doc-hidden' : ''}`}>
       {/* ── Zero-Dependency CSS Layer ───────────────────────────────────────── */}
       <style>{`
         :root {
@@ -608,42 +644,45 @@ export default function AITheme({
         }
 
         @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
+          0%, 100% { transform: translate3d(0, 0px, 0); }
+          50% { transform: translate3d(0, -8px, 0); }
         }
         @keyframes shimmer {
           0% { background-position: -400px 0; }
           100% { background-position: 400px 0; }
         }
         @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
         }
         /* ── Continuous Floating Motion Keyframes (8px-10px & 5px-6px smooth vertical drift) ── */
         @keyframes float-gentle {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-9px); }
+          0%, 100% { transform: translate3d(0, 0px, 0); }
+          50% { transform: translate3d(0, -9px, 0); }
         }
         @keyframes float-subtle {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-5.5px); }
+          0%, 100% { transform: translate3d(0, 0px, 0); }
+          50% { transform: translate3d(0, -5.5px, 0); }
         }
         @keyframes float-micro {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-3px); }
+          0%, 100% { transform: translate3d(0, 0px, 0); }
+          50% { transform: translate3d(0, -3px, 0); }
         }
-        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-float { animation: float 4s ease-in-out infinite; backface-visibility: hidden; }
         .animate-float-gentle {
           animation: float-gentle 5s ease-in-out infinite;
           will-change: transform;
+          backface-visibility: hidden;
         }
         .animate-float-subtle {
           animation: float-subtle 4.5s ease-in-out infinite;
           will-change: transform;
+          backface-visibility: hidden;
         }
         .animate-float-micro {
           animation: float-micro 3.8s ease-in-out infinite;
           will-change: transform;
+          backface-visibility: hidden;
         }
         .animate-float-gentle:hover,
         .animate-float-subtle:hover {
@@ -658,8 +697,11 @@ export default function AITheme({
           display: flex;
           width: max-content;
           animation: marquee 28s linear infinite;
+          will-change: transform;
+          backface-visibility: hidden;
         }
-        .animate-marquee:hover { animation-play-state: paused; }
+        .animate-marquee:hover,
+        .waas-doc-hidden .animate-marquee { animation-play-state: paused; }
 
         .glass-glow {
           backdrop-filter: blur(12px);
@@ -724,6 +766,7 @@ export default function AITheme({
           transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1),
                       transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
           will-change: opacity, transform;
+          backface-visibility: hidden;
         }
         .reveal-visible {
           opacity: 1;
@@ -776,6 +819,7 @@ export default function AITheme({
           .aurora-blob,
           .btn-radar::after {
             animation: none !important;
+            animation-play-state: paused !important;
             transform: none !important;
           }
         }
@@ -978,7 +1022,7 @@ export default function AITheme({
                 <a
                   href={`tel:${biz.phone.replace(/\s+/g, '')}`}
                   onClick={() => setIsMenuOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl border border-[var(--theme-border-strong)] text-[var(--theme-text)] font-semibold text-sm hover:border-[var(--theme-text)] transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl border border-[var(--theme-border-strong)] text-[var(--theme-text)] font-semibold text-sm hover:border-[var(--theme-text)] transition-colors cursor-pointer"
                 >
                   <Phone className="w-4 h-4" />
                   <span>Call {biz.phone}</span>
@@ -1054,7 +1098,7 @@ export default function AITheme({
                   loading={index === 0 ? 'eager' : 'lazy'}
                   decoding={index === 0 ? 'sync' : 'async'}
                   fetchPriority={index === 0 ? 'high' : 'auto'}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out transform-gpu motion-safe:scale-[1.03] select-none ${
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out transform-gpu [backface-visibility:hidden] motion-safe:scale-[1.03] select-none ${
                     isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0'
                   }`}
                 />
@@ -1118,7 +1162,7 @@ export default function AITheme({
                   {/* High-Contrast Primary Pill Button */}
                   <a
                     href="#catalog"
-                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2.5 rounded-full bg-[var(--theme-primary)] px-6 sm:px-7 py-2.5 sm:py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-lg hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
+                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2.5 rounded-full bg-[var(--theme-primary)] px-6 sm:px-7 py-2.5 sm:py-3 text-sm font-semibold text-[var(--theme-on-primary)] whitespace-nowrap shrink-0 transition-[transform,filter,box-shadow] duration-200 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-lg hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-primary)]"
                   >
                     <ShoppingBag className="h-4 w-4 shrink-0 text-[var(--theme-on-primary)]" stroke="currentColor" aria-hidden="true" />
                     <span>Explore Catalog</span>
@@ -1127,7 +1171,7 @@ export default function AITheme({
                   {/* Translucent Secondary Glass Pill Button */}
                   <a
                     href="#contact"
-                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2 rounded-full backdrop-blur-sm bg-white/10 border border-white/25 px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-white whitespace-nowrap shrink-0 transition-all duration-200 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2 rounded-full backdrop-blur-sm bg-white/10 border border-white/25 px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-white whitespace-nowrap shrink-0 transition-[transform,background-color,border-color] duration-200 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   >
                     <span>Contact &amp; Inquiries</span>
                   </a>
@@ -1164,10 +1208,10 @@ export default function AITheme({
                   type="button"
                   onClick={() => setCurrentSlide(idx)}
                   aria-label={`Go to visual slide ${idx + 1}`}
-                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  className={`h-1.5 w-5 origin-center rounded-full transition-[transform,background-color,opacity] duration-300 cursor-pointer ${
                     currentSlide === idx
-                      ? 'w-6 bg-[var(--theme-primary)]'
-                      : 'w-1.5 bg-white/50 hover:bg-white'
+                      ? 'scale-x-100 bg-[var(--theme-primary)]'
+                      : 'scale-x-[0.35] bg-white/50 hover:bg-white'
                   }`}
                 />
               ))}
@@ -1287,7 +1331,7 @@ export default function AITheme({
                 <div className="flex items-center gap-2">
                   <Link
                     to="/catalog"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold shadow-xs hover:shadow-md transition-all active:scale-95"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--theme-radius-inner)] bg-[var(--theme-primary)] hover:bg-[var(--theme-primary-hover)] text-[var(--theme-on-primary)] text-xs font-semibold shadow-xs hover:shadow-md transition-[transform,background-color,box-shadow] active:scale-95"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
                     <span>View All Products</span>
@@ -1312,28 +1356,50 @@ export default function AITheme({
 
         {/* ── Storefront Marquee Ticker ──────────────────────────────────────── */}
         <div className="border-y border-[var(--theme-border)] bg-[var(--theme-surface)] py-3.5 overflow-hidden">
-          <div className="flex animate-marquee whitespace-nowrap" aria-hidden="true">
-            {(safeProducts.length > 0
-              ? [...safeProducts, ...safeProducts]
-              : [
-                  { name: 'Curated Premium Collections' },
-                  { name: 'Fast Doorstep Delivery' },
-                  { name: 'Instant Web Checkout' },
-                  { name: '100% Quality Guaranteed' },
-                  { name: 'Cash on Delivery & Secure Pay' },
-                  { name: 'Verified Merchant Storefront' },
-                ]
-            ).map((item: any, i: number) => (
-              <span key={i} className="mx-6 text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-muted)] flex items-center">
-                <span>{item.name}</span>
-                {item.price !== undefined && (
-                  <span className="ml-2 font-mono font-bold text-[var(--theme-primary)]">
-                    · {formatPrice(item.price, biz.currencySymbol)}
-                  </span>
-                )}
-                <span className="mx-4 text-[var(--theme-primary)] opacity-40">✦</span>
-              </span>
-            ))}
+          <div className="animate-marquee whitespace-nowrap" aria-hidden="true">
+            {(() => {
+              const tickerItems =
+                Array.isArray(safeProducts) && safeProducts.length > 0
+                  ? safeProducts
+                  : [
+                      { name: 'Curated Premium Collections' },
+                      { name: 'Fast Doorstep Delivery' },
+                      { name: 'Instant Web Checkout' },
+                      { name: '100% Quality Guaranteed' },
+                      { name: 'Cash on Delivery & Secure Pay' },
+                      { name: 'Verified Merchant Storefront' },
+                    ];
+              return (
+                <>
+                  <div className="flex items-center shrink-0">
+                    {tickerItems.map((item: any, i: number) => (
+                      <span key={`m1-${item?.id || i}`} className="mx-6 text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-muted)] flex items-center">
+                        <span>{item?.name || 'Featured Product'}</span>
+                        {item?.price !== undefined && (
+                          <span className="ml-2 font-mono font-bold text-[var(--theme-primary)]">
+                            · {formatPrice(item.price, biz.currencySymbol)}
+                          </span>
+                        )}
+                        <span className="mx-4 text-[var(--theme-primary)] opacity-40">✦</span>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center shrink-0" aria-hidden="true">
+                    {tickerItems.map((item: any, i: number) => (
+                      <span key={`m2-${item?.id || i}`} className="mx-6 text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-muted)] flex items-center">
+                        <span>{item?.name || 'Featured Product'}</span>
+                        {item?.price !== undefined && (
+                          <span className="ml-2 font-mono font-bold text-[var(--theme-primary)]">
+                            · {formatPrice(item.price, biz.currencySymbol)}
+                          </span>
+                        )}
+                        <span className="mx-4 text-[var(--theme-primary)] opacity-40">✦</span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -1432,7 +1498,7 @@ export default function AITheme({
                   <div className="mt-8 flex flex-wrap items-center gap-4">
                     <a
                       href="#catalog"
-                      className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-on-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-primary)] whitespace-nowrap shrink-0 hover:brightness-110 active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-on-primary)]"
+                      className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--theme-radius)] bg-[var(--theme-on-primary)] px-6 py-3 text-sm font-semibold text-[var(--theme-primary)] whitespace-nowrap shrink-0 hover:brightness-110 active:scale-95 transition-[transform,filter] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--theme-on-primary)]"
                     >
                       <ShoppingBag className="h-4 w-4 shrink-0 text-[var(--theme-primary)]" stroke="currentColor" aria-hidden="true" />
                       <span>Browse Store Catalog</span>
@@ -1554,7 +1620,7 @@ export default function AITheme({
     {businessInfo?.phone && (
       <a
         href={`tel:${(businessInfo?.phone || '').toString().replace(/[^0-9+]/g, '')}`}
-        className="!fixed !bottom-8 !right-6 md:!bottom-10 md:!right-8 !left-auto !m-0 !z-40 flex items-center justify-center w-14 h-14 bg-[var(--theme-primary)] text-[var(--theme-bg)] rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:brightness-110 active:scale-95 transition-all duration-300 btn-radar isolate touch-manipulation cursor-pointer"
+        className="!fixed !bottom-8 !right-6 md:!bottom-10 md:!right-8 !left-auto !m-0 !z-40 flex items-center justify-center w-14 h-14 bg-[var(--theme-primary)] text-[var(--theme-bg)] rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:brightness-110 active:scale-95 transition-[transform,filter] duration-300 btn-radar isolate touch-manipulation cursor-pointer"
         aria-label="Call Us"
       >
         <Phone className="w-6 h-6 text-[var(--theme-bg)]" />

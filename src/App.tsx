@@ -507,7 +507,7 @@ function PublicStorefrontPortal() {
                     prev === 0 ? lightboxItem.images.length - 1 : prev - 1
                   );
                 }}
-                className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl hover:scale-105"
+                className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-white flex items-center justify-center transition-[transform,background-color] cursor-pointer shadow-xl hover:scale-105"
                 title="Previous image (Left Arrow)"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -533,7 +533,7 @@ function PublicStorefrontPortal() {
                     prev === lightboxItem.images.length - 1 ? 0 : prev + 1
                   );
                 }}
-                className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl hover:scale-105"
+                className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-white flex items-center justify-center transition-[transform,background-color] cursor-pointer shadow-xl hover:scale-105"
                 title="Next image (Right Arrow)"
               >
                 <ChevronRight className="w-6 h-6" />
@@ -553,7 +553,7 @@ function PublicStorefrontPortal() {
                     key={`${img}-${i}`}
                     type="button"
                     onClick={() => setCurrentImageIndex(i)}
-                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-[transform,opacity,border-color] cursor-pointer shrink-0 ${
                       i === currentImageIndex
                         ? 'border-white scale-105 ring-2 ring-white/30'
                         : 'border-zinc-800 opacity-60 hover:opacity-100'
