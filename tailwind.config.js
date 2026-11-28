@@ -45,15 +45,10 @@ export default {
           '0%': { backgroundPosition: '-400px 0' },
           '100%': { backgroundPosition: '400px 0' },
         },
-        marquee: {
-          '0%': { transform: 'translateX(0)' },
-          '100%': { transform: 'translateX(-50%)' },
-        },
       },
       animation: {
         float: 'float 4s ease-in-out infinite',
         shimmer: 'shimmer 2.5s infinite linear',
-        marquee: 'marquee 28s linear infinite',
       },
     },
   },

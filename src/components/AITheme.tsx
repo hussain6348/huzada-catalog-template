@@ -109,9 +109,25 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
     return isNaN(parsed) ? 0 : parsed;
   }, [end]);
 
-  const [displayValue, setDisplayValue] = useState<number>(0);
+  const shouldAnimate = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    if (window.innerWidth < 768) return false;
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return false;
+    }
+    return true;
+  }, []);
+
+  const [displayValue, setDisplayValue] = useState<number>(() =>
+    shouldAnimate ? 0 : numericEnd
+  );
 
   useEffect(() => {
+    if (!shouldAnimate) {
+      setDisplayValue(numericEnd);
+      return;
+    }
+
     let startTime: number | null = null;
     let frameId: number;
 
@@ -134,7 +150,7 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [numericEnd, duration]);
+  }, [numericEnd, duration, shouldAnimate]);
 
   return <>{displayValue.toFixed(decimals)}</>;
 };
@@ -460,11 +476,11 @@ export default function AITheme({
   }, []);
 
   useEffect(() => {
-    if (!hasIntersected) return;
+    if (!hasIntersected || isDocHidden) return;
 
     const secondaryTimer = setTimeout(() => {
       setShowSecondarySlides(true);
-    }, 1200);
+    }, 2800);
 
     const timer = setTimeout(() => {
       setIsIntroAnimating(false);
@@ -474,7 +490,7 @@ export default function AITheme({
       clearTimeout(secondaryTimer);
       clearTimeout(timer);
     };
-  }, [hasIntersected]);
+  }, [hasIntersected, isDocHidden]);
 
   useEffect(() => {
     if (!isHeroInView || isDocHidden) return;
@@ -598,118 +614,6 @@ export default function AITheme({
         .font-editorial { font-family: var(--font-display); }
         .headline-balance { text-wrap: balance; }
 
-        @keyframes text-shimmer {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 200% 50%; }
-        }
-
-        .animate-text-shimmer,
-        .hero-headline-shading {
-          background: linear-gradient(
-            to right,
-            var(--shading-base, var(--theme-text)) 0%,
-            color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 25%,
-            color-mix(in srgb, var(--theme-spice) 80%, var(--shading-base, var(--theme-text))) 50%,
-            color-mix(in srgb, var(--theme-primary) 85%, var(--shading-base, var(--theme-text))) 75%,
-            var(--shading-base, var(--theme-text)) 100%
-          );
-          background-size: 200% auto;
-          color: transparent !important;
-          -webkit-background-clip: text !important;
-          background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-          animation: text-shimmer 4s linear infinite;
-          display: inline;
-          -webkit-box-decoration-break: clone;
-          box-decoration-break: clone;
-        }
-
-        .hero-headline-depth {
-          filter:
-            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
-            drop-shadow(0 4px 16px rgba(0, 0, 0, 0.8))
-            drop-shadow(0 0 24px color-mix(in srgb, var(--theme-spice) 25%, transparent));
-        }
-
-        .metric-headline-depth {
-          filter:
-            drop-shadow(0 2px 4px color-mix(in srgb, var(--theme-text) 14%, transparent))
-            drop-shadow(0 0 14px color-mix(in srgb, var(--theme-spice) 20%, transparent));
-        }
-
-        .hero-subheadline-depth {
-          text-shadow:
-            0 1px 3px rgba(0, 0, 0, 0.9),
-            0 2px 10px rgba(0, 0, 0, 0.65);
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translate3d(0, 0px, 0); }
-          50% { transform: translate3d(0, -8px, 0); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -400px 0; }
-          100% { background-position: 400px 0; }
-        }
-        @keyframes marquee {
-          0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(-50%, 0, 0); }
-        }
-        /* ── Continuous Floating Motion Keyframes (8px-10px & 5px-6px smooth vertical drift) ── */
-        @keyframes float-gentle {
-          0%, 100% { transform: translate3d(0, 0px, 0); }
-          50% { transform: translate3d(0, -9px, 0); }
-        }
-        @keyframes float-subtle {
-          0%, 100% { transform: translate3d(0, 0px, 0); }
-          50% { transform: translate3d(0, -5.5px, 0); }
-        }
-        @keyframes float-micro {
-          0%, 100% { transform: translate3d(0, 0px, 0); }
-          50% { transform: translate3d(0, -3px, 0); }
-        }
-        .animate-float { animation: float 4s ease-in-out infinite; backface-visibility: hidden; }
-        .animate-float-gentle {
-          animation: float-gentle 5s ease-in-out infinite;
-          will-change: transform;
-          backface-visibility: hidden;
-        }
-        .animate-float-subtle {
-          animation: float-subtle 4.5s ease-in-out infinite;
-          will-change: transform;
-          backface-visibility: hidden;
-        }
-        .animate-float-micro {
-          animation: float-micro 3.8s ease-in-out infinite;
-          will-change: transform;
-          backface-visibility: hidden;
-        }
-        .animate-float-gentle:hover,
-        .animate-float-subtle:hover {
-          animation-play-state: paused;
-        }
-        .animate-shimmer {
-          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
-          background-size: 400px 100%;
-          animation: shimmer 2.5s infinite linear;
-        }
-        .animate-marquee {
-          display: flex;
-          width: max-content;
-          animation: marquee 28s linear infinite;
-          will-change: transform;
-          backface-visibility: hidden;
-        }
-        .animate-marquee:hover,
-        .waas-doc-hidden .animate-marquee { animation-play-state: paused; }
-
-        .glass-glow {
-          backdrop-filter: blur(12px);
-          background: rgba(255, 255, 255, 0.72);
-          border: 1px solid rgba(255, 255, 255, 0.5);
-          box-shadow: 0 4px 32px color-mix(in srgb, var(--theme-primary) 8%, transparent);
-        }
-
         @keyframes wavy-float {
           0% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
           50% { transform: translateY(-12px) rotate(2.5deg) scale(1.02); filter: drop-shadow(0 25px 35px rgba(0,0,0,0.25)); }
@@ -719,44 +623,6 @@ export default function AITheme({
           animation: wavy-float 6s ease-in-out infinite;
           will-change: transform, filter;
           transform-origin: center;
-        }
-
-        /* 2. Aurora Glow */
-        @keyframes aurora-pulse {
-          0%, 100% { opacity: 0.15; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(1.1); }
-        }
-        .aurora-blob {
-          position: absolute;
-          filter: blur(100px);
-          border-radius: 50%;
-          animation: aurora-pulse 8s ease-in-out infinite;
-          will-change: transform, opacity;
-        }
-        @media (max-width: 767px) {
-          .aurora-blob {
-            filter: blur(56px);
-          }
-        }
-
-        /* 3. Radar Pulse */
-        @keyframes radar-ping {
-          0% { transform: scale(1); opacity: 0.6; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        .btn-radar {
-          position: relative;
-          isolation: isolate;
-        }
-        .btn-radar::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border: 2px solid var(--theme-primary);
-          border-radius: inherit;
-          animation: radar-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-          z-index: -1;
-          pointer-events: none;
         }
 
         /* 1. Hardware-Composited Scroll Reveal */
@@ -827,9 +693,9 @@ export default function AITheme({
 
       {/* ── True Glassmorphic Sticky Header & Marquee Wrapper ──────────────── */}
       <div
-        className="sticky top-0 z-40 w-full backdrop-blur-md border-b transition-colors transform-gpu relative"
+        className="sticky top-0 z-40 w-full border-b transition-colors transform-gpu relative"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--theme-bg) 75%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--theme-bg) 94%, transparent)',
           borderColor: 'color-mix(in srgb, var(--theme-spice) 22%, color-mix(in srgb, var(--theme-text) 10%, transparent))'
         }}
       >
@@ -840,41 +706,29 @@ export default function AITheme({
             background: 'linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--theme-spice) 35%, transparent) 20%, color-mix(in srgb, var(--theme-spice) 50%, transparent) 50%, color-mix(in srgb, var(--theme-spice) 35%, transparent) 80%, transparent 100%)',
           }}
         />
-        {/* ── Top-Level Marquee Announcement Bar ───────────────────────────────── */}
+        {/* ── Top-Level Marquee Announcement Bar (Isolated from backdrop-filter) ── */}
         <div
-          className="w-full overflow-hidden py-2 border-b select-none relative"
+          className="w-full overflow-hidden py-2 border-b select-none relative [contain:layout_paint]"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--theme-text) 6%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--theme-text) 6%, var(--theme-bg))',
             color: 'var(--theme-text)',
             borderColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)'
           }}
         >
           <div className="animate-marquee whitespace-nowrap">
             <div className="flex items-center shrink-0">
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+              <span className="mx-6 text-xs sm:text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
                 {promoText}
               </span>
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
-                {promoText}
-              </span>
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
-                {promoText}
-              </span>
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+              <span className="mx-6 text-xs sm:text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
                 {promoText}
               </span>
             </div>
             <div className="flex items-center shrink-0" aria-hidden="true">
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+              <span className="mx-6 text-xs sm:text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
                 {promoText}
               </span>
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
-                {promoText}
-              </span>
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
-                {promoText}
-              </span>
-              <span className="mx-8 text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
+              <span className="mx-6 text-xs sm:text-sm font-semibold tracking-wider uppercase inline-flex items-center gap-3">
                 {promoText}
               </span>
             </div>
@@ -882,7 +736,7 @@ export default function AITheme({
         </div>
 
         {/* ── Navigation Bar ──────────────────────────────────────────────────── */}
-        <header className="min-h-16 py-2.5 relative flex items-center">
+        <header className="min-h-16 py-2.5 relative flex items-center md:backdrop-blur-md">
           <div className="w-full max-w-7xl mx-auto px-4 min-h-16 flex items-center justify-between gap-2 sm:gap-3">
             {/* Left: Logo + Business Name (flex-1 with min-w-0 flex container) */}
             <div className="min-w-0 flex-1 flex items-center gap-2 sm:gap-3">
@@ -1056,13 +910,12 @@ export default function AITheme({
             {/* Themed gradient & aurora fallback layer */}
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--theme-surface)] to-[var(--theme-bg)] z-0" />
 
-            {/* HARDWARE-ACCELERATED NEON PATTERN */}
+            {/* HARDWARE-ACCELERATED NEON PATTERN (Desktop only to keep 360px scroll lightweight) */}
             <div
-              className="absolute inset-0 pointer-events-none z-0"
+              className="hidden md:block absolute inset-0 pointer-events-none z-0"
               style={{
                 backgroundImage: `radial-gradient(color-mix(in srgb, var(--theme-primary) 70%, transparent) 2px, transparent 2px)`,
                 backgroundSize: '32px 32px',
-                filter: 'drop-shadow(0 0 4px var(--theme-primary))',
                 transform: 'translateZ(0)',
                 opacity: 0.35,
                 WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)',
@@ -1070,7 +923,7 @@ export default function AITheme({
             />
 
             {/* Aurora Glow Blobs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none z-0">
               <div className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] -top-32 -left-32 opacity-25"></div>
               <div
                 className="aurora-blob bg-[var(--theme-primary)] w-[30rem] h-[30rem] top-32 -right-32 opacity-20"
@@ -1098,7 +951,7 @@ export default function AITheme({
                   loading={index === 0 ? 'eager' : 'lazy'}
                   decoding={index === 0 ? 'sync' : 'async'}
                   fetchPriority={index === 0 ? 'high' : 'auto'}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out transform-gpu [backface-visibility:hidden] motion-safe:scale-[1.03] select-none ${
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out transform-gpu [backface-visibility:hidden] md:motion-safe:scale-[1.03] select-none ${
                     isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0'
                   }`}
                 />
@@ -1109,7 +962,7 @@ export default function AITheme({
           {/* Silky Edge-Free Readability Scrim (Multi-stop depth for bulletproof contrast across all presets) */}
           <div className="absolute inset-0 pointer-events-none z-[1] bg-gradient-to-t from-black/95 via-black/75 via-50% to-black/25 md:bg-gradient-to-r md:from-black/90 md:via-black/65 md:via-50% md:to-transparent" />
           <div
-            className="absolute inset-0 pointer-events-none z-[1]"
+            className="hidden md:block absolute inset-0 pointer-events-none z-[1]"
             style={{
               background: 'radial-gradient(ellipse 65% 75% at 20% 45%, rgba(0,0,0,0.68) 0%, transparent 80%)',
             }}
@@ -1123,7 +976,7 @@ export default function AITheme({
             >
               {/* Slim Glass Trust Pill with Crisp Spice Rim */}
               <div
-                className="inline-flex flex-wrap items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium backdrop-blur-sm bg-white/10 text-white/90 shadow-sm border"
+                className="inline-flex flex-wrap items-center gap-2 rounded-full px-3.5 py-1 text-xs font-medium bg-black/55 md:bg-white/10 md:backdrop-blur-sm text-white/95 shadow-sm border"
                 style={{
                   borderColor: 'color-mix(in srgb, var(--theme-spice) 35%, rgba(255,255,255,0.25))',
                   boxShadow: '0 0 12px color-mix(in srgb, var(--theme-spice) 12%, transparent)',
@@ -1171,7 +1024,7 @@ export default function AITheme({
                   {/* Translucent Secondary Glass Pill Button */}
                   <a
                     href="#contact"
-                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2 rounded-full backdrop-blur-sm bg-white/10 border border-white/25 px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-white whitespace-nowrap shrink-0 transition-[transform,background-color,border-color] duration-200 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    className="inline-flex min-h-[46px] sm:min-h-[48px] items-center justify-center gap-2 rounded-full bg-black/45 md:bg-white/10 md:backdrop-blur-sm border border-white/25 px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold text-white whitespace-nowrap shrink-0 transition-[transform,background-color,border-color] duration-200 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   >
                     <span>Contact &amp; Inquiries</span>
                   </a>
@@ -1197,7 +1050,7 @@ export default function AITheme({
           {/* Slide Indicator & Fullscreen Trigger (Compact Glass Pill in bottom-right corner) */}
           {slideImages.length > 1 && (
             <div
-              className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/40 border shadow-lg"
+              className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/65 md:bg-black/40 md:backdrop-blur-md border shadow-lg"
               style={{
                 borderColor: 'color-mix(in srgb, var(--theme-spice) 30%, rgba(255,255,255,0.2))',
               }}
@@ -1269,9 +1122,9 @@ export default function AITheme({
               ].map((metric, mIdx) => (
                 <div
                   key={mIdx}
-                  className="group relative rounded-2xl border p-5 sm:p-6 backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] motion-safe:animate-float-subtle motion-safe:hover:-translate-y-0.5 transition-[box-shadow,border-color] duration-200 flex flex-col justify-between"
+                  className="group relative rounded-2xl border p-5 sm:p-6 md:backdrop-blur-md shadow-[0_14px_34px_-14px_rgba(0,0,0,0.25)] md:motion-safe:animate-float-subtle md:motion-safe:hover:-translate-y-0.5 transition-[box-shadow,border-color] duration-200 flex flex-col justify-between"
                   style={{
-                    backgroundColor: 'color-mix(in srgb, var(--theme-surface) 75%, transparent)',
+                    backgroundColor: 'color-mix(in srgb, var(--theme-surface) 88%, transparent)',
                     borderColor: 'color-mix(in srgb, var(--theme-spice) 20%, color-mix(in srgb, var(--theme-border) 60%, transparent))',
                     boxShadow: '0 14px 34px -14px rgba(0,0,0,0.25), 0 0 0 1px color-mix(in srgb, var(--theme-spice) 10%, transparent)',
                     animationDelay: `${mIdx * 0.75}s`,
@@ -1283,7 +1136,7 @@ export default function AITheme({
                       {metric.label}
                     </p>
                     <div
-                      className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1.5 flex items-baseline gap-1 motion-safe:animate-float-micro metric-headline-depth"
+                      className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1.5 flex items-baseline gap-1 md:motion-safe:animate-float-micro metric-headline-depth"
                       style={{ animationDelay: `${mIdx * 0.75 + 0.35}s` }}
                     >
                       <span className="hero-headline-shading">
