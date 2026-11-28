@@ -20,65 +20,22 @@ import { isAuthenticated, AUTH_CHANGE_EVENT } from './lib/auth';
 import { getStoredBusinessInfo, fetchBusinessInfo, DEFAULT_BUSINESS_INFO, BUSINESS_INFO_UPDATED_EVENT } from './lib/businessInfo';
 import { fetchProductsPayload } from './lib/products';
 import { parseJsonResponse } from './lib/safeJson';
-import { fetchThemePayload } from './lib/themeCache';
+import {
+  fetchThemePayload,
+  determineSpiceColor,
+  applyStoredThemeSnapshot,
+  applyAndPersistTheme,
+  clearThemeHydratingFlag,
+  extractThemeData,
+  shouldRevalidateThemeOnVisible,
+} from './lib/themeCache';
 import type { BusinessInfo, Service, Product } from './lib/types';
 
+export { determineSpiceColor };
 export const FALLBACK_SERVICES: Service[] = [];
 
-export function determineSpiceColor(primaryColor?: string, bgColor?: string): string {
-  const primary = (primaryColor || '').toLowerCase().trim();
-  const bg = (bgColor || '').toLowerCase().trim();
-
-  // 1. Exact preset: Neon Midnight (#10b981 emerald on #09090b obsidian)
-  if (primary === '#10b981' || bg === '#09090b') {
-    return '#a855f7'; // Neon Midnight: Electric Ultraviolet
-  }
-
-  // 2. Exact preset: Luxury Amber (#d97706 amber on #1c1917 espresso)
-  if (primary === '#d97706' || bg === '#1c1917') {
-    return '#f43f5e'; // Luxury Amber: Crimson Ruby
-  }
-
-  // 3. Exact preset: Ocean Light (#0ea5e9 sky blue on #ffffff / #f8fafc canvas)
-  if (primary === '#0ea5e9' || bg === '#ffffff' || bg === '#f8fafc') {
-    return '#ea580c'; // Ocean Light: Deep Coral Sunset
-  }
-
-  // 4. Perceptual hue check for custom themes:
-  const hex = primary.replace('#', '');
-  if (hex.length === 6) {
-    const r = parseInt(hex.slice(0, 2), 16) || 0;
-    const g = parseInt(hex.slice(2, 4), 16) || 0;
-    const b = parseInt(hex.slice(4, 6), 16) || 0;
-    if (g > r + 30 && g > b) return '#a855f7';
-    if (b > r + 30 && b > g) return '#ea580c';
-    if (r > b + 40 && g > b) return '#f43f5e';
-  }
-
-  return '#ea580c';
-}
-
-function applyThemeCss(themeData: any) {
-  if (!themeData || typeof document === 'undefined') return;
-  if (themeData.primaryColor) {
-    document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
-    // Dynamic perceived luminance check to guarantee high-contrast button text
-    const hex = String(themeData.primaryColor).replace('#', '').trim();
-    if (hex.length === 6) {
-      const r = parseInt(hex.slice(0, 2), 16) || 0;
-      const g = parseInt(hex.slice(2, 4), 16) || 0;
-      const b = parseInt(hex.slice(4, 6), 16) || 0;
-      const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-      document.documentElement.style.setProperty('--theme-on-primary', luminance > 0.65 ? '#0f172a' : '#ffffff');
-    }
-  }
-  if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
-  if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
-
-  // 4th Spice Accent synchronization (scoped to product badges)
-  const spiceColor = themeData.spiceColor || determineSpiceColor(themeData.primaryColor, themeData.bgColor);
-  document.documentElement.style.setProperty('--theme-spice', spiceColor);
-  document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${spiceColor} 14%, transparent)`);
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  applyStoredThemeSnapshot();
 }
 
 function PublicStorefrontPortal() {
@@ -223,14 +180,14 @@ function PublicStorefrontPortal() {
     const hydrateThemeCss = async () => {
       try {
         const raw = await fetchThemePayload();
-        if (raw) {
-          const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
-          if (themeData && isMounted.current) {
-            applyThemeCss(themeData);
-          }
+        const themeData = extractThemeData(raw);
+        if (themeData && isMounted.current) {
+          applyAndPersistTheme(themeData, true);
         }
       } catch (err) {
         console.warn('[WaaS] Failed to hydrate theme CSS variables:', err);
+      } finally {
+        clearThemeHydratingFlag();
       }
     };
 
@@ -270,11 +227,9 @@ function PublicStorefrontPortal() {
       // Re-fetch theme data to update document CSS variables dynamically without page refresh
       try {
         const raw = await fetchThemePayload(true);
-        if (raw) {
-          const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
-          if (themeData) {
-            applyThemeCss(themeData);
-          }
+        const themeData = extractThemeData(raw);
+        if (themeData) {
+          applyAndPersistTheme(themeData, false);
         }
       } catch (err) {
         console.warn('[WaaS] Failed to update theme CSS variables on event:', err);
@@ -595,56 +550,52 @@ function ProtectedAdminRoute() {
 }
 
 export default function App() {
-  const lastFetchTime = useRef<number>(0);
-
   useEffect(() => {
     let isMounted = true;
 
-    const fetchHydratedData = async (forceRefresh = false) => {
-      // 1. Throttle: Prevent DB spam from notification shade fidgeting
-      const now = Date.now();
-      if (now - lastFetchTime.current < 30000) return; 
-      lastFetchTime.current = now;
-
+    const fetchHydratedData = async (forceRefresh = false, suppressTransition = true) => {
       try {
-        // 2. Coalesced mount fetch / fresh visibility resume fetch with NO CORS preflight penalties
         const raw = await fetchThemePayload(forceRefresh);
-        
-        // 3. Memory Leak Protection: Abort if unmounted
-        if (!isMounted || !raw) return;
-        
-        // 4. Update existing state safely
-        const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
-        if (themeData) {
-          applyThemeCss(themeData);
-        }
+        const themeData = extractThemeData(raw);
+        if (!isMounted || !themeData) return;
+        applyAndPersistTheme(themeData, suppressTransition);
       } catch (err) {
         console.warn('[WaaS] Hydration skipped:', err);
+      } finally {
+        clearThemeHydratingFlag();
       }
     };
 
     // Initial fetch on mount
-    fetchHydratedData();
+    fetchHydratedData(false, true);
 
-    // BFCache Defeat: Listen for foreground return
+    // BFCache Defeat: Revalidate when tab becomes visible and cached fetch is stale
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchHydratedData(true);
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && shouldRevalidateThemeOnVisible(4000)) {
+        fetchHydratedData(true, true);
       }
     };
 
     const handleGlobalThemeUpdate = () => {
-      fetchHydratedData(true);
+      fetchHydratedData(true, false);
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('WAAS_THEME_UPDATED', handleGlobalThemeUpdate);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('WAAS_THEME_UPDATED', handleGlobalThemeUpdate);
+    }
 
     // Strict Cleanup: Prevent memory leaks
     return () => {
       isMounted = false;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('WAAS_THEME_UPDATED', handleGlobalThemeUpdate);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('WAAS_THEME_UPDATED', handleGlobalThemeUpdate);
+      }
     };
   }, []);
 

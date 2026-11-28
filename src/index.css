@@ -41,6 +41,13 @@
   --theme-radius: 0.75rem;
   --theme-radius-inner: 0.5rem;
   --perspective: 1000px;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html {
+  scroll-padding-top: 80px;
+  scroll-behavior: smooth;
 }
 
 html, body {
@@ -48,9 +55,21 @@ html, body {
   min-height: 100vh;
   background-color: var(--theme-bg, #f8fafc);
   color: var(--theme-text, #0f172a);
+  font-family: var(--font-body);
   max-width: 100%;
   width: 100%;
 }
+
+/* Suppress color/background/border interpolation during initial theme hydration without locking transform/opacity */
+html.waas-theme-hydrating,
+html.waas-theme-hydrating *,
+html.waas-theme-hydrating *::before,
+html.waas-theme-hydrating *::after {
+  transition-property: transform, opacity !important;
+}
+
+.font-editorial { font-family: var(--font-display); }
+.headline-balance { text-wrap: balance; }
 
 /* ── Continuous Floating Motion Utilities (Layered) ────────────────────────── */
 @layer utilities {
@@ -327,6 +346,20 @@ html, body {
   display: none;
 }
 
+.reveal-blur {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+.reveal-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  will-change: auto;
+}
+
 /* ── Accessibility: Prefers Reduced Motion ─────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -336,6 +369,11 @@ html, body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .reveal-blur {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
   .animate-float,
   .animate-float-gentle,

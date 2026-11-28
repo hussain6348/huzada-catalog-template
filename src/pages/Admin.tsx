@@ -62,6 +62,7 @@ import {
   saveImageSlot,
   BUSINESS_INFO_UPDATED_EVENT,
 } from '../lib/businessInfo';
+import { applyAndPersistTheme, persistThemeSnapshot } from '../lib/themeCache';
 import { clientConfig } from '../config/client';
 import { compressHero, compressLogo, compressProduct } from '../utils/imageCompression';
 
@@ -439,6 +440,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
         const item = data.data ? (Array.isArray(data.data) ? data.data[0] : data.data) : (Array.isArray(data) ? data[0] : data);
         if (item) {
           if (item.id) setActiveThemeId(String(item.id));
+          persistThemeSnapshot(item);
           if (item.primaryColor) {
             setThemeForm({
               primaryColor: item.primaryColor || '#0ea5e9',
@@ -493,32 +495,27 @@ export function Admin({ onLogout }: AdminProps = {}) {
 
       const verifiedThemeId = data?.data?.id ?? data?.id ?? '1';
       const verifiedTheme = data?.data || data;
+      const savedThemePayload = {
+        primaryColor: verifiedTheme?.primaryColor || themeForm.primaryColor,
+        bgColor: verifiedTheme?.bgColor || themeForm.bgColor,
+        textColor: verifiedTheme?.textColor || themeForm.textColor,
+        spiceColor: verifiedTheme?.spiceColor || themeForm.spiceColor || '#ea580c',
+      };
+
+      // Instant local document CSS & origin-scoped snapshot sync
+      applyAndPersistTheme(savedThemePayload, false);
 
       // Wrap state updates with isMounted ref check
       if (isMounted.current) {
         setActiveThemeId(String(verifiedThemeId));
-        if (verifiedTheme.primaryColor && verifiedTheme.bgColor && verifiedTheme.textColor) {
-          setThemeForm({
-            primaryColor: verifiedTheme.primaryColor,
-            bgColor: verifiedTheme.bgColor,
-            textColor: verifiedTheme.textColor,
-            spiceColor: verifiedTheme.spiceColor || themeForm.spiceColor || '#ea580c'
-          });
-        }
+        setThemeForm(savedThemePayload);
       }
 
       // 3. THE GLOBAL BRIDGE - DISPATCH (ADMIN): Dispatch global event to instantly sync storefront
-      window.dispatchEvent(
-        new CustomEvent('WAAS_THEME_UPDATED', { detail: String(verifiedThemeId) })
-      );
-
-      // Instant local document CSS sync
-      if (typeof document !== 'undefined') {
-        document.documentElement.style.setProperty('--theme-primary', themeForm.primaryColor);
-        document.documentElement.style.setProperty('--theme-bg', themeForm.bgColor);
-        document.documentElement.style.setProperty('--theme-text', themeForm.textColor);
-        document.documentElement.style.setProperty('--theme-spice', themeForm.spiceColor);
-        document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${themeForm.spiceColor} 14%, transparent)`);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('WAAS_THEME_UPDATED', { detail: String(verifiedThemeId) })
+        );
       }
 
       if (isMounted.current) {

@@ -31,9 +31,58 @@
       />
     </noscript>
     <script>
-      if (typeof window !== 'undefined' && typeof fetch === 'function' && window.location.pathname === '/') {
-        window.__WAAS_BIZ_PROMISE__ = fetch('/api/business-info?t=' + Date.now(), { cache: 'no-store' }).catch(function () { return null; });
-      }
+      (function () {
+        if (typeof document !== 'undefined' && document.documentElement) {
+          document.documentElement.classList.add('waas-theme-hydrating');
+          setTimeout(function () {
+            try {
+              document.documentElement.classList.remove('waas-theme-hydrating');
+            } catch (e) {}
+          }, 1500);
+        }
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+          try {
+            var origin = window.location && window.location.origin ? window.location.origin : 'default';
+            var raw = window.localStorage ? window.localStorage.getItem('waas_theme_snapshot:' + origin) : null;
+            if (raw) {
+              var theme = JSON.parse(raw);
+              if (theme && typeof theme === 'object' && (!theme.origin || theme.origin === origin)) {
+                var isSafeColor = function (v) {
+                  return typeof v === 'string' && v.length > 0 && v.length <= 140 && !/[;{}<>\n\r]/.test(v);
+                };
+                var rootStyle = document.documentElement.style;
+                if (isSafeColor(theme.primaryColor)) {
+                  rootStyle.setProperty('--theme-primary', theme.primaryColor);
+                  var accent = isSafeColor(theme.accentColor) ? theme.accentColor : theme.primaryColor;
+                  rootStyle.setProperty('--theme-accent', accent);
+                  rootStyle.setProperty('--theme-accent-soft', 'color-mix(in srgb, ' + accent + ' 14%, transparent)');
+                  var hover = isSafeColor(theme.primaryHoverColor)
+                    ? theme.primaryHoverColor
+                    : 'color-mix(in srgb, ' + theme.primaryColor + ' 85%, #000000)';
+                  rootStyle.setProperty('--theme-primary-hover', hover);
+                }
+                if (isSafeColor(theme.spiceColor)) {
+                  rootStyle.setProperty('--theme-spice', theme.spiceColor);
+                  rootStyle.setProperty('--theme-spice-soft', 'color-mix(in srgb, ' + theme.spiceColor + ' 14%, transparent)');
+                }
+                if (isSafeColor(theme.bgColor)) rootStyle.setProperty('--theme-bg', theme.bgColor);
+                if (isSafeColor(theme.textColor)) rootStyle.setProperty('--theme-text', theme.textColor);
+                if (isSafeColor(theme.onPrimaryColor)) rootStyle.setProperty('--theme-on-primary', theme.onPrimaryColor);
+                if (typeof theme.radius === 'string' && /^\d+(?:\.\d+)?(?:px|rem|em|%)$/.test(theme.radius)) {
+                  rootStyle.setProperty('--theme-radius', theme.radius);
+                }
+                if (typeof theme.fontFamily === 'string' && theme.fontFamily.length > 0 && theme.fontFamily.length <= 160 && !/[;{}<>\n\r]/.test(theme.fontFamily)) {
+                  rootStyle.setProperty('--font-body', theme.fontFamily);
+                }
+              }
+            }
+          } catch (e) {}
+        }
+        if (typeof window !== 'undefined' && typeof fetch === 'function' && window.location.pathname === '/') {
+          window.__WAAS_BIZ_PROMISE__ = fetch('/api/business-info?t=' + Date.now(), { cache: 'no-store' }).catch(function () { return null; });
+          window.__WAAS_THEME_PROMISE__ = fetch('/api/theme?t=' + Date.now(), { cache: 'no-store' }).catch(function () { return null; });
+        }
+      })();
     </script>
     <title>Huzada Storefront | Curated Products & Premium Selection</title>
     <meta name="description" content="Explore our handpicked catalog of premium items with transparent pricing, instant web order placement, and direct doorstep delivery." />

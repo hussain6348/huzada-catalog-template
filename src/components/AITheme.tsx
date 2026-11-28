@@ -19,7 +19,13 @@ import { openCartDrawer } from '../lib/cart';
 import type { Product } from '../lib/types';
 import { clientConfig } from '../config/client';
 import { DEFAULT_BUSINESS_INFO } from '../lib/businessInfo';
-import { fetchThemePayload } from '../lib/themeCache';
+import {
+  fetchThemePayload,
+  applyAndPersistTheme,
+  clearThemeHydratingFlag,
+  extractThemeData,
+  shouldRevalidateThemeOnVisible,
+} from '../lib/themeCache';
 import { DEFAULT_HERO_IMAGE, optimizeUnsplashUrl, buildUnsplashSrcSet } from '../lib/imageOptimize';
 
 // ─── Fallback image used when a service has no image ─────────────────────────
@@ -315,88 +321,46 @@ export default function AITheme({
   }, [isMenuOpen]);
 
   const [themeLogo, setThemeLogo] = useState<string | null>(null);
-  const lastThemeFetchTime = useRef<number>(0);
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchHydratedData = async (forceRefresh = false) => {
-      // 1. Throttle: Prevent DB spam from notification shade fidgeting
-      const now = Date.now();
-      if (now - lastThemeFetchTime.current < 30000) return; 
-      lastThemeFetchTime.current = now;
-
       try {
-        // 2. Coalesced mount fetch / fresh visibility resume fetch with NO CORS preflight penalties
         const raw = await fetchThemePayload(forceRefresh);
-        
-        // 3. Memory Leak Protection: Abort if unmounted
         if (!isMounted || !raw) return;
-        
-        // 4. Update existing state safely
-        const themeData = raw?.data ? (Array.isArray(raw.data) ? raw.data[0] : raw.data) : (Array.isArray(raw) ? raw[0] : raw);
+
+        const themeData = extractThemeData(raw);
         if (themeData) {
           if (themeData.logo) setThemeLogo(themeData.logo);
-          if (typeof document !== 'undefined') {
-            if (themeData.primaryColor) {
-              document.documentElement.style.setProperty('--theme-primary', themeData.primaryColor);
-              const hex = String(themeData.primaryColor).replace('#', '').trim();
-              if (hex.length === 6) {
-                const r = parseInt(hex.slice(0, 2), 16) || 0;
-                const g = parseInt(hex.slice(2, 4), 16) || 0;
-                const b = parseInt(hex.slice(4, 6), 16) || 0;
-                const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-                document.documentElement.style.setProperty('--theme-on-primary', luminance > 0.65 ? '#0f172a' : '#ffffff');
-              }
-            }
-            if (themeData.bgColor) document.documentElement.style.setProperty('--theme-bg', themeData.bgColor);
-            if (themeData.textColor) document.documentElement.style.setProperty('--theme-text', themeData.textColor);
-
-            // 4th Spice Accent synchronization (scoped to product badges)
-            let spiceColor = themeData.spiceColor;
-            if (!spiceColor) {
-              const primary = (themeData.primaryColor || '').toLowerCase().trim();
-              const bg = (themeData.bgColor || '').toLowerCase().trim();
-              spiceColor = '#ea580c';
-              if (primary === '#10b981' || bg === '#09090b') {
-                spiceColor = '#a855f7'; // Neon Midnight: Electric Ultraviolet
-              } else if (primary === '#d97706' || bg === '#1c1917') {
-                spiceColor = '#f43f5e'; // Luxury Amber: Crimson Ruby
-              } else if (primary === '#0ea5e9' || bg === '#ffffff' || bg === '#f8fafc') {
-                spiceColor = '#ea580c'; // Ocean Light: Deep Coral Sunset
-              } else {
-                const h = primary.replace('#', '');
-                if (h.length === 6) {
-                  const r = parseInt(h.slice(0, 2), 16) || 0;
-                  const g = parseInt(h.slice(2, 4), 16) || 0;
-                  const b = parseInt(h.slice(4, 6), 16) || 0;
-                  if (g > r + 30 && g > b) spiceColor = '#a855f7';
-                  else if (b > r + 30 && b > g) spiceColor = '#ea580c';
-                  else if (r > b + 40 && g > b) spiceColor = '#f43f5e';
-                }
-              }
-            }
-            document.documentElement.style.setProperty('--theme-spice', spiceColor);
-            document.documentElement.style.setProperty('--theme-spice-soft', `color-mix(in srgb, ${spiceColor} 14%, transparent)`);
-          }
+          applyAndPersistTheme(themeData, true);
         }
       } catch (err) {
         console.warn('[WaaS] Hydration skipped:', err);
+      } finally {
+        clearThemeHydratingFlag();
       }
     };
 
     // Initial fetch on mount
-    fetchHydratedData();
+    fetchHydratedData(false);
 
-    // BFCache Defeat: Listen for foreground return
+    // BFCache Defeat: Revalidate on foreground return when cached theme is stale
     const handleVisibilityChange = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && shouldRevalidateThemeOnVisible(4000)) {
         fetchHydratedData(true);
       }
     };
 
+    const handleThemeUpdated = () => {
+      fetchHydratedData(true);
+    };
+
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('WAAS_THEME_UPDATED', handleThemeUpdated);
     }
 
     // Strict Cleanup: Prevent memory leaks
@@ -404,6 +368,9 @@ export default function AITheme({
       isMounted = false;
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('WAAS_THEME_UPDATED', handleThemeUpdated);
       }
     };
   }, []);
@@ -579,121 +546,9 @@ export default function AITheme({
   return (
     <>
       <div className={`min-h-[100dvh] flex flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] selection:bg-[var(--theme-primary)] selection:text-[var(--theme-on-primary)] relative${isDocHidden ? ' waas-doc-hidden' : ''}`}>
-      {/* ── Zero-Dependency CSS Layer ───────────────────────────────────────── */}
-      <style>{`
-        :root {
-          --theme-primary: #0ea5e9;
-          --theme-primary-hover: color-mix(in srgb, var(--theme-primary) 85%, #000000);
-          --theme-accent: var(--theme-primary);
-          --theme-accent-soft: color-mix(in srgb, var(--theme-primary) 14%, transparent);
-          --theme-spice: #ea580c;
-          --theme-spice-soft: color-mix(in srgb, var(--theme-spice) 14%, transparent);
-          --theme-surface: color-mix(in srgb, var(--theme-text) 6%, var(--theme-bg));
-          --theme-surface-subtle: color-mix(in srgb, var(--theme-text) 10%, var(--theme-bg));
-          --theme-surface-translucent: color-mix(in srgb, var(--theme-bg) 88%, transparent);
-          --theme-text-muted: color-mix(in srgb, var(--theme-text) 74%, transparent);
-          --theme-text-subtle: color-mix(in srgb, var(--theme-text) 54%, transparent);
-          --theme-on-primary: #ffffff;
-          --theme-on-primary-muted: rgba(255, 255, 255, 0.75);
-          --theme-on-primary-border: rgba(255, 255, 255, 0.22);
-          --theme-border: color-mix(in srgb, var(--theme-text) 14%, transparent);
-          --theme-border-strong: color-mix(in srgb, var(--theme-text) 24%, transparent);
-          --theme-radius: 0.75rem;
-          --theme-radius-inner: 0.5rem;
-          --shading-base: var(--theme-text);
-          --font-display: 'Cormorant Garamond', Georgia, serif;
-          --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        html { scroll-padding-top: 80px; scroll-behavior: smooth; }
-
-        body {
-          font-family: var(--font-body);
-        }
-
-        .font-editorial { font-family: var(--font-display); }
-        .headline-balance { text-wrap: balance; }
-
-        @keyframes wavy-float {
-          0% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
-          50% { transform: translateY(-12px) rotate(2.5deg) scale(1.02); filter: drop-shadow(0 25px 35px rgba(0,0,0,0.25)); }
-          100% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
-        }
-        .animate-wavy-float {
-          animation: wavy-float 6s ease-in-out infinite;
-          will-change: transform, filter;
-          transform-origin: center;
-        }
-
-        /* 1. Hardware-Composited Scroll Reveal */
-        .reveal-blur {
-          opacity: 0;
-          transform: translate3d(0, 14px, 0);
-          transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-                      transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: opacity, transform;
-          backface-visibility: hidden;
-        }
-        .reveal-visible {
-          opacity: 1;
-          transform: translate3d(0, 0, 0);
-          will-change: auto;
-        }
-
-        /* 2. Linear Spotlight Card */
-        .spotlight-card {
-          position: relative;
-          isolation: isolate;
-          overflow: hidden;
-        }
-        .spotlight-card::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(
-            600px circle at var(--mouse-x, 0) var(--mouse-y, 0),
-            color-mix(in srgb, var(--theme-primary) 15%, transparent),
-            transparent 40%
-          );
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          z-index: -1;
-          pointer-events: none;
-        }
-        @media (hover: hover) and (pointer: fine) {
-          .spotlight-card:hover::before {
-            opacity: 1;
-          }
-        }
-
-        /* ── Strict Prefers-Reduced-Motion Guardrail ── */
-        @media (prefers-reduced-motion: reduce) {
-          .reveal-blur {
-            opacity: 1 !important;
-            transform: none !important;
-            transition: none !important;
-          }
-          .animate-float,
-          .animate-wavy-float,
-          .animate-float-gentle,
-          .animate-float-subtle,
-          .animate-float-micro,
-          .animate-shimmer,
-          .animate-text-shimmer,
-          .hero-headline-shading,
-          .animate-marquee,
-          .aurora-blob,
-          .btn-radar::after {
-            animation: none !important;
-            animation-play-state: paused !important;
-            transform: none !important;
-          }
-        }
-      `}</style>
-
       {/* ── True Glassmorphic Sticky Header & Marquee Wrapper ──────────────── */}
       <div
-        className="sticky top-0 z-40 w-full border-b transition-colors transform-gpu relative"
+        className="sticky top-0 z-40 w-full border-b transform-gpu relative"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--theme-bg) 94%, transparent)',
           borderColor: 'color-mix(in srgb, var(--theme-spice) 22%, color-mix(in srgb, var(--theme-text) 10%, transparent))'
