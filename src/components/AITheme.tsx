@@ -993,7 +993,10 @@ export default function AITheme({
                       className="font-editorial text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1.5 flex items-baseline gap-1 motion-safe:animate-float-micro metric-headline-depth"
                       style={{ animationDelay: `${mIdx * 0.75 + 0.35}s` }}
                     >
-                      <span className="hero-headline-shading">
+                      <span
+                        className="hero-headline-shading"
+                        style={{ animationDelay: `${mIdx * 0.55}s` }}
+                      >
                         {metric.value}
                       </span>
                     </div>

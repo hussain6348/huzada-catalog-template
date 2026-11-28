@@ -185,6 +185,11 @@ html.waas-theme-hydrating *::after {
   animation: shimmer 2.5s infinite linear;
 }
 
+@keyframes text-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
 .animate-text-shimmer,
 .hero-headline-shading {
   color: var(--shading-base, var(--theme-text, #ffffff));
@@ -205,8 +210,9 @@ html.waas-theme-hydrating *::after {
     color-mix(in srgb, var(--theme-primary, #0ea5e9) 85%, var(--shading-base, var(--theme-text, #ffffff))) 75%,
     var(--shading-base, var(--theme-text, #ffffff)) 100%
   );
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  background-repeat: repeat;
+  animation: text-shimmer 4s linear infinite;
   display: inline;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -255,7 +261,9 @@ html.waas-theme-hydrating *::after {
 .waas-doc-hidden .animate-float,
 .waas-doc-hidden .animate-float-gentle,
 .waas-doc-hidden .animate-float-subtle,
-.waas-doc-hidden .animate-float-micro {
+.waas-doc-hidden .animate-float-micro,
+.waas-doc-hidden .animate-text-shimmer,
+.waas-doc-hidden .hero-headline-shading {
   animation-play-state: paused;
 }
 
