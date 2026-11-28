@@ -942,8 +942,12 @@ export default function AITheme({
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-5">
               {[
                 {
-                  value: <AnimatedCounter end={biz.rating} decimals={1} />,
-                  suffix: '/ 5.0',
+                  value: (
+                    <>
+                      <AnimatedCounter end={biz.rating} decimals={1} />
+                      <span className="text-base sm:text-lg font-normal ml-1">/ 5.0</span>
+                    </>
+                  ),
                   label: 'Client Rating',
                   detail: (
                     <>
@@ -992,11 +996,6 @@ export default function AITheme({
                       <span className="hero-headline-shading">
                         {metric.value}
                       </span>
-                      {metric.suffix && (
-                        <span className="text-base sm:text-lg font-normal text-[var(--theme-text-muted)]">
-                          {metric.suffix}
-                        </span>
-                      )}
                     </div>
                   </div>
                   <p className="mt-3 text-xs text-[var(--theme-text-muted)] leading-relaxed tabular-nums">
