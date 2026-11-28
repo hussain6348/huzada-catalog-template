@@ -367,7 +367,6 @@ export function Admin({ onLogout }: AdminProps = {}) {
       hero2: current.heroImage2 || current.imageSlots?.hero2 || '',
       hero3: current.heroImage3 || current.imageSlots?.hero3 || '',
       about: current.imageSlots?.about || '',
-      promo: current.imageSlots?.promo || '',
     };
   });
   const [slotNotice, setSlotNotice] = useState<string | null>(null);
@@ -690,7 +689,6 @@ export function Admin({ onLogout }: AdminProps = {}) {
           hero2: data.heroImage2 || data.imageSlots?.hero2 || '',
           hero3: data.heroImage3 || data.imageSlots?.hero3 || '',
           about: data.imageSlots?.about || '',
-          promo: data.imageSlots?.promo || '',
         });
       }
     }).catch(console.warn);
@@ -1089,7 +1087,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
     }
   };
 
-  const handleUpdateSlot = async (slot: 'logo' | 'hero' | 'about' | 'promo' | 'hero2' | 'hero3') => {
+  const handleUpdateSlot = async (slot: 'logo' | 'hero' | 'about' | 'hero2' | 'hero3') => {
     const url = normalizeMediaUrl(slotInputs[slot]?.trim() || '');
     const oldUrl = businessInfo.imageSlots?.[slot] || (slot === 'hero' ? businessInfo.heroImage : slot === 'hero2' ? businessInfo.heroImage2 : slot === 'hero3' ? businessInfo.heroImage3 : '') || '';
 
@@ -1131,7 +1129,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
   };
 
   const handleSlotFileUpload = async (
-    slot: 'logo' | 'hero' | 'about' | 'promo' | 'hero2' | 'hero3',
+    slot: 'logo' | 'hero' | 'about' | 'hero2' | 'hero3',
     file: File
   ) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -1147,7 +1145,7 @@ export function Admin({ onLogout }: AdminProps = {}) {
     try {
       // --- INJECTED COMPRESSION STEP ---
       let compressedTarget: File;
-      if (slot === 'hero' || slot === 'hero2' || slot === 'hero3' || slot === 'about' || slot === 'promo') {
+      if (slot === 'hero' || slot === 'hero2' || slot === 'hero3' || slot === 'about') {
         compressedTarget = await compressHero(file);
       } else if (slot === 'logo') {
         compressedTarget = await compressLogo(file);
@@ -2436,7 +2434,6 @@ export function Admin({ onLogout }: AdminProps = {}) {
                   { slot: 'hero3' as const, title: 'Hero Slideshow (Slide 3)', desc: 'Third image in the cinematic hero card fan-out & slideshow.' },
                   { slot: 'logo' as const, title: 'Brand Logo Slot', desc: 'Optional custom logo replacing header text title.' },
                   { slot: 'about' as const, title: 'About Section Slot', desc: 'Portrait / team photo in boutique standards section.' },
-                  { slot: 'promo' as const, title: 'Promotional Banner Slot', desc: 'Optional background or accent showcase slot.' },
                 ]
                   .filter(item => !['hero', 'hero2', 'hero3'].includes(item.slot))
                   .map(({ slot, title, desc }) => {
